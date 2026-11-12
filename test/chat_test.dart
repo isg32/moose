@@ -80,7 +80,9 @@ void main() {
     final m = c
         .read(messagesProvider)
         .firstWhere(
-          (m) => m.body is TextBody && (m.body as TextBody).text == 'leaving office now',
+          (m) =>
+              m.body is TextBody &&
+              (m.body as TextBody).text == 'leaving office now',
         );
     expect(m.reactions.single.emoji, '🔥');
 
@@ -119,7 +121,10 @@ void main() {
     await settle(tester);
     await tester.tapAt(Offset(chat.center.dx, chat.top + 80));
     await settle(tester);
-    expect(c.read(chatThemeProvider).wallpaper, const WallpaperRef.builtin('paper'));
+    expect(
+      c.read(chatThemeProvider).wallpaper,
+      const WallpaperRef.builtin('paper'),
+    );
     await close(tester);
   });
 

@@ -20,6 +20,21 @@ abstract final class MockData {
   /// Photos saved as wallpapers in the theme sheet (C22).
   static const themePhotos = ['mock:0', 'mock:2'];
 
+  /// The phone's gallery (C18): photos, with a few videos.
+  static List<Media> gallery() => [
+    for (var i = 0; i < 18; i++)
+      Media(
+        id: 'g$i',
+        art: i,
+        aspect: const [1.0, 1.5, 0.75][i % 3],
+        duration: i == 2
+            ? const Duration(seconds: 24)
+            : i == 9
+            ? const Duration(minutes: 1, seconds: 2)
+            : null,
+      ),
+  ];
+
   static const sapan = Person(id: 'me', name: 'Sapan');
   static const aatika = Person(id: 'partner', name: 'Aatika');
 

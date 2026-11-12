@@ -44,10 +44,7 @@ void main() {
         expect(s.unlock('0000', now: now), Unlock.wrong);
       }
       expect(s.unlock(MockData.pin, now: now), Unlock.waiting);
-      expect(
-        s.unlock(MockData.pin, now: now.add(Session.wait)),
-        Unlock.opened,
-      );
+      expect(s.unlock(MockData.pin, now: now.add(Session.wait)), Unlock.opened);
     });
   });
 
@@ -103,13 +100,11 @@ void main() {
   });
 
   test('mock searches find the canvas data', () async {
-    final songs = await MockMusicRepository(
-      latency: Duration.zero,
-    ).search('sienna the marias');
+    final songs = await MockMusicRepository(latency: Duration.zero)
+        .search('sienna the marias');
     expect(songs.first.title, 'Sienna');
-    final memes = await MockMemeRepository(
-      latency: Duration.zero,
-    ).search('sleepy cat', MemeSource.klipy, null);
+    final memes = await MockMemeRepository(latency: Duration.zero)
+        .search('sleepy cat', MemeSource.klipy, null);
     expect(memes, isNotEmpty);
   });
 

@@ -5,6 +5,7 @@ analyzer:
     - build/**
     - "**/*.g.dart"
     - android/**
+    - test_peek/**
   language:
     strict-casts: true
     strict-raw-types: true
