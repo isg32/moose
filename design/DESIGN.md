@@ -7,6 +7,7 @@ This is the spec the Flutter code follows. It is distilled from the **Moose Scre
 | `canvas/canvas.json` | The canvas index: board positions and titles. |
 | `canvas/*.dc.html` | One board per file. Each screen board draws a dark-ink row and a light-ink row, and has wallpaper tweaks. |
 | `SCREENS.md` | The inventory: every page, state and component. |
+| `screens/*.png` | Each board rendered to PNG, for the README. Regenerate with `tool/design_render/render.sh`. |
 
 ## Boards
 
