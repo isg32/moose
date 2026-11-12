@@ -83,9 +83,15 @@ class VTabBar extends StatefulWidget {
     required this.index,
     required this.onTap,
     this.position,
+    this.stretch = false,
   });
 
   final List<VTabItem> items;
+
+  /// Moose's pill: the full width less 12 on each side, with the tabs spread
+  /// to its ends (the canvas's A10). Otherwise the bar hugs its tabs and
+  /// centres, as in Cariño.
+  final bool stretch;
   final int index;
   final ValueChanged<int> onTap;
 
@@ -179,15 +185,19 @@ class _VTabBarState extends State<VTabBar> with SingleTickerProviderStateMixin {
     final widths = <double>[];
     for (var i = 0; i < widget.items.length; i++) {
       if (i != selected) {
-        widths.add(_iconOnlyWidth);
+        // The canvas gives idle tabs 22 px either side of the icon.
+        widths.add(widget.stretch ? 68 : _iconOnlyWidth);
         continue;
       }
       widths.add(_padX * 2 + 18 + _iconGap + _labelWidth(i, scaler));
     }
     final used = widths.fold<double>(0, (s, w) => s + w);
-    final gap = ((maxWidth - used) / widths.length).clamp(0.0, double.infinity);
+    final spread = widget.stretch && widths.length > 1;
+    final gap =
+        ((maxWidth - used) / (spread ? widths.length - 1 : widths.length))
+            .clamp(0.0, double.infinity);
     final lefts = <double>[];
-    var x = gap / 2;
+    var x = spread ? 0.0 : gap / 2;
     for (final w in widths) {
       lefts.add(x);
       x += w + gap;
@@ -219,16 +229,18 @@ class _VTabBarState extends State<VTabBar> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final scaler = MediaQuery.textScalerOf(context);
     return Padding(
-      padding: EdgeInsets.zero,
+      padding: EdgeInsets.symmetric(horizontal: widget.stretch ? 12 : 0),
       child: Center(
         child: SizedBox(
-          width: _naturalWidth(scaler),
+          width: widget.stretch ? double.infinity : _naturalWidth(scaler),
           child: VGlass(
             radius: _barHeight / 2,
             child: SizedBox(
               height: _barHeight,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.stretch ? 7 : 6,
+                ),
                 child: LayoutBuilder(
                   builder: (context, box) {
                     final to = _target(widget.index, box.maxWidth, scaler);

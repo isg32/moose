@@ -1,7 +1,10 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/cupertino.dart';
 
 import '../icons/v_icons.dart';
-import 'v_ink.dart';
+import '../theme/v_colors.dart';
+import '../theme/v_palette.dart';
 import '../theme/v_text.dart';
 import '../theme/v_tokens.dart';
 import 'v_buttons.dart';
@@ -108,9 +111,14 @@ class VTabPage extends StatelessWidget {
     this.titleStyle,
     this.header,
     this.onRefresh,
+    this.veil = false,
   });
 
   final String title;
+
+  /// Lays the page veil (blur 30 + veil tint) over the shared wallpaper, for
+  /// full pages like Settings. Otherwise the wallpaper shows through.
+  final bool veil;
   final String? eyebrow;
   final Widget? trailing;
   final TextStyle? titleStyle;
@@ -125,8 +133,9 @@ class VTabPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      backgroundColor: VInk.surfaceOf(context),
+      backgroundColor: VColors.transparent,
       child: _UnderStatusBar(
+        veil: veil,
         child: CustomScrollView(
           physics: _physics(onRefresh),
           slivers: [
@@ -176,9 +185,14 @@ class VDetailPage extends StatelessWidget {
     this.action,
     this.titleStyle,
     this.onRefresh,
+    this.veil = true,
   });
 
   final String backLabel;
+
+  /// Lays the page veil over the shared wallpaper (on by default: detail
+  /// pages are full pages).
+  final bool veil;
   final String title;
   final Widget? action;
   final TextStyle? titleStyle;
@@ -190,8 +204,9 @@ class VDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      backgroundColor: VInk.surfaceOf(context),
+      backgroundColor: VColors.transparent,
       child: _UnderStatusBar(
+        veil: veil,
         bottomSafe: true,
         child: CustomScrollView(
           physics: _physics(onRefresh),
@@ -235,15 +250,21 @@ class VDetailPage extends StatelessWidget {
 
 /// Lets [child] run under the status bar, with [VStatusBarBlur] over it.
 class _UnderStatusBar extends StatelessWidget {
-  const _UnderStatusBar({required this.child, this.bottomSafe = false});
+  const _UnderStatusBar({
+    required this.child,
+    this.bottomSafe = false,
+    this.veil = false,
+  });
 
   final Widget child;
   final bool bottomSafe;
+  final bool veil;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        if (veil) const Positioned.fill(child: VVeil()),
         Positioned.fill(
           child: SafeArea(top: false, bottom: bottomSafe, child: child),
         ),
@@ -277,3 +298,19 @@ ScrollPhysics? _physics(Future<void> Function()? onRefresh) => onRefresh == null
 Widget? _refresh(Future<void> Function()? onRefresh) => onRefresh == null
     ? null
     : CupertinoSliverRefreshControl(onRefresh: onRefresh);
+
+/// The page veil: the shared wallpaper blurred (30) under the veil tint, so
+/// full pages read clearly while the wallpaper still shows through.
+class VVeil extends StatelessWidget {
+  const VVeil({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+        child: ColoredBox(color: VPalette.of(context).veil),
+      ),
+    );
+  }
+}
