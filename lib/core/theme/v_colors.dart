@@ -152,3 +152,48 @@ enum VMoment {
   /// A poke row's tinted background in the chat.
   Color get tint => color.withValues(alpha: 0.18);
 }
+
+/// Stand-in art for mock photos, videos, GIFs, stickers and song covers until
+/// real media arrives (Phase 4): two-stop gradients from the design canvas.
+/// Content, not interface.
+abstract final class VMockArt {
+  static const List<(Color, Color)> gradients = [
+    (Color(0xFF6B3B1F), Color(0xFF24344F)),
+    (Color(0xFF1F3A26), Color(0xFF5B6470)),
+    (Color(0xFF3D2536), Color(0xFF5A1A1A)),
+    (Color(0xFF3A2416), Color(0xFFCDBFA9)),
+    (Color(0xFF15322F), Color(0xFF3D2536)),
+    (Color(0xFF24344F), Color(0xFF15322F)),
+    (Color(0xFF1F3A26), Color(0xFFFFC15E)),
+    (Color(0xFF6B3B1F), Color(0xFFFF8FA3)),
+    (Color(0xFF3D2536), Color(0xFF9DB2FF)),
+    (Color(0xFF24344F), Color(0xFFF3E6D2)),
+  ];
+
+  static (Color, Color) of(int art) => gradients[art % gradients.length];
+}
+
+/// Pen colours for doodles and stickers: what people draw with, not the
+/// interface. Strokes store their colour as ARGB; [of] turns it back.
+abstract final class VPenColors {
+  static const List<int> presets = [
+    0xFF000000, 0xFFFFFFFF, 0xFFFF5C7A, 0xFFFF8FA3, //
+    0xFFFFC15E, 0xFFFFE066, 0xFF3FA34D, 0xFF5BC0EB,
+    0xFF9DB2FF, 0xFFB57EDC, 0xFF6B3B1F, 0xFF24344F,
+    0xFFF3E6D2, 0xFF5B6470, 0xFF5A1A1A, 0xFF1F3A26,
+  ];
+
+  /// The hues on the colour wheel, in order round it.
+  static const List<Color> wheel = [
+    Color(0xFFFF5C7A),
+    Color(0xFFFFC15E),
+    Color(0xFFFFE066),
+    Color(0xFF3FA34D),
+    Color(0xFF5BC0EB),
+    Color(0xFF9DB2FF),
+    Color(0xFFB57EDC),
+    Color(0xFFFF5C7A),
+  ];
+
+  static Color of(int argb) => Color(argb);
+}
