@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moose message bubbles</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&amp;family=Inter:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#ecebe7;font-family:Inter,sans-serif;color:#000}
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.tk{width:15px;height:15px}
+.eb{font:500 11px Inter;letter-spacing:.1em;text-transform:uppercase}
+.col{display:flex;flex-direction:column;gap:10px}
+.out{align-self:flex-end;background:var(--ink);color:var(--paper);border-radius:20px 20px 6px 20px;padding:10px 14px;max-width:290px;font:400 15px/1.4 Inter;box-sizing:border-box}
+.in{align-self:flex-start;background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--ink);border-radius:20px 20px 20px 6px;padding:10px 14px;max-width:290px;font:400 15px/1.4 Inter;box-sizing:border-box}
+.meta{font:300 11px Inter;display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-top:4px}
+.q{border-left:0;border-radius:12px;padding:6px 10px;margin-bottom:6px;font:400 13px/1.3 Inter;display:flex;gap:8px;align-items:center}
+.sys{align-self:center;font:500 11px Inter;letter-spacing:.06em;padding:6px 12px;border-radius:999px;border:1px solid var(--ink);background:var(--card);backdrop-filter:blur(16px)}
+.lbl{font:300 12px Inter;margin-top:6px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font:500 12px Inter}
+</style>
+</helmet>
+<div style="width: 2620px; height: 1900px; box-sizing: border-box; padding: 40px; display: flex; gap: 40px; background: #ecebe7">
+<sc-for list="{{ panels }}" as="k" hint-placeholder-count="2">
+<div style="flex: 1; border-radius: 36px; overflow: hidden; background: {{ k.wall }}; color: var(--ink); padding: 32px; box-sizing: border-box; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px; align-content: start; {{ k.vars }}">
+
+  <!-- Column 1: text, ticks, replies, reactions -->
+  <div class="col">
+    <div style="font: 700 34px/1 Doto, monospace; margin-bottom: 6px">{{ k.name }}</div>
+    <div class="eb">B1 · Text</div>
+    <div class="in">are you up?<div class="meta">23:41</div></div>
+    <div class="out">yes!! couldn't sleep, kept thinking about the trip. did you book the train or should i<div class="meta">23:42<svg class="ic tk" viewBox="0 0 24 24" aria-label="Seen" role="img"><path d="{{ i.dcheck }}" style="stroke-width: 2.6"></path></svg></div></div>
+    <div class="out" style="background: transparent; color: var(--ink); font-size: 44px; padding: 0 4px">🥺🫶<div class="meta" style="font-size: 11px">23:42</div></div>
+    <div class="in">look <span style="text-decoration: underline; text-underline-offset: 3px">maps.app.goo.gl/k8Qd</span> the café with the swing<div class="meta">23:44</div></div>
+
+    <div class="eb" style="margin-top: 10px">Delivery states (outgoing)</div>
+    <div class="out">sending…<div class="meta">23:45<svg class="ic tk" viewBox="0 0 24 24" aria-label="Pending" role="img"><path d="{{ i.pending }}"></path></svg></div></div>
+    <div class="out">sent<div class="meta">23:45<svg class="ic tk" viewBox="0 0 24 24" aria-label="Sent" role="img"><path d="{{ i.check }}"></path></svg></div></div>
+    <div class="out">delivered<div class="meta">23:45<svg class="ic tk" viewBox="0 0 24 24" aria-label="Delivered" role="img"><path d="{{ i.dcheck }}"></path></svg></div></div>
+    <div class="out">seen<div class="meta">23:45<svg class="ic tk" viewBox="0 0 24 24" aria-label="Seen" role="img"><path d="{{ i.dcheck }}" style="stroke-width: 2.6"></path></svg></div></div>
+    <div style="align-self: flex-end; display: flex; align-items: center; gap: 8px">
+      <button style="display: flex; align-items: center; gap: 4px; background: transparent; border: 1px solid var(--ink); color: var(--ink); border-radius: 999px; padding: 5px 10px; font: 500 12px Inter"><svg class="ic tk" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.warning }}"></path></svg>Retry</button>
+      <div class="out" style="border: 1px dashed var(--ink); background: transparent; color: var(--ink)">didn't go through<div class="meta">Not sent</div></div>
+    </div>
+    <div class="lbl" style="align-self: flex-end">clock · ✓ sent · ✓✓ delivered · bold ✓✓ seen · dashed = failed</div>
+
+    <div class="eb" style="margin-top: 10px">B2 · Reply quote</div>
+    <div class="out"><div class="q" style="background: var(--paper); color: var(--ink)"><span style="width: 2px; align-self: stretch; background: var(--ink); border-radius: 1px"></span><span><b style="font-weight: 600">Aatika</b><br>the café with the swing</span></div>let's go saturday<div class="meta">23:46<svg class="ic tk" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.dcheck }}"></path></svg></div></div>
+    <div class="in"><div class="q" style="border: 1px solid var(--ink)"><span style="width: 32px; height: 32px; border-radius: 8px; background: {{ ph1 }}"></span><span><b style="font-weight: 600">You</b><br>Photo</span></div>is that you at 6??<div class="meta">23:47</div></div>
+    <div class="in"><div class="q" style="border: 1px solid var(--ink)"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.music }}"></path></svg><span><b style="font-weight: 600">You</b><br>Yellow · Coldplay</span></div>stuck in my head now<div class="meta">23:48</div></div>
+
+    <div class="eb" style="margin-top: 10px">B3 · Reactions</div>
+    <div style="align-self: flex-start; display: flex; flex-direction: column; gap: 0">
+      <div class="in">i miss you already<div class="meta">23:50</div></div>
+      <div style="display: flex; gap: 4px; margin: -8px 0 0 12px"><span class="chip" style="background: var(--ink); color: var(--paper)">❤️ 1</span><span class="chip" style="border: 1px solid var(--ink); background: var(--card); backdrop-filter: blur(16px)">🥺 2</span></div>
+    </div>
+    <div style="align-self: flex-start; display: flex; gap: 6px; padding: 8px 10px; border-radius: 999px; border: 1px solid var(--ink); background: var(--sheet); backdrop-filter: blur(14px); font-size: 24px; align-items: center">
+      <span>❤️</span><span>😂</span><span>🥺</span><span>😮</span><span>🔥</span><span>👍</span><span style="width: 32px; height: 32px; border-radius: 16px; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-label="More reactions" role="img"><path d="{{ i.plus }}"></path></svg></span>
+    </div>
+    <div class="lbl">Picker: long-press a bubble. Your reaction is the filled chip.</div>
+  </div>
+
+  <!-- Column 2: photos, video, round video, voice -->
+  <div class="col">
+    <div class="eb" style="margin-top: 40px">B4 · Photo</div>
+    <div class="in" style="padding: 4px"><div style="width: 260px; height: 200px; border-radius: 16px 16px 4px 16px; background: {{ ph1 }}; position: relative"><span style="position: absolute; right: 10px; bottom: 8px; font: 300 11px Inter; color: #fff">23:51</span></div></div>
+    <div class="out" style="padding: 4px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; width: 260px">
+      <span style="height: 110px; border-radius: 16px 4px 4px 4px; background: {{ ph2 }}"></span><span style="height: 110px; border-radius: 4px 16px 4px 4px; background: {{ ph1 }}"></span>
+      <span style="height: 110px; border-radius: 4px; background: {{ ph3 }}"></span><span style="height: 110px; border-radius: 4px 4px 4px 4px; background: {{ ph2 }}; display: flex; align-items: center; justify-content: center; font: 900 28px Doto, monospace; color: #fff">+3</span>
+    </div>
+    <div style="display: flex; gap: 10px">
+      <div class="in" style="padding: 4px"><div style="width: 130px; height: 130px; border-radius: 16px; background: {{ ph3 }}; filter: blur(0); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #fff"><svg viewBox="0 0 48 48" style="width: 44px; height: 44px" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="none" stroke="#fff" stroke-width="1" stroke-dasharray="1 4"></circle><path d="M24 4a20 20 0 0 1 19 26" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"></path></svg><span style="font: 500 11px Inter">from Aatika's phone</span></div></div>
+      <div class="in" style="padding: 4px"><div style="width: 130px; height: 130px; border-radius: 16px; background: {{ ph1 }}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #fff"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.download }}"></path></svg><span style="font: 500 11px Inter">2.4 MB · cloud</span></div></div>
+    </div>
+    <div class="in" style="padding: 4px"><div style="width: 270px; height: 70px; border-radius: 16px; border: 1px dashed var(--ink); display: flex; align-items: center; gap: 10px; padding: 0 14px; box-sizing: border-box"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.warning }}"></path></svg><span style="font: 400 13px/1.3 Inter">Aatika's phone is offline.<br>It'll arrive when it's back.</span></div></div>
+    <div class="lbl">Downloading direct (P2P) · tap to download (cloud) · waiting</div>
+
+    <div class="eb" style="margin-top: 10px">B5 · Video</div>
+    <div class="out" style="padding: 4px"><div style="width: 260px; height: 160px; border-radius: 16px 16px 4px 16px; background: {{ ph2 }}; position: relative; display: flex; align-items: center; justify-content: center; color: #fff"><span style="width: 52px; height: 52px; border-radius: 26px; border: 1px solid #fff; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.4)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.play }}"></path></svg></span><span style="position: absolute; left: 10px; bottom: 8px; font: 700 13px Doto, monospace">0:24</span></div></div>
+
+    <div class="eb" style="margin-top: 10px">B6 · Round video note</div>
+    <div style="display: flex; gap: 24px; align-items: flex-end">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+        <div style="width: 180px; height: 180px; border-radius: 90px; background: {{ ph3 }}; position: relative">
+          <svg viewBox="0 0 188 188" style="position: absolute; left: -4px; top: -4px; width: 188px; height: 188px" aria-hidden="true"><circle cx="94" cy="94" r="92" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="1 5"></circle><path d="M94 2a92 92 0 0 1 87 120" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path></svg>
+          <span style="position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); font: 700 13px Doto, monospace; color: #fff">0:07</span>
+        </div>
+        <span class="lbl">Playing, sound on</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+        <div style="width: 140px; height: 140px; border-radius: 70px; background: {{ ph1 }}; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; color: #fff"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.mute }}"></path></svg></div>
+        <span class="lbl">Muted autoplay · 0:12</span>
+      </div>
+    </div>
+
+    <div class="eb" style="margin-top: 10px">B7 · Voice note</div>
+    <sc-for list="{{ voices }}" as="v" hint-placeholder-count="2">
+      <div class="{{ v.cls }}" style="display: flex; align-items: center; gap: 10px; width: 270px">
+        <span style="width: 36px; height: 36px; border-radius: 18px; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ v.icon }}"></path></svg></span>
+        <span style="flex: 1; display: flex; align-items: center; gap: 2px; height: 28px">
+          <sc-for list="{{ v.bars }}" as="b" hint-placeholder-count="28"><span style="width: 3px; border-radius: 2px; height: {{ b.h }}px; background: currentColor; opacity: {{ b.o }}"></span></sc-for>
+        </span>
+        <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><span style="font: 700 13px Doto, monospace">{{ v.t }}</span><span style="width: 6px; height: 6px; border-radius: 3px; background: currentColor; opacity: {{ v.dot }}"></span></span>
+      </div>
+    </sc-for>
+    <div class="lbl">Dot = not played yet · bars fill as it plays</div>
+  </div>
+
+  <!-- Column 3: music, memes, pokes, system rows, swipe -->
+  <div class="col">
+    <div class="eb" style="margin-top: 40px">B8 · Music clip (15 s)</div>
+    <sc-for list="{{ songs }}" as="s" hint-placeholder-count="3">
+      <div class="{{ s.cls }}" style="width: 290px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; gap: 12px; align-items: center">
+          <span style="width: 52px; height: 52px; border-radius: 12px; background: {{ s.art }}; flex-shrink: 0"></span>
+          <span style="flex: 1; display: flex; flex-direction: column; min-width: 0"><span style="font: 600 14px Inter">{{ s.title }}</span><span style="font: 300 12px Inter">{{ s.artist }}</span></span>
+          <span style="width: 36px; height: 36px; border-radius: 18px; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; opacity: {{ s.op }}"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ s.icon }}"></path></svg></span>
+        </div>
+        <div style="height: 4px; border-radius: 2px; border: 1px solid currentColor; overflow: hidden"><div style="height: 100%; width: {{ s.pct }}; background: currentColor"></div></div>
+        <div style="display: flex; justify-content: space-between; font: 300 11px Inter"><span>{{ s.range }}</span><span>{{ s.state }}</span></div>
+      </div>
+    </sc-for>
+
+    <div class="eb" style="margin-top: 10px">B9 · Meme, GIF, sticker</div>
+    <div style="display: flex; gap: 14px; align-items: flex-end">
+      <div class="in" style="padding: 4px"><div style="width: 170px; height: 150px; border-radius: 16px; background: {{ ph2 }}; position: relative; color: #fff"><span style="position: absolute; left: 8px; top: 8px; padding: 2px 6px; border-radius: 6px; border: 1px solid #fff; font: 600 10px Inter">GIF</span></div><div style="font: 300 11px Inter; padding: 6px 8px 2px">via KLIPY</div></div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px"><div style="width: 120px; height: 120px; border-radius: 30px; background: {{ ph3 }}; transform: rotate(-4deg)"></div><span class="lbl" style="margin: 0">Sticker · no bubble</span></div>
+    </div>
+    <div class="out" style="padding: 4px"><div style="width: 230px; height: 190px; border-radius: 16px 16px 4px 16px; background: {{ ph1 }}"></div><div style="font: 300 11px Inter; padding: 6px 8px 2px">r/wholesomememes</div></div>
+
+    <div class="eb" style="margin-top: 10px">B10 · Pokes (moment colours)</div>
+    <sc-for list="{{ pokes }}" as="p" hint-placeholder-count="4">
+      <div class="sys" style="display: flex; align-items: center; gap: 8px; font: 500 13px Inter; letter-spacing: 0; border-color: {{ p.c }}; background: {{ p.bg }}"><span style="font-size: 16px">{{ p.e }}</span>{{ p.text }}</div>
+    </sc-for>
+
+    <div class="eb" style="margin-top: 10px">B11 · System rows</div>
+    <div class="sys">TODAY</div>
+    <div class="sys" style="letter-spacing: 0; font-size: 12px">Aatika changed the theme to Dune</div>
+    <div class="sys" style="letter-spacing: 0; font-size: 12px">You changed the wallpaper</div>
+    <div class="sys" style="letter-spacing: 0; font-size: 12px">Paired · 14 Feb 2025</div>
+    <div class="sys" style="letter-spacing: 0; font-size: 12px; display: flex; gap: 6px; align-items: center"><svg class="ic" viewBox="0 0 24 24" style="width: 16px; height: 16px" aria-hidden="true"><path d="{{ i.doodle }}"></path></svg>New doodle: Sunday plans</div>
+    <div style="display: flex; align-items: center; gap: 10px; font: 500 11px Inter; letter-spacing: .1em"><span style="flex: 1; border-top: 1px dashed var(--ink)"></span>3 UNREAD<span style="flex: 1; border-top: 1px dashed var(--ink)"></span></div>
+
+    <div class="eb" style="margin-top: 10px">B12 · Swipe to reply</div>
+    <div style="display: flex; align-items: center; gap: 12px">
+      <span style="width: 34px; height: 34px; border-radius: 17px; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.reply }}"></path></svg></span>
+      <div class="in" style="transform: translateX(8px)">sleep well, moose<div class="meta">00:12</div></div>
+    </div>
+    <div class="lbl">Drag right ~60 px: the icon fills and a light tick of haptics.</div>
+  </div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2620,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WP = {
+      night: [false, '#06070A', [['#24344F', 15, 10, 60], ['#3D2536', 95, 55, 50], ['#15322F', 30, 105, 60]]],
+      paper: [true, '#EFE9E0', [['#F3E6D2', 85, 7, 60], ['#DCD0C0', 0, 60, 55], ['#CDBFA9', 70, 105, 55]]]
+    };
+    const css = (k) => WP[k][2].map((b) => 'radial-gradient(' + b[3] + '% ' + Math.round(b[3] * 0.75) + '% at ' + b[1] + '% ' + b[2] + '%, ' + b[0] + ' 0%, transparent 100%)').concat([WP[k][1]]).join(', ');
+    const D = '--ink:#FFFFFF;--paper:#000000;--bar:rgba(255,255,255,.10);--card:rgba(255,255,255,.08);--sheet:rgba(0,0,0,.55);--scrim:rgba(0,0,0,.40);--veil:rgba(0,0,0,.60);--fade:rgba(0,0,0,.6);';
+    const L = '--ink:#000000;--paper:#FFFFFF;--bar:rgba(0,0,0,.06);--card:rgba(0,0,0,.05);--sheet:rgba(255,255,255,.60);--scrim:rgba(255,255,255,.40);--veil:rgba(255,255,255,.60);--fade:rgba(255,255,255,.6);';
+    const i = {
+      check: 'M5 12l5 5l9-10', dcheck: 'M2 12l5 5l9-10 M12 16l1 1l9-10', pending: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 7v5l3 2',
+      warning: 'M12 3l10 18H2z M12 10v5 M12 18h.01', plus: 'M12 5v14 M5 12h14',
+      music: 'M9 18V6l10-2v12 M9 18a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0 M19 16a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0',
+      download: 'M12 4v11 M7 10l5 5l5-5 M5 20h14', play: 'M8 5l11 7l-11 7z', pause: 'M8 5v14 M16 5v14',
+      mute: 'M4 9h4l5-4v14l-5-4H4z M17 9l4 6 M21 9l-4 6', reply: 'M10 8L5 12l5 4 M5 12h9a5 5 0 0 1 5 5v1',
+      doodle: 'M14.5 4.5l5 5L9 20H4v-5z M12.5 6.5l5 5'
+    };
+    const pk = {
+      poke: 'M12 10.5a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3 M7.8 7.8a6 6 0 0 0 0 8.4 M16.2 7.8a6 6 0 0 1 0 8.4 M5 5a10 10 0 0 0 0 14 M19 5a10 10 0 0 1 0 14',
+      hug: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+      kiss: 'M4 12c2-3 5-4 8-1c3-3 6-2 8 1c-2 3-5 4-8 4s-6-1-8-4z M4 12h16',
+      miss: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M8.5 15.5c1-1 2.2-1.5 3.5-1.5s2.5.5 3.5 1.5 M9 9.5v.5 M15 9.5v.5 M16 11v2'
+    };
+    const H = [6, 12, 18, 10, 22, 14, 8, 20, 26, 16, 10, 6, 14, 22, 18, 12, 8, 16, 24, 20, 12, 6, 10, 18, 14, 8, 12, 6];
+    const bars = (played) => H.map((h, n) => ({ h, o: n < played ? 1 : 0.35 }));
+    return {
+      i,
+      ph1: 'linear-gradient(135deg, #6B3B1F, #24344F)',
+      ph2: 'linear-gradient(160deg, #1F3A26, #5B6470)',
+      ph3: 'linear-gradient(200deg, #3D2536, #5A1A1A)',
+      voices: [
+        { cls: 'in', icon: i.play, bars: bars(0), t: '0:18', dot: 1 },
+        { cls: 'out', icon: i.pause, bars: bars(11), t: '0:07', dot: 0 }
+      ],
+      songs: [
+        { cls: 'in', art: 'linear-gradient(135deg, #6B3B1F, #3D2536)', title: 'Yellow', artist: 'Coldplay', icon: i.play, op: 1, pct: '0%', range: '1:02 – 1:17', state: '15 s' },
+        { cls: 'out', art: 'linear-gradient(135deg, #24344F, #15322F)', title: 'Sienna', artist: 'The Marías', icon: i.pause, op: 1, pct: '46%', range: '0:41 – 0:56', state: 'Playing · 0:07' },
+        { cls: 'in', art: 'linear-gradient(135deg, #5B6470, #1A1D22)', title: 'Lover', artist: 'Taylor Swift', icon: i.warning, op: 0.35, pct: '0%', range: '2:10 – 2:25', state: "Can't play right now" }
+      ],
+      pokes: [
+        { e: '👉', c: '#FFC15E', bg: 'rgba(255,193,94,.18)', text: 'Aatika poked you · 21:14' },
+        { e: '🫂', c: '#FF8FA3', bg: 'rgba(255,143,163,.18)', text: 'You sent a hug · 21:15' },
+        { e: '💋', c: '#FF5C7A', bg: 'rgba(255,92,122,.18)', text: 'Aatika sent a kiss · 21:16' },
+        { e: '🥺', c: '#9DB2FF', bg: 'rgba(157,178,255,.18)', text: 'Aatika misses you · 21:20' }
+      ],
+      panels: [
+        { name: 'Dark ink', wall: css('night'), vars: D },
+        { name: 'Light ink', wall: css('paper'), vars: L }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

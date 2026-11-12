@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moose system surfaces</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&amp;family=Inter:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#ecebe7;font-family:Inter,sans-serif;color:#000}
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.lbl{font:500 12px Inter;color:#000}
+.eb{font:500 11px Inter;letter-spacing:.1em;text-transform:uppercase}
+.ph{width:390px;height:844px;border-radius:44px;overflow:hidden;position:relative;background:var(--wall);color:var(--ink);font-family:Inter,sans-serif;flex-shrink:0;box-shadow:0 0 0 8px #000}
+.veil{position:absolute;inset:0;background:var(--veil);backdrop-filter:blur(30px)}
+.sub{font:300 12px/1.4 Inter}
+.nt{border-radius:22px;border:1px solid var(--ink);background:var(--sheet);backdrop-filter:blur(14px);padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+.app{width:30px;height:30px;border-radius:9px;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;font:900 13px Doto,monospace;flex-shrink:0}
+.chip{padding:6px 12px;border-radius:999px;border:1px solid var(--ink);font:500 12px Inter}
+.b1{background:var(--ink);color:var(--paper);border:0;border-radius:999px;padding:15px;font:600 15px Inter;width:100%;text-align:center;box-sizing:border-box;display:block}
+.b2{background:transparent;color:var(--ink);border:1px solid var(--ink);border-radius:999px;padding:14px;font:500 15px Inter;width:100%;text-align:center;box-sizing:border-box;display:block}
+.card{border:1px solid var(--ink);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:8px}
+</style>
+</helmet>
+<div style="width: 1330px; height: 1960px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 48px; background: #ecebe7">
+<sc-for list="{{ modes }}" as="m" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 14px; {{ m.vars }}">
+<div style="font: 600 14px Inter; color: #000">{{ m.label }}</div>
+<div style="display: flex; gap: 40px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C42 · Notifications (shade)</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div style="position: relative; z-index: 1; padding: 64px 12px 0; display: flex; flex-direction: column; gap: 10px">
+        <div style="font: 900 64px/1 Doto, monospace; padding: 0 8px">21:14</div>
+        <div class="sub" style="padding: 0 8px 10px">Thursday, 13 November</div>
+        <div class="nt" style="background: #FF8FA3; color: #000; border-color: #FF8FA3; box-shadow: 0 12px 40px rgba(255,143,163,.45)">
+          <span style="font-size: 26px; line-height: 30px">🫂</span>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+            <div><div style="font: 600 15px Inter">Aatika sent you a hug</div><div style="font: 400 12px Inter">Moose · now</div></div>
+            <div style="display: flex; gap: 8px"><span style="padding: 7px 14px; border-radius: 999px; background: #000; color: #FF8FA3; font: 600 12px Inter">Hug back</span><span style="padding: 6px 14px; border-radius: 999px; border: 1px solid #000; font: 500 12px Inter">Open</span></div>
+          </div>
+        </div>
+        <div class="nt" style="background: #FFC15E; color: #000; border-color: #FFC15E"><span style="font-size: 22px; line-height: 28px">👉</span><div style="flex: 1"><div style="font: 600 15px Inter">Aatika poked you</div><div style="font: 400 12px Inter">Moose · 2 min ago</div></div></div>
+        <div class="nt"><span class="app">M</span><div style="flex: 1"><div style="font: 600 14px Inter">Aatika</div><div style="font: 400 14px/1.35 Inter">come home early today? i'm making rajma</div><div class="sub" style="margin-top: 4px">Moose · 5 min · preview on</div></div></div>
+        <div class="nt"><span class="app">M</span><div style="flex: 1"><div style="font: 600 14px Inter">New message from Aatika</div><div class="sub" style="margin-top: 4px">Moose · preview off</div></div></div>
+        <div class="nt" style="border-style: dashed"><span class="app">M</span><div style="flex: 1"><div style="font: 600 14px Inter">Aatika has a new phone</div><div style="font: 400 13px Inter">Open Moose to check it's her.</div></div></div>
+        <div class="nt" style="opacity: .7"><span class="app">M</span><div style="flex: 1"><div style="font: 500 13px Inter">Moose · keeping in touch</div><div class="sub">Silent · checks every 6 min</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C43 · Crash overlay</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div style="position: relative; z-index: 1; padding: 110px 20px 0; display: flex; flex-direction: column; gap: 12px">
+        <svg class="ic" viewBox="0 0 24 24" style="width: 36px; height: 36px" aria-hidden="true"><path d="{{ i.warning }}"></path></svg>
+        <div style="font: 700 34px/1 Doto, monospace">Something broke</div>
+        <div class="sub" style="font-size: 14px">Moose hit an error. Your chats are safe on this phone. Copy the details if you want to report it.</div>
+        <div style="border: 1px dashed var(--ink); border-radius: 16px; padding: 12px; font: 400 11.5px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap">StateError: Bad state: No element
+#0  SyncEngine._drainInbox (sync_engine.dart:142)
+#1  SyncEngine.tick (sync_engine.dart:88)
+#2  BackgroundService._onAlarm (background.dart:51)</div>
+      </div>
+      <div style="position: absolute; left: 20px; right: 20px; bottom: 40px; z-index: 2; display: flex; flex-direction: column; gap: 12px">
+        <button class="b2">Copy details</button>
+        <button class="b1">Restart Moose</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">Empty and error states</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div style="position: relative; z-index: 1; padding: 60px 16px 0; display: flex; flex-direction: column; gap: 12px">
+        <div class="eb" style="padding: 0 4px">New chat</div>
+        <div class="card" style="border-style: dashed; align-items: center; text-align: center"><div style="font: 700 22px Doto, monospace">Say hi to Aatika</div><div class="sub">Your first message is the first thing she'll see.</div></div>
+        <div class="eb" style="padding: 0 4px; margin-top: 4px">Memes can't load</div>
+        <div class="card"><div style="display: flex; gap: 10px; align-items: center; font: 500 14px Inter"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.warning }}"></path></svg>KLIPY isn't answering</div><div class="sub">Try again, or switch to Reddit.</div><div style="display: flex; gap: 8px"><span class="chip" style="background: var(--ink); color: var(--paper); border-color: var(--ink); font-weight: 600">Try again</span><span class="chip">Reddit</span></div></div>
+        <div class="eb" style="padding: 0 4px; margin-top: 4px">No results</div>
+        <div class="card" style="border-style: dashed"><div style="font: 500 14px Inter">Nothing for "sienna maraias"</div><div class="sub">Check the spelling, or try fewer words.</div></div>
+        <div class="eb" style="padding: 0 4px; margin-top: 4px">Song can't play</div>
+        <div class="card"><div style="display: flex; gap: 10px; align-items: center; font: 500 14px Inter"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.music }}"></path></svg>YouTube won't play this one right now</div><div class="sub">It stays in the chat. Tap to try again later.</div></div>
+        <div class="eb" style="padding: 0 4px; margin-top: 4px">No doodles yet</div>
+        <div class="card" style="border-style: dashed; align-items: center; text-align: center"><div style="font: 700 22px Doto, monospace">Nothing here yet</div><div class="sub">Start a doodle and Aatika can draw on it too.</div><span class="chip">New doodle</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"darkWallpaper":{"editor":"enum","options":["night","dune","moss","fog","ember","black"],"default":"night"},"lightWallpaper":{"editor":"enum","options":["paper","white"],"default":"paper"},"$preview":{"width":1330,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WP = {
+      night: [false, '#06070A', [['#24344F', 15, 10, 60], ['#3D2536', 95, 55, 50], ['#15322F', 30, 105, 60]]],
+      dune: [false, '#120B07', [['#6B3B1F', 80, 20, 65], ['#3A2416', 10, 90, 55]]],
+      paper: [true, '#EFE9E0', [['#F3E6D2', 85, 7, 60], ['#DCD0C0', 0, 60, 55], ['#CDBFA9', 70, 105, 55]]],
+      moss: [false, '#060A07', [['#1F3A26', 20, 90, 60], ['#2C3B2F', 90, 10, 50]]],
+      fog: [false, '#1A1D22', [['#5B6470', 50, 30, 65]]],
+      ember: [false, '#0B0505', [['#5A1A1A', 30, 80, 55]]],
+      black: [false, '#000000', []],
+      white: [true, '#FFFFFF', []]
+    };
+    const v = (k) => {
+      const wall = WP[k][2].map((b) => 'radial-gradient(' + b[3] + '% ' + Math.round(b[3] * 0.75) + '% at ' + b[1] + '% ' + b[2] + '%, ' + b[0] + ' 0%, transparent 100%)').concat([WP[k][1]]).join(', ');
+      return (WP[k][0]
+        ? '--ink:#000000;--paper:#FFFFFF;--bar:rgba(0,0,0,.06);--card:rgba(0,0,0,.05);--sheet:rgba(255,255,255,.60);--scrim:rgba(255,255,255,.40);--veil:rgba(255,255,255,.60);--fade:rgba(255,255,255,.6);'
+        : '--ink:#FFFFFF;--paper:#000000;--bar:rgba(255,255,255,.10);--card:rgba(255,255,255,.08);--sheet:rgba(0,0,0,.55);--scrim:rgba(0,0,0,.40);--veil:rgba(0,0,0,.60);--fade:rgba(0,0,0,.6);') + '--wall:' + wall + ';';
+    };
+    const dk = WP[this.props.darkWallpaper] && !WP[this.props.darkWallpaper][0] ? this.props.darkWallpaper : 'night';
+    const lk = WP[this.props.lightWallpaper] && WP[this.props.lightWallpaper][0] ? this.props.lightWallpaper : 'paper';
+    const modes = [{ label: 'Dark ink · ' + dk + ' wallpaper', vars: v(dk) }, { label: 'Light ink · ' + lk + ' wallpaper', vars: v(lk) }];
+    return {
+      modes,
+      i: {
+        warning: 'M12 3l10 18H2z M12 10v5 M12 18h.01',
+        music: 'M9 18V6l10-2v12 M9 18a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0 M19 16a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0'
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

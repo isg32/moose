@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moose calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&amp;family=Inter:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#ecebe7;font-family:Inter,sans-serif;color:#000}
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.lbl{font:500 12px Inter;color:#000}
+.eb{font:500 11px Inter;letter-spacing:.1em;text-transform:uppercase}
+.ph{width:390px;height:844px;border-radius:44px;overflow:hidden;position:relative;background:var(--wall);color:var(--ink);font-family:Inter,sans-serif;flex-shrink:0;box-shadow:0 0 0 8px #000}
+.veil{position:absolute;inset:0;background:var(--veil);backdrop-filter:blur(30px)}
+.tb{position:absolute;left:0;right:0;top:0;height:130px;background:linear-gradient(var(--fade),transparent);backdrop-filter:blur(11px);-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent);z-index:3;pointer-events:none}
+.bb{position:absolute;left:0;right:0;bottom:0;height:210px;background:linear-gradient(transparent,var(--fade));backdrop-filter:blur(11px);-webkit-mask-image:linear-gradient(transparent,#000 45%);mask-image:linear-gradient(transparent,#000 45%);z-index:3;pointer-events:none}
+.sub{font:300 12px/1.4 Inter}
+.icb{width:44px;height:44px;border-radius:50%;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;background:transparent;color:var(--ink);padding:0;flex-shrink:0}
+.cb{display:flex;flex-direction:column;align-items:center;gap:8px;font:500 12px Inter}
+.cb .c{width:64px;height:64px;border-radius:32px;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center}
+.cb .f{background:var(--ink);color:var(--paper);border:0}
+.mid{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+.ring{position:relative;width:220px;height:220px;display:flex;align-items:center;justify-content:center}
+.pulse{animation:pulse 2.4s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.7);opacity:.9}100%{transform:scale(1.3);opacity:0}}
+.hdr{position:absolute;left:0;right:0;top:0;padding:52px 16px 0;display:flex;align-items:center;gap:8px;z-index:4}
+.av{width:40px;height:40px;border-radius:20px;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;font:900 18px Doto,monospace;flex-shrink:0;margin-right:4px}
+.sys{align-self:center;font:500 12px Inter;padding:8px 14px;border-radius:16px;border:1px solid var(--ink);background:var(--card);backdrop-filter:blur(16px);display:flex;align-items:center;gap:8px}
+.in{align-self:flex-start;background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--ink);border-radius:20px 20px 20px 6px;padding:9px 13px;max-width:270px;font:400 15px/1.4 Inter}
+.out{align-self:flex-end;background:var(--ink);color:var(--paper);border-radius:20px 20px 6px 20px;padding:9px 13px;max-width:270px;font:400 15px/1.4 Inter}
+.pill{position:absolute;left:12px;right:12px;bottom:22px;height:62px;border-radius:31px;background:var(--bar);backdrop-filter:blur(18px);border:1px solid var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 7px;box-sizing:border-box;z-index:4}
+.act{display:flex;align-items:center;gap:6px;background:var(--ink);color:var(--paper);border-radius:24px;padding:12px 18px;font:600 12px Inter}
+</style>
+</helmet>
+<div style="width: 2190px; height: 1960px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 48px; background: #ecebe7">
+<sc-for list="{{ modes }}" as="m" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 14px; {{ m.vars }}">
+<div style="font: 600 14px Inter; color: #000">{{ m.label }}</div>
+<div style="display: flex; gap: 40px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">K1 · Calling (outgoing)</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div class="mid" style="padding-top: 110px">
+        <div class="eb">Voice call</div>
+        <div class="ring">
+          <span class="pulse" style="position: absolute; inset: 0; border-radius: 50%; border: 1px dashed var(--ink)"></span>
+          <span class="pulse" style="position: absolute; inset: 0; border-radius: 50%; border: 1px dashed var(--ink); animation-delay: -1.2s"></span>
+          <span style="width: 130px; height: 130px; border-radius: 65px; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; font: 900 60px Doto, monospace">A</span>
+        </div>
+        <div style="font: 900 44px/1 Doto, monospace">Aatika</div>
+        <div style="font: 400 15px Inter">Ringing…</div>
+      </div>
+      <div style="position: absolute; left: 0; right: 0; bottom: 56px; display: flex; justify-content: center; gap: 34px; z-index: 2">
+        <span class="cb"><span class="c"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.mic }}"></path></svg></span>Mute</span>
+        <span class="cb"><span class="c f"><svg class="ic" viewBox="0 0 24 24" style="transform: rotate(135deg)" aria-hidden="true"><path d="{{ i.phone }}"></path></svg></span>End</span>
+        <span class="cb"><span class="c"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.speaker }}"></path></svg></span>Speaker</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">K2 · Incoming call</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div class="mid" style="padding-top: 110px">
+        <div class="eb">Video call · direct and encrypted</div>
+        <div class="ring">
+          <span class="pulse" style="position: absolute; inset: 0; border-radius: 50%; border: 1px solid var(--ink)"></span>
+          <span class="pulse" style="position: absolute; inset: 0; border-radius: 50%; border: 1px solid var(--ink); animation-delay: -1.2s"></span>
+          <span style="width: 130px; height: 130px; border-radius: 65px; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; font: 900 60px Doto, monospace">A</span>
+        </div>
+        <div style="font: 900 44px/1 Doto, monospace">Aatika</div>
+        <div style="font: 400 15px Inter">is calling you</div>
+        <span style="margin-top: 16px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--ink); font: 500 13px Inter">Reply with a message</span>
+      </div>
+      <div style="position: absolute; left: 0; right: 0; bottom: 56px; display: flex; justify-content: space-around; padding: 0 40px; z-index: 2">
+        <span class="cb"><span class="c" style="width: 72px; height: 72px; border-radius: 36px"><svg class="ic" viewBox="0 0 24 24" style="transform: rotate(135deg)" aria-hidden="true"><path d="{{ i.phone }}"></path></svg></span>Decline</span>
+        <span class="cb"><span class="c f" style="width: 72px; height: 72px; border-radius: 36px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.video }}"></path></svg></span>Accept</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">K3 · Voice call</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div class="mid" style="padding-top: 120px">
+        <span style="width: 110px; height: 110px; border-radius: 55px; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; font: 900 50px Doto, monospace">A</span>
+        <div style="font: 900 36px/1 Doto, monospace; margin-top: 8px">Aatika</div>
+        <div style="font: 900 52px/1 Doto, monospace; margin-top: 18px">04:12</div>
+        <div style="display: flex; align-items: center; gap: 6px; font: 400 13px Inter"><svg class="ic" viewBox="0 0 24 24" style="width: 15px; height: 15px" aria-hidden="true"><path d="{{ i.lock }}"></path></svg>Direct, phone to phone · encrypted</div>
+        <div style="display: flex; align-items: flex-end; gap: 3px; height: 22px; margin-top: 10px"><span style="width: 4px; height: 6px; background: var(--ink); border-radius: 1px"></span><span style="width: 4px; height: 11px; background: var(--ink); border-radius: 1px"></span><span style="width: 4px; height: 16px; background: var(--ink); border-radius: 1px"></span><span style="width: 4px; height: 22px; border: 1px solid var(--ink); border-radius: 1px; box-sizing: border-box"></span></div>
+      </div>
+      <div style="position: absolute; left: 0; right: 0; bottom: 48px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 0; padding: 0 30px; z-index: 2">
+        <span class="cb"><span class="c f"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.micoff }}"></path></svg></span>Muted</span>
+        <span class="cb"><span class="c"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.speaker }}"></path></svg></span>Speaker</span>
+        <span class="cb"><span class="c"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.video }}"></path></svg></span>Video</span>
+        <span class="cb"><span class="c" style="border-color: #FF8FA3; background: #FF8FA3; color: #000; font-size: 26px">🫂</span>Send a hug</span>
+        <span class="cb"><span class="c f"><svg class="ic" viewBox="0 0 24 24" style="transform: rotate(135deg)" aria-hidden="true"><path d="{{ i.phone }}"></path></svg></span>End</span>
+        <span class="cb"><span class="c"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chat }}"></path></svg></span>Chat</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">K4 · Video call (always dark, it's video)</div>
+    <div class="ph" style="background: radial-gradient(60% 40% at 50% 40%, #6B3B1F 0%, transparent 100%), radial-gradient(70% 40% at 30% 90%, #24344F 0%, transparent 100%), #0B0805; color: #fff">
+      <div style="position: absolute; left: 0; right: 0; top: 0; height: 150px; background: linear-gradient(rgba(0,0,0,.55), transparent)"></div>
+      <div style="position: absolute; left: 20px; top: 56px; z-index: 2"><div style="font: 600 17px Inter">Aatika</div><div style="font: 700 14px Doto, monospace; margin-top: 2px">12:48</div></div>
+      <div style="position: absolute; right: 16px; top: 52px; width: 104px; height: 150px; border-radius: 20px; border: 1px solid #fff; background: radial-gradient(60% 50% at 50% 40%, #3D2536 0%, transparent 100%), #15322F; z-index: 2"></div>
+      <div style="position: absolute; left: 14px; right: 14px; bottom: 40px; height: 84px; border-radius: 42px; border: 1px solid #fff; background: rgba(0,0,0,.45); backdrop-filter: blur(18px); display: flex; align-items: center; justify-content: space-around; z-index: 2">
+        <span class="icb" style="width: 54px; height: 54px; border-color: #fff; color: #fff"><svg class="ic" viewBox="0 0 24 24" aria-label="Flip camera" role="img"><path d="{{ i.swap }}"></path></svg></span>
+        <span class="icb" style="width: 54px; height: 54px; border-color: #fff; color: #fff"><svg class="ic" viewBox="0 0 24 24" aria-label="Mute" role="img"><path d="{{ i.mic }}"></path></svg></span>
+        <span class="icb" style="width: 54px; height: 54px; border-color: #fff; color: #fff"><svg class="ic" viewBox="0 0 24 24" aria-label="Camera off" role="img"><path d="{{ i.video }}"></path></svg></span>
+        <span class="icb" style="width: 54px; height: 54px; background: #fff; color: #000; border: 0"><svg class="ic" viewBox="0 0 24 24" style="transform: rotate(135deg)" aria-label="End call" role="img"><path d="{{ i.phone }}"></path></svg></span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">K5 · Calls in the chat, call buttons in the header</div>
+    <div class="ph">
+      <div style="position: absolute; left: 0; right: 0; bottom: 150px; padding: 0 14px; display: flex; flex-direction: column; gap: 10px; z-index: 1">
+        <div class="sys"><svg class="ic" viewBox="0 0 24 24" style="width: 16px; height: 16px" aria-hidden="true"><path d="{{ i.phone }}"></path></svg>Voice call · 12 min · 20:31</div>
+        <div class="in">that was the best call omg</div>
+        <div class="sys" style="border-style: dashed"><svg class="ic" viewBox="0 0 24 24" style="width: 16px; height: 16px" aria-hidden="true"><path d="{{ i.video }}"></path></svg>Missed video call · 22:45<span style="padding: 4px 10px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 11px Inter">Call back</span></div>
+        <div class="sys" style="flex-direction: column; align-items: flex-start; gap: 4px; max-width: 300px"><span style="display: flex; gap: 8px; align-items: center"><svg class="ic" viewBox="0 0 24 24" style="width: 16px; height: 16px" aria-hidden="true"><path d="{{ i.phone }}"></path></svg>You called · no answer · 23:02</span><span class="sub">Aatika's Moose was closed. She'll see a missed call at its next check.</span></div>
+        <div class="out">call me when you're up ☀️</div>
+      </div>
+      <div class="tb"></div>
+      <div class="hdr">
+        <span class="av">A</span>
+        <div style="flex: 1"><div style="font: 600 16px Inter">Aatika</div><div class="sub">last seen 23:01</div></div>
+        <button class="icb" aria-label="Voice call"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><path d="{{ i.phone }}"></path></svg></button>
+        <button class="icb" aria-label="Video call"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><path d="{{ i.video }}"></path></svg></button>
+        <button class="icb" aria-label="Poke"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><path d="{{ i.poke }}"></path></svg></button>
+      </div>
+      <div class="bb"></div>
+      <div class="pill">
+        <span class="act"><svg class="ic" viewBox="0 0 24 24" style="stroke-width: 2" aria-hidden="true"><path d="{{ i.chat }}"></path></svg>Chat</span>
+        <span style="padding: 12px 22px"><svg class="ic" viewBox="0 0 24 24" aria-label="Doodles" role="img"><path d="{{ i.doodle }}"></path></svg></span>
+        <span style="padding: 12px 22px"><svg class="ic" viewBox="0 0 24 24" aria-label="Settings" role="img"><path d="{{ i.settings }}"></path></svg></span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"darkWallpaper":{"editor":"enum","options":["night","dune","moss","fog","ember","black"],"default":"night"},"lightWallpaper":{"editor":"enum","options":["paper","white"],"default":"paper"},"$preview":{"width":2190,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WP = {
+      night: [false, '#06070A', [['#24344F', 15, 10, 60], ['#3D2536', 95, 55, 50], ['#15322F', 30, 105, 60]]],
+      dune: [false, '#120B07', [['#6B3B1F', 80, 20, 65], ['#3A2416', 10, 90, 55]]],
+      paper: [true, '#EFE9E0', [['#F3E6D2', 85, 7, 60], ['#DCD0C0', 0, 60, 55], ['#CDBFA9', 70, 105, 55]]],
+      moss: [false, '#060A07', [['#1F3A26', 20, 90, 60], ['#2C3B2F', 90, 10, 50]]],
+      fog: [false, '#1A1D22', [['#5B6470', 50, 30, 65]]],
+      ember: [false, '#0B0505', [['#5A1A1A', 30, 80, 55]]],
+      black: [false, '#000000', []],
+      white: [true, '#FFFFFF', []]
+    };
+    const v = (k) => {
+      const wall = WP[k][2].map((b) => 'radial-gradient(' + b[3] + '% ' + Math.round(b[3] * 0.75) + '% at ' + b[1] + '% ' + b[2] + '%, ' + b[0] + ' 0%, transparent 100%)').concat([WP[k][1]]).join(', ');
+      return (WP[k][0]
+        ? '--ink:#000000;--paper:#FFFFFF;--bar:rgba(0,0,0,.06);--card:rgba(0,0,0,.05);--sheet:rgba(255,255,255,.60);--scrim:rgba(255,255,255,.40);--veil:rgba(255,255,255,.60);--fade:rgba(255,255,255,.6);'
+        : '--ink:#FFFFFF;--paper:#000000;--bar:rgba(255,255,255,.10);--card:rgba(255,255,255,.08);--sheet:rgba(0,0,0,.55);--scrim:rgba(0,0,0,.40);--veil:rgba(0,0,0,.60);--fade:rgba(0,0,0,.6);') + '--wall:' + wall + ';';
+    };
+    const dk = WP[this.props.darkWallpaper] && !WP[this.props.darkWallpaper][0] ? this.props.darkWallpaper : 'night';
+    const lk = WP[this.props.lightWallpaper] && WP[this.props.lightWallpaper][0] ? this.props.lightWallpaper : 'paper';
+    const modes = [{ label: 'Dark ink · ' + dk + ' wallpaper', vars: v(dk) }, { label: 'Light ink · ' + lk + ' wallpaper', vars: v(lk) }];
+    return {
+      modes,
+      i: {
+        phone: 'M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z',
+        video: 'M3 7h12v10H3z M15 10l6-3v10l-6-3',
+        mic: 'M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z M6 11a6 6 0 0 0 12 0 M12 17v4',
+        micoff: 'M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z M6 11a6 6 0 0 0 12 0 M12 17v4 M4 4l16 16',
+        speaker: 'M4 9h4l5-4v14l-5-4H4z M16 9a4 4 0 0 1 0 6 M18.5 6.5a8 8 0 0 1 0 11',
+        lock: 'M6 11h12v9H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3',
+        swap: 'M4 10a8 8 0 0 1 14-4l2 2 M20 4v4h-4 M20 14a8 8 0 0 1-14 4l-2-2 M4 20v-4h4',
+        poke: 'M12 10.5a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3 M7.8 7.8a6 6 0 0 0 0 8.4 M16.2 7.8a6 6 0 0 1 0 8.4 M5 5a10 10 0 0 0 0 14 M19 5a10 10 0 0 1 0 14',
+        chat: 'M4 5h16v11H9l-5 4z', doodle: 'M14.5 4.5l5 5L9 20H4v-5z M12.5 6.5l5 5',
+        settings: 'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M4.9 19.1L7 17 M17 7l2.1-2.1'
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

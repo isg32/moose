@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moose stickers</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&amp;family=Inter:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#ecebe7;font-family:Inter,sans-serif;color:#000}
+a{color:inherit;text-decoration:none}
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.lbl{font:500 12px Inter;color:#000}
+.eb{font:500 11px Inter;letter-spacing:.1em;text-transform:uppercase}
+.ttl{font:700 34px/1 Doto,monospace}
+.ph{width:390px;height:844px;border-radius:44px;overflow:hidden;position:relative;background:var(--wall);color:var(--ink);font-family:Inter,sans-serif;flex-shrink:0;box-shadow:0 0 0 8px #000}
+.veil{position:absolute;inset:0;background:var(--veil);backdrop-filter:blur(30px)}
+.scrim{position:absolute;inset:0;background:var(--scrim);backdrop-filter:blur(6px);z-index:5}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sheet);backdrop-filter:blur(14px);border-top:1px solid var(--ink);border-radius:28px 28px 0 0;z-index:6;padding:10px 16px 30px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px}
+.hdl{width:36px;height:4px;border-radius:2px;background:var(--ink);margin:0 auto}
+.sub{font:300 12px/1.4 Inter}
+.icb{width:44px;height:44px;border-radius:50%;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;background:transparent;color:var(--ink);padding:0;flex-shrink:0}
+.b1{background:var(--ink);color:var(--paper);border:0;border-radius:999px;padding:15px;font:600 15px Inter;width:100%;text-align:center;box-sizing:border-box;display:block}
+.b2{background:transparent;color:var(--ink);border:1px solid var(--ink);border-radius:999px;padding:14px;font:500 15px Inter;width:100%;text-align:center;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px}
+.srch{border:1px solid var(--ink);border-radius:999px;padding:11px 16px;display:flex;align-items:center;gap:10px;font:400 15px Inter}
+.cut{border:4px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.35);box-sizing:border-box}
+.st{display:flex;align-items:center;justify-content:center;aspect-ratio:1}
+.tab{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tsel{background:var(--ink);color:var(--paper)}
+.checker{background-color:#fff;background-image:linear-gradient(45deg,#e6e6e6 25%,transparent 25%,transparent 75%,#e6e6e6 75%),linear-gradient(45deg,#e6e6e6 25%,transparent 25%,transparent 75%,#e6e6e6 75%);background-size:16px 16px;background-position:0 0,8px 8px}
+.card{border:1px solid var(--ink);border-radius:20px}
+.row{display:flex;align-items:center;gap:12px;padding:13px 14px;font:500 15px Inter}
+.dv{border-top:1px solid var(--ink)}
+.tb{position:absolute;left:0;right:0;top:0;height:130px;background:linear-gradient(var(--fade),transparent);backdrop-filter:blur(11px);-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent);z-index:3;pointer-events:none}
+.bb{position:absolute;left:0;right:0;bottom:0;height:210px;background:linear-gradient(transparent,var(--fade));backdrop-filter:blur(11px);-webkit-mask-image:linear-gradient(transparent,#000 45%);mask-image:linear-gradient(transparent,#000 45%);z-index:3;pointer-events:none}
+.hdr{position:absolute;left:0;right:0;top:0;padding:52px 16px 0;display:flex;align-items:center;gap:12px;z-index:4}
+.av{width:40px;height:40px;border-radius:20px;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;font:900 18px Doto,monospace;flex-shrink:0}
+.out{align-self:flex-end;background:var(--ink);color:var(--paper);border-radius:20px 20px 6px 20px;padding:9px 13px;max-width:270px;font:400 15px/1.4 Inter}
+.meta{font:300 11px Inter;text-align:right;margin-top:3px}
+.stm{font:300 11px Inter;display:flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:var(--sheet);backdrop-filter:blur(14px)}
+.fld{flex:1;height:44px;border-radius:22px;border:1px solid var(--ink);background:var(--card);backdrop-filter:blur(16px);display:flex;align-items:center;padding:0 12px 0 16px;box-sizing:border-box;font:400 15px Inter}
+.pill{position:absolute;left:12px;right:12px;bottom:22px;height:62px;border-radius:31px;background:var(--bar);backdrop-filter:blur(18px);border:1px solid var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 7px;box-sizing:border-box;z-index:4}
+.act{display:flex;align-items:center;gap:6px;background:var(--ink);color:var(--paper);border-radius:24px;padding:12px 18px;font:600 12px Inter}
+.in{align-self:flex-start;background:var(--card);border:1px solid var(--ink);border-radius:20px 20px 20px 6px;padding:9px 13px;font:400 15px/1.4 Inter}
+</style>
+</helmet>
+<div style="width: 2620px; height: 1960px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 48px; background: #ecebe7">
+<sc-for list="{{ modes }}" as="m" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 14px; {{ m.vars }}">
+<div style="font: 600 14px Inter; color: #000">{{ m.label }}</div>
+<div style="display: flex; gap: 40px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">S6 · Stickers in the chat</div>
+    <div class="ph">
+      <div style="position: absolute; left: 0; right: 0; bottom: 150px; padding: 0 14px; display: flex; flex-direction: column; gap: 8px; z-index: 1">
+        <div class="in">look what i made</div>
+        <div style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start; gap: 4px">
+          <span class="cut" style="width: 140px; height: 140px; border-radius: 50% 40% 55% 45%; background: linear-gradient(160deg, #1F3A26, #FFC15E); transform: rotate(-4deg)"></span>
+          <span class="stm">21:02</span>
+        </div>
+        <div style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; gap: 4px">
+          <svg viewBox="0 0 200 180" style="width: 150px; height: 135px; transform: rotate(5deg)" aria-label="Doodle sticker: a heart" role="img">
+            <path d="M100 160 c -44 -40 -86 -58 -86 -104 a 44 44 0 0 1 86 -12 a 44 44 0 0 1 86 12 c 0 46 -42 64 -86 104z" fill="none" stroke="#fff" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M100 160 c -44 -40 -86 -58 -86 -104 a 44 44 0 0 1 86 -12 a 44 44 0 0 1 86 12 c 0 46 -42 64 -86 104z" fill="none" stroke="#FF5C7A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+          <span class="stm">21:03 <svg class="ic" viewBox="0 0 24 24" style="width: 14px; height: 14px" aria-label="Seen" role="img"><path d="{{ i.dcheck }}" style="stroke-width: 2.6"></path></svg></span>
+        </div>
+        <div style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start; gap: 0">
+          <span class="cut" style="width: 110px; height: 110px; border-radius: 46% 54% 42% 58% / 52% 44% 56% 48%; background: radial-gradient(60% 50% at 45% 35%, #FFC15E 0%, transparent 100%), linear-gradient(170deg, #6B3B1F, #3D2536); transform: rotate(3deg)"></span>
+          <span style="margin: -10px 0 0 70px; padding: 2px 8px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 500 12px Inter; position: relative">❤️ 2</span>
+        </div>
+        <div class="out"><div style="display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 12px; background: var(--paper); color: var(--ink); margin-bottom: 6px; font: 400 13px/1.3 Inter"><span style="width: 2px; align-self: stretch; background: var(--ink); border-radius: 1px"></span><span class="cut" style="width: 30px; height: 30px; border-width: 2px; border-radius: 46% 54% 42% 58%; background: linear-gradient(170deg, #6B3B1F, #3D2536); box-shadow: none"></span><span><b style="font-weight: 600">Aatika</b><br>Sticker</span></div>stealing this one<div class="meta">21:04</div></div>
+      </div>
+      <div class="tb"></div>
+      <div class="hdr"><span class="av">A</span><div style="flex: 1"><div style="font: 600 16px Inter">Aatika</div><div class="sub">online</div></div></div>
+      <div class="bb"></div>
+      <div style="position: absolute; left: 12px; right: 12px; bottom: 96px; display: flex; align-items: center; gap: 8px; z-index: 4">
+        <button class="icb" aria-label="Attach"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.plus }}"></path></svg></button>
+        <div class="fld"><span style="flex: 1">Message</span><svg class="ic" viewBox="0 0 24 24" aria-label="Stickers, GIFs and memes" role="img"><path d="{{ i.sticker }}"></path></svg></div>
+        <button class="icb" style="background: var(--ink); color: var(--paper); border: 0" aria-label="Hold to record"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.mic }}"></path></svg></button>
+      </div>
+      <div class="pill">
+        <span class="act"><svg class="ic" viewBox="0 0 24 24" style="stroke-width: 2" aria-hidden="true"><path d="{{ i.chat }}"></path></svg>Chat</span>
+        <span style="padding: 12px 22px"><svg class="ic" viewBox="0 0 24 24" aria-label="Doodles" role="img"><path d="{{ i.doodle }}"></path></svg></span>
+        <span style="padding: 12px 22px"><svg class="ic" viewBox="0 0 24 24" aria-label="Settings" role="img"><path d="{{ i.settings }}"></path></svg></span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">S1 · Sticker tray (the composer's sticker button)</div>
+    <div class="ph">
+      <div class="scrim"></div>
+      <div class="sheet" style="top: 150px; padding-bottom: 0">
+        <div class="hdl"></div>
+        <div style="display: flex; border: 1px solid var(--ink); border-radius: 999px; padding: 3px">
+          <span style="flex: 1; text-align: center; padding: 8px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 13px Inter">Stickers</span>
+          <span style="flex: 1; text-align: center; padding: 8px; font: 500 13px Inter">GIFs</span>
+          <span style="flex: 1; text-align: center; padding: 8px; font: 500 13px Inter">Memes</span>
+        </div>
+        <div class="srch"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.search }}"></path></svg><span style="flex: 1">Search your stickers</span></div>
+        <div style="display: flex; gap: 6px; align-items: center; border-bottom: 1px solid var(--ink); padding-bottom: 10px; margin: 0 -16px; padding-left: 16px; padding-right: 16px">
+          <span class="tab"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-label="Recent" role="img"><path d="{{ i.clock }}"></path></svg></span>
+          <span class="tab tsel"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-label="Favourites" role="img"><path d="{{ i.star }}"></path></svg></span>
+          <span class="tab"><span style="width: 28px; height: 28px; border-radius: 45% 55% 50% 50%; background: linear-gradient(135deg, #6B3B1F, #FF8FA3)" aria-label="Pack: Ours"></span></span>
+          <span class="tab"><svg viewBox="0 0 40 40" style="width: 30px; height: 30px" aria-label="Pack: Moose doodles" role="img"><path d="M20 32 c -8 -7 -14 -10 -14 -17 a 7 7 0 0 1 14 -2 a 7 7 0 0 1 14 2 c 0 7 -6 10 -14 17z" fill="none" stroke="#FF5C7A" stroke-width="3"></path></svg></span>
+          <span class="tab"><span style="width: 28px; height: 28px; border-radius: 50% 40% 55% 45%; background: linear-gradient(160deg, #1F3A26, #FFC15E)" aria-label="Pack: From Aatika"></span></span>
+          <span style="flex: 1"></span>
+          <span class="tab" style="border: 1px dashed var(--ink)"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-label="Make a sticker" role="img"><path d="{{ i.plus }}"></path></svg></span>
+        </div>
+        <div class="eb">Favourites</div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+          <sc-for list="{{ stickers }}" as="s" hint-placeholder-count="12">
+            <div class="st">
+              <sc-if value="{{ s.img }}" hint-placeholder-val="{{ true }}"><span class="cut" style="width: 74px; height: 74px; border-radius: {{ s.r }}; background: {{ s.bg }}; transform: rotate({{ s.rot }}deg)"></span></sc-if>
+              <sc-if value="{{ s.doodle }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 80 80" style="width: 78px; height: 78px; transform: rotate({{ s.rot }}deg)" aria-hidden="true"><path d="{{ s.d }}" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path><path d="{{ s.d }}" fill="none" stroke="{{ s.c }}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div class="sub" style="text-align: center">Long-press a sticker to favourite or remove it</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">S2 · Make a sticker from a photo</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div style="position: relative; z-index: 1; padding: 52px 16px 0; display: flex; align-items: center; justify-content: space-between">
+        <button class="icb" aria-label="Close"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.close }}"></path></svg></button>
+        <span style="font: 600 15px Inter">New sticker</span>
+        <button class="icb" aria-label="Undo"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><path d="{{ i.undo }}"></path></svg></button>
+      </div>
+      <div class="checker" style="position: relative; z-index: 1; margin: 20px 16px 0; height: 420px; border-radius: 20px; overflow: hidden; display: flex; align-items: center; justify-content: center">
+        <div style="position: absolute; inset: 0; background: linear-gradient(160deg, #5B6470, #24344F); opacity: .25"></div>
+        <span style="position: relative; width: 230px; height: 270px; border-radius: 46% 54% 42% 58% / 52% 44% 56% 48%; background: radial-gradient(60% 50% at 45% 35%, #FFC15E 0%, transparent 100%), linear-gradient(170deg, #6B3B1F, #3D2536); border: 6px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,.4)"></span>
+        <span style="position: absolute; width: 250px; height: 290px; border-radius: 46% 54% 42% 58% / 52% 44% 56% 48%; border: 1.5px dashed #000"></span>
+        <span style="position: absolute; bottom: 28px; padding: 4px 12px; border-radius: 999px; background: #fff; color: #000; font: 700 22px Doto, monospace; transform: rotate(-4deg)">us!!</span>
+      </div>
+      <div style="position: relative; z-index: 1; margin: 14px 16px 0; display: flex; justify-content: space-between">
+        <sc-for list="{{ cutTools }}" as="t" hint-placeholder-count="5">
+          <span style="display: flex; flex-direction: column; align-items: center; gap: 6px; font: 500 11px Inter"><span style="width: 48px; height: 48px; border-radius: 24px; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; background: {{ t.bg }}; color: {{ t.fg }}"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><path d="{{ t.d }}"></path></svg></span>{{ t.n }}</span>
+        </sc-for>
+      </div>
+      <div style="position: absolute; left: 16px; right: 16px; bottom: 34px; z-index: 2; display: flex; gap: 10px">
+        <button class="b2"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.star }}"></path></svg>Save</button>
+        <button class="b1">Send to Aatika</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">S3 · Doodle to sticker (lasso › Sticker)</div>
+    <div class="ph">
+      <div style="position: absolute; inset: 0; background: var(--paper)"><div style="position: absolute; inset: 0; background-image: radial-gradient(var(--ink) 1px, transparent 1.4px); background-size: 22px 22px; opacity: .22"></div></div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="hdl"></div>
+        <div style="font: 700 26px Doto, monospace">New sticker</div>
+        <div class="checker" style="height: 220px; border-radius: 20px; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center">
+          <svg viewBox="0 0 200 180" style="width: 200px; height: 180px; transform: rotate(-5deg)" aria-hidden="true">
+            <path d="M100 160 c -44 -40 -86 -58 -86 -104 a 44 44 0 0 1 86 -12 a 44 44 0 0 1 86 12 c 0 46 -42 64 -86 104z" fill="none" stroke="#fff" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M100 160 c -44 -40 -86 -58 -86 -104 a 44 44 0 0 1 86 -12 a 44 44 0 0 1 86 12 c 0 46 -42 64 -86 104z" fill="none" stroke="#FF5C7A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M40 60 q 20 -14 40 0 t 40 0 t 40 0" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round"></path>
+            <path d="M40 60 q 20 -14 40 0 t 40 0 t 40 0" fill="none" stroke="#5BC0EB" stroke-width="5" stroke-linecap="round"></path>
+          </svg>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; font: 500 15px Inter"><span>White outline</span><span style="width: 46px; height: 28px; border-radius: 14px; background: var(--ink); position: relative"><span style="position: absolute; right: 3px; top: 3px; width: 22px; height: 22px; border-radius: 11px; background: var(--paper)"></span></span></div>
+        <div class="card"><div class="row"><span style="flex: 1">Add to pack</span><span style="font: 400 14px Inter">Moose doodles</span><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div></div>
+        <div style="display: flex; gap: 10px"><button class="b2">Save</button><button class="b1">Save and send</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">S4 · Save a sticker Aatika sent</div>
+    <div class="ph">
+      <div style="position: absolute; left: 14px; right: 14px; top: 140px; display: flex; flex-direction: column; gap: 10px">
+        <div class="in">look what i made</div>
+        <span class="cut" style="width: 120px; height: 120px; border-radius: 50% 40% 55% 45%; background: linear-gradient(160deg, #1F3A26, #FFC15E); transform: rotate(-4deg)"></span>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="hdl"></div>
+        <div style="display: flex; justify-content: center; padding: 10px 0"><span class="cut" style="width: 170px; height: 170px; border-radius: 50% 40% 55% 45%; background: linear-gradient(160deg, #1F3A26, #FFC15E); transform: rotate(-4deg)"></span></div>
+        <div style="text-align: center"><div style="font: 600 15px Inter">From Aatika</div><div class="sub">In her pack "Cat chaos" · 8 stickers</div></div>
+        <button class="b2"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.star }}"></path></svg>Add to favourites</button>
+        <button class="b2">Save to my stickers</button>
+        <button class="b1">Save the whole pack</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">S5 · Sticker library (Settings › Stickers)</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div style="position: relative; z-index: 1; padding: 56px 16px 0; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between"><a href="#" style="font: 400 14px Inter; padding-left: 4px">‹ Settings</a><span style="font: 600 14px Inter">Select</span></div>
+        <div class="ttl" style="padding-left: 4px">Stickers</div>
+        <div class="sub" style="padding-left: 4px">52 stickers · 6.8 MB on this phone</div>
+        <div style="height: 70px; border-radius: 20px; border: 1px dashed var(--ink); display: flex; align-items: center; justify-content: center; gap: 18px">
+          <span style="display: flex; align-items: center; gap: 8px; font: 500 14px Inter"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><path d="{{ i.image }}"></path></svg>From a photo</span>
+          <span style="width: 1px; height: 26px; background: var(--ink)"></span>
+          <span style="display: flex; align-items: center; gap: 8px; font: 500 14px Inter"><svg class="ic" viewBox="0 0 24 24" style="width: 20px; height: 20px" aria-hidden="true"><path d="{{ i.doodle }}"></path></svg>From a doodle</span>
+        </div>
+        <div class="card">
+          <sc-for list="{{ packs }}" as="p" hint-placeholder-count="4">
+            <div class="row {{ p.dv }}">
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+                <div style="display: flex; justify-content: space-between; align-items: baseline"><span>{{ p.n }}</span><span class="sub">{{ p.m }}</span></div>
+                <div style="display: flex; gap: 10px">
+                  <sc-for list="{{ p.th }}" as="t" hint-placeholder-count="4"><span class="cut" style="width: 52px; height: 52px; border-radius: {{ t.r }}; background: {{ t.bg }}; border-width: 3px"></span></sc-for>
+                </div>
+              </div>
+              <svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.chev }}"></path></svg>
+            </div>
+          </sc-for>
+        </div>
+        <div class="sub" style="padding: 0 4px">Stickers live on this phone. Sending one sends Aatika a copy she can save.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"darkWallpaper":{"editor":"enum","options":["night","dune","moss","fog","ember","black"],"default":"night"},"lightWallpaper":{"editor":"enum","options":["paper","white"],"default":"paper"},"$preview":{"width":2620,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WP = {
+      night: [false, '#06070A', [['#24344F', 15, 10, 60], ['#3D2536', 95, 55, 50], ['#15322F', 30, 105, 60]]],
+      dune: [false, '#120B07', [['#6B3B1F', 80, 20, 65], ['#3A2416', 10, 90, 55]]],
+      paper: [true, '#EFE9E0', [['#F3E6D2', 85, 7, 60], ['#DCD0C0', 0, 60, 55], ['#CDBFA9', 70, 105, 55]]],
+      moss: [false, '#060A07', [['#1F3A26', 20, 90, 60], ['#2C3B2F', 90, 10, 50]]],
+      fog: [false, '#1A1D22', [['#5B6470', 50, 30, 65]]],
+      ember: [false, '#0B0505', [['#5A1A1A', 30, 80, 55]]],
+      black: [false, '#000000', []],
+      white: [true, '#FFFFFF', []]
+    };
+    const v = (k) => {
+      const wall = WP[k][2].map((b) => 'radial-gradient(' + b[3] + '% ' + Math.round(b[3] * 0.75) + '% at ' + b[1] + '% ' + b[2] + '%, ' + b[0] + ' 0%, transparent 100%)').concat([WP[k][1]]).join(', ');
+      return (WP[k][0]
+        ? '--ink:#000000;--paper:#FFFFFF;--bar:rgba(0,0,0,.06);--card:rgba(0,0,0,.05);--sheet:rgba(255,255,255,.60);--scrim:rgba(255,255,255,.40);--veil:rgba(255,255,255,.60);--fade:rgba(255,255,255,.6);'
+        : '--ink:#FFFFFF;--paper:#000000;--bar:rgba(255,255,255,.10);--card:rgba(255,255,255,.08);--sheet:rgba(0,0,0,.55);--scrim:rgba(0,0,0,.40);--veil:rgba(0,0,0,.60);--fade:rgba(0,0,0,.6);') + '--wall:' + wall + ';';
+    };
+    const dk = WP[this.props.darkWallpaper] && !WP[this.props.darkWallpaper][0] ? this.props.darkWallpaper : 'night';
+    const lk = WP[this.props.lightWallpaper] && WP[this.props.lightWallpaper][0] ? this.props.lightWallpaper : 'paper';
+    const modes = [{ label: 'Dark ink · ' + dk + ' wallpaper', vars: v(dk) }, { label: 'Light ink · ' + lk + ' wallpaper', vars: v(lk) }];
+    const IMG = [
+      ['linear-gradient(135deg, #6B3B1F, #FF8FA3)', '46% 54% 42% 58% / 52% 44% 56% 48%'],
+      ['linear-gradient(160deg, #1F3A26, #FFC15E)', '50% 40% 55% 45%'],
+      ['linear-gradient(200deg, #3D2536, #9DB2FF)', '40% 60% 50% 50% / 55% 45% 55% 45%'],
+      ['linear-gradient(120deg, #24344F, #F3E6D2)', '55% 45% 40% 60%']
+    ];
+    const DD = [
+      ['M40 70 c -18 -16 -32 -24 -32 -42 a 16 16 0 0 1 32 -5 a 16 16 0 0 1 32 5 c 0 18 -14 26 -32 42z', '#FF5C7A'],
+      ['M12 50 l 14 -30 l 14 30 M 18 38 h 16 M 50 20 v 30 h 18', '#9DB2FF'],
+      ['M10 40 q 15 -20 30 0 t 30 0', '#5BC0EB'],
+      ['M20 60 q 20 -50 40 0 M 28 30 l -10 -16 M 52 30 l 10 -16', '#B57EDC']
+    ];
+    const stickers = [];
+    for (let n = 0; n < 12; n++) {
+      const isImg = n % 3 !== 1;
+      const a = IMG[n % 4], d = DD[n % 4];
+      stickers.push({ img: isImg, doodle: !isImg, bg: a[0], r: a[1], d: d[0], c: d[1], rot: ((n * 17) % 14) - 7 });
+    }
+    const th = (o) => [0, 1, 2, 3].map((x) => ({ bg: IMG[(x + o) % 4][0], r: IMG[(x + o) % 4][1] }));
+    return {
+      modes, stickers,
+      cutTools: [
+        { n: 'Auto cut', d: 'M6 6l12 12 M6 18L18 6 M4 12h3 M17 12h3', bg: 'var(--ink)', fg: 'var(--paper)' },
+        { n: 'Erase', d: 'M8 20h12 M4 15l9-9l6 6l-8 8H8z', bg: 'transparent', fg: 'var(--ink)' },
+        { n: 'Restore', d: 'M14.5 4.5l5 5L9 20H4v-5z', bg: 'transparent', fg: 'var(--ink)' },
+        { n: 'Text', d: 'M5 6h14 M12 6v13 M9 19h6', bg: 'transparent', fg: 'var(--ink)' },
+        { n: 'Outline', d: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10', bg: 'var(--ink)', fg: 'var(--paper)' }
+      ],
+      packs: [
+        { n: 'Ours', m: '24 · made by you two', th: th(0), dv: '' },
+        { n: 'Moose doodles', m: '12 · from doodles', th: th(1), dv: 'dv' },
+        { n: 'Cat chaos', m: '8 · from Aatika', th: th(2), dv: 'dv' },
+        { n: 'Favourites', m: '8', th: th(3), dv: 'dv' }
+      ],
+      i: {
+        search: 'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14 M16 16l5 5', clock: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 7v5l3 2',
+        star: 'M12 3l2.7 5.6l6.1.9l-4.4 4.3l1 6.1L12 17l-5.4 2.9l1-6.1L3.2 9.5l6.1-.9z', plus: 'M12 5v14 M5 12h14',
+        close: 'M6 6l12 12 M18 6L6 18', undo: 'M9 7L5 11l4 4 M5 11h9a5 5 0 0 1 0 10h-3', chev: 'M9 6l6 6l-6 6',
+        dcheck: 'M2 12l5 5l9-10 M12 16l1 1l9-10', mic: 'M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z M6 11a6 6 0 0 0 12 0 M12 17v4', chat: 'M4 5h16v11H9l-5 4z', settings: 'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M4.9 19.1L7 17 M17 7l2.1-2.1', sticker: 'M4 4h11l5 5v11H4z M15 4v5h5 M8.5 14c1 1.5 2.2 2 3.5 2s2.5-.5 3.5-2',
+        image: 'M4 5h16v14H4z M4 16l5-5l4 4l3-3l4 4 M15 8.5h.01', doodle: 'M14.5 4.5l5 5L9 20H4v-5z M12.5 6.5l5 5'
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

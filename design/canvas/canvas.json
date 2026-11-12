@@ -1,0 +1,198 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-12T10:00:00Z"
+  },
+  "title": "Moose Screens",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1760,
+      "h": 960,
+      "title": "00 · Moose: rules, type and wallpapers"
+    },
+    "Icons.dc.html": {
+      "x": 1840,
+      "y": 0,
+      "w": 1330,
+      "h": 960,
+      "title": "00 · Icons"
+    },
+    "Components.dc.html": {
+      "x": 0,
+      "y": 1340,
+      "w": 2620,
+      "h": 1900,
+      "title": "A · Shared components, both inks"
+    },
+    "Bubbles.dc.html": {
+      "x": 2700,
+      "y": 1340,
+      "w": 2620,
+      "h": 1900,
+      "title": "B · Message bubbles, both inks"
+    },
+    "Onboarding.dc.html": {
+      "x": 0,
+      "y": 3620,
+      "w": 1760,
+      "h": 1960,
+      "title": "C1–4 · Onboarding"
+    },
+    "Pairing.dc.html": {
+      "x": 1840,
+      "y": 3620,
+      "w": 2620,
+      "h": 1960,
+      "title": "C5–10 · Pairing"
+    },
+    "Lock.dc.html": {
+      "x": 4540,
+      "y": 3620,
+      "w": 1760,
+      "h": 1960,
+      "title": "C11–14 · App lock"
+    },
+    "Chat.dc.html": {
+      "x": 0,
+      "y": 5960,
+      "w": 1330,
+      "h": 1960,
+      "title": "C15, 25, 44 · Chat"
+    },
+    "Composer.dc.html": {
+      "x": 1410,
+      "y": 5960,
+      "w": 1760,
+      "h": 1960,
+      "title": "C16 · Composer"
+    },
+    "Attach.dc.html": {
+      "x": 3250,
+      "y": 5960,
+      "w": 2190,
+      "h": 1960,
+      "title": "C17–21 · Attach and media"
+    },
+    "ChatSheets.dc.html": {
+      "x": 5520,
+      "y": 5960,
+      "w": 1760,
+      "h": 1960,
+      "title": "B13, C22–24 · Chat sheets"
+    },
+    "MemeMusic.dc.html": {
+      "x": 7360,
+      "y": 5960,
+      "w": 1330,
+      "h": 1960,
+      "title": "C26–28 · Memes and music"
+    },
+    "Doodles.dc.html": {
+      "x": 0,
+      "y": 8300,
+      "w": 2620,
+      "h": 1960,
+      "title": "C29–35 · Doodles"
+    },
+    "Settings.dc.html": {
+      "x": 2700,
+      "y": 8300,
+      "w": 3480,
+      "h": 1960,
+      "title": "C36–41 · Settings and About"
+    },
+    "System.dc.html": {
+      "x": 6260,
+      "y": 8300,
+      "w": 1330,
+      "h": 1960,
+      "title": "C42–44 · System surfaces"
+    },
+    "Moments.dc.html": {
+      "x": 8770,
+      "y": 5960,
+      "w": 1760,
+      "h": 1960,
+      "title": "C25 · Poke moments (in colour)"
+    },
+    "Stickers.dc.html": {
+      "x": 7670,
+      "y": 8300,
+      "w": 2620,
+      "h": 1960,
+      "title": "S1–6 · Stickers (from doodles and photos, and in chat)"
+    },
+    "Calls.dc.html": {
+      "x": 10610,
+      "y": 5960,
+      "w": 2190,
+      "h": 1960,
+      "title": "K1–5 · P2P calls"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Icons.dc.html",
+    "Components.dc.html",
+    "Bubbles.dc.html",
+    "Onboarding.dc.html",
+    "Pairing.dc.html",
+    "Lock.dc.html",
+    "Chat.dc.html",
+    "Composer.dc.html",
+    "Attach.dc.html",
+    "ChatSheets.dc.html",
+    "MemeMusic.dc.html",
+    "Moments.dc.html",
+    "Calls.dc.html",
+    "Doodles.dc.html",
+    "Settings.dc.html",
+    "System.dc.html",
+    "Stickers.dc.html"
+  ],
+  "notes": {
+    "rowA": {
+      "x": 0,
+      "y": -260,
+      "text": "Foundations",
+      "kind": "title1",
+      "maxW": 3170
+    },
+    "rowB": {
+      "x": 0,
+      "y": 1080,
+      "text": "Components and bubbles",
+      "kind": "title1",
+      "maxW": 5320
+    },
+    "rowC": {
+      "x": 0,
+      "y": 3360,
+      "text": "Onboarding, pairing and lock",
+      "kind": "title1",
+      "maxW": 6300
+    },
+    "rowD": {
+      "x": 0,
+      "y": 5700,
+      "text": "Chat, moments and calls",
+      "kind": "title1",
+      "maxW": 12800
+    },
+    "rowE": {
+      "x": 0,
+      "y": 8040,
+      "text": "Doodles, settings, system and stickers",
+      "kind": "title1",
+      "maxW": 10290
+    }
+  },
+  "designSystems": []
+}

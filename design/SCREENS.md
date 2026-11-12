@@ -2,7 +2,9 @@
 
 This is the full inventory of every page, and every component on each page, for the Moose design canvas. It is the brief for Claude Design and the checklist for building the UI: nothing gets drawn or built that isn't listed here, and nothing listed here is left out.
 
-Design rules are the same as Veronica, Idris and Cariño: two inks only (`#000` / `#FFF`), Doto and Inter, glass surfaces, Cariño's progressive top and bottom blur, and the chat wallpaper as the only colour. Draw every page in **both inks**.
+Design rules are the same as Veronica, Idris and Cariño: two inks only (`#000` / `#FFF`), Doto and Inter, glass surfaces, Cariño's progressive top and bottom blur, and the chat wallpaper as the only colour. Draw every page in **both inks**: each screen board has a dark-ink row and a light-ink row.
+
+Example people: **Sapan** (you, he) and **Aatika** (your partner, she). The decoy chat's made-up name is **Neha**. The example song is **"Sienna" by The Marías**.
 
 ## A. Shared components (component sheet)
 1. **Ink and type:** wordmark `MO/OSE` (Doto 900), page title, eyebrow, body, secondary, hero number, mono code.
@@ -29,7 +31,7 @@ Each bubble comes in outgoing and incoming. States: pending (clock), sent ✓, d
 7. Voice note: play/pause, waveform, duration, and a played/unplayed dot.
 8. Music clip: thumbnail, title, artist, 15 s range bar, and play. States: resolving, playing, and unavailable.
 9. Meme/GIF/sticker: GIF autoplay, sticker without a bubble, and a 'via KLIPY / r/sub' caption.
-10. Poke event (centered system row: '🫵 poked you · 2:14'), plus hug, kiss and miss-you variants.
+10. Poke event (centred system row in its moment colour: '👉 Aatika poked you · 21:14'), plus hug, kiss and miss-you variants.
 11. System rows: date divider, 'Theme changed by X', 'Wallpaper changed', 'Paired', 'New doodle: name', and 'Unread' divider.
 12. Swipe-to-reply affordance (the reply icon reveals as you drag).
 13. Message action sheet (long-press): reactions row, Reply, Copy, Save media, Delete for me, and Info (sent, delivered, seen times).
@@ -64,8 +66,8 @@ Each bubble comes in outgoing and incoming. States: pending (clock), sent ✓, d
 21. **Media viewer:** full screen, zoom, swipe between items, sender and time, Save and Share, and video controls.
 22. **Theme sheet** (long-press the background): palette swatches grid (Cariño palettes), custom photo slot(s) (add, long-press to delete), dim slider, blur slider, glass strength slider, a live preview, 'Applies for both of you', and Apply.
 23. **Wallpaper photo crop:** a crop frame with the chat preview overlay, plus Use.
-24. **Poke picker** (long-press the poke button): four variants (Poke, Hug, Kiss, Miss you), each with an icon and a label, and the cooldown ring shown on locked variants.
-25. **Poke burst:** a full-screen animation per variant (received while the app is open), with the name and the variant text.
+24. **Poke picker** (long-press the poke button): four colour tiles (Poke, Hug, Kiss, Miss you) with emoji and label; a variant on cooldown is faded with its seconds left.
+25. **Poke burst** (one per variant, received while open): the colour wash over a scrim, three rings in the moment colour (outer one ripples), a filled centre circle with the line icon that **pulses like a heartbeat**, the word in Doto (HUG), 'from Aatika · just now', ink 'Hug back' + outline 'Close', and the haptic note. Hearts drift up across the whole screen, and the gesture's emoji (🫂 👉 💋 🥺) floats gently up through the middle.
 26. **Meme picker sheet:** search field, source toggle (KLIPY / Reddit), category chips (Trending, GIFs, Stickers, Memes, and subreddits), masonry grid, loading/empty/error states, and a preview before send.
 27. **Music search sheet:** search field, results list (thumb, title, channel, duration), and loading/empty/error.
 28. **Music range picker:** big thumb and title, scrolling waveform with a 15 s window, start/end time labels, play preview, and Send.
@@ -84,7 +86,7 @@ Each bubble comes in outgoing and incoming. States: pending (clock), sent ✓, d
 37. **Partner detail:** avatar, name, paired date, security code, and Unpair (destructive with confirm).
 38. **Storage page:** a breakdown by type (photos, videos, voice, round, doodles, wallpapers) with sizes, and clear-per-type.
 39. **Notification settings:** channels list, poke sounds preview, and background service status (running / stopped + Fix).
-40. **About:** mark, version, developer photo (as in the siblings), licenses (Doto, Inter OFL), and an E2EE explainer.
+40. **About** (copied from Idris): big app mark, 'Moose' in Doto 40, version, one line; LICENCES list (Doto, Inter, NewPipe Extractor, youtube_explode_dart, OkHttp, flutter_webrtc, cryptography, drift, just_audio, camera); DEVELOPER (photo, Sapan Gajjar, "You've probably guessed who made this app", GitHub isg32, LinkedIn sapangajjar101105); HELP (See a test crash report); footnote. The Settings row shows the mark, 'Moose' and 'Version 0.1.0 · licences, developer'.
 41. **Unpair confirm:** what gets deleted, a type-to-confirm field, and Unpair.
 
 *System surfaces*
@@ -92,3 +94,33 @@ Each bubble comes in outgoing and incoming. States: pending (clock), sent ✓, d
 43. **Crash overlay** (copied from Cariño/Idris).
 44. **Offline/error banner** at the top of the chat, and the 'partner's phone is offline, using cloud' hint on media.
 
+
+## D. Moment colours (the one exception to two inks)
+
+Used only in poke bursts, the poke picker, poke rows in the chat, poke notifications and the 'Send a hug' call button.
+
+| Moment | Emoji | Colour | Haptic |
+| --- | --- | --- | --- |
+| Poke | 👉 | `#FFC15E` | Two quick taps |
+| Hug | 🫂 | `#FF8FA3` | One long swell that fades |
+| Kiss | 💋 | `#FF5C7A` | Short, short, flutter |
+| Miss you | 🥺 | `#9DB2FF` | Slow heartbeat |
+
+## E. Stickers
+
+Stickers can be made from **doodles** and from **photos**, and are kept in a WhatsApp-style library.
+
+- **S1 · Sticker tray** (the composer's sticker button): Stickers / GIFs / Memes switch, search, pack tabs (Recent, Favourites, each pack, + make), a 4-column grid, long-press to favourite or remove.
+- **S2 · Sticker from a photo:** checkerboard canvas, auto cut-out with a white outline, tools (Auto cut, Erase, Restore, Text, Outline), Save and Send.
+- **S3 · Sticker from a doodle:** lasso › Sticker (also on the lasso popover), preview with a white outline toggle, choose a pack, Save / Save and send.
+- **S4 · Save a received sticker:** big preview, 'From Aatika · in her pack', Add to favourites, Save to my stickers, Save the whole pack.
+- **S5 · Sticker library** (Settings › Stickers): count and size, make from a photo or a doodle, packs with thumbnails (Ours, Moose doodles, Cat chaos, Favourites).
+- **S6 · Stickers in the chat:** no bubble, tilted a few degrees, white outline, time chip under it, reactions on stickers, and replying to a sticker.
+
+## F. Calls (P2P, WebRTC)
+
+- **K1 · Calling:** pulsing rings round the avatar, name, 'Ringing…', Mute / End / Speaker.
+- **K2 · Incoming:** 'Video call · direct and encrypted', name, 'is calling you', 'Reply with a message', Decline / Accept.
+- **K3 · Voice call:** timer in Doto, 'Direct, phone to phone · encrypted', signal bars, Mute / Speaker / Video / Send a hug / End / Chat.
+- **K4 · Video call:** partner full screen, your own picture top right, glass control bar (Flip, Mute, Camera off, End). Always dark.
+- **K5 · Calls in the chat:** voice and video call buttons in the header; call rows (done, missed with Call back, 'no answer: her Moose was closed').

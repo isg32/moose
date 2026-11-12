@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moose chat sheets</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&amp;family=Inter:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#ecebe7;font-family:Inter,sans-serif;color:#000}
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.lbl{font:500 12px Inter;color:#000}
+.eb{font:500 11px Inter;letter-spacing:.1em;text-transform:uppercase}
+.ph{width:390px;height:844px;border-radius:44px;overflow:hidden;position:relative;background:var(--wall);color:var(--ink);font-family:Inter,sans-serif;flex-shrink:0;box-shadow:0 0 0 8px #000}
+.tb{position:absolute;left:0;right:0;top:0;height:130px;background:linear-gradient(var(--fade),transparent);backdrop-filter:blur(11px);-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent);z-index:3;pointer-events:none}
+.icb{width:44px;height:44px;border-radius:50%;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;background:transparent;color:var(--ink);padding:0;flex-shrink:0}
+.sub{font:300 12px/1.4 Inter}
+.b1{background:var(--ink);color:var(--paper);border:0;border-radius:999px;padding:16px;font:600 16px Inter;width:100%;text-align:center;box-sizing:border-box;display:block}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sheet);backdrop-filter:blur(14px);border-top:1px solid var(--ink);border-radius:28px 28px 0 0;z-index:6;padding:10px 16px 30px;box-sizing:border-box}
+.hdl{width:36px;height:4px;border-radius:2px;background:var(--ink);margin:0 auto 14px}
+.scrim{position:absolute;inset:0;background:var(--scrim);backdrop-filter:blur(6px);z-index:5}
+.hdr{position:absolute;left:0;right:0;top:0;padding:52px 16px 0;display:flex;align-items:center;gap:12px;z-index:4}
+.av{width:40px;height:40px;border-radius:20px;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;font:900 18px Doto,monospace;flex-shrink:0}
+.list{position:absolute;left:0;right:0;padding:0 14px;display:flex;flex-direction:column;gap:8px;z-index:1}
+.in{align-self:flex-start;background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--ink);border-radius:20px 20px 20px 6px;padding:9px 13px;max-width:270px;font:400 15px/1.4 Inter}
+.out{align-self:flex-end;background:var(--ink);color:var(--paper);border-radius:20px 20px 6px 20px;padding:9px 13px;max-width:270px;font:400 15px/1.4 Inter}
+.meta{font:300 11px Inter;text-align:right;margin-top:3px}
+.row{display:flex;align-items:center;gap:14px;padding:14px 4px;font:500 15px Inter}
+.dv{border-top:1px solid var(--ink)}
+.sl{display:flex;flex-direction:column;gap:4px}
+.track{height:24px;position:relative}
+</style>
+</helmet>
+<div style="width: 1760px; height: 1960px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 48px; background: #ecebe7">
+<sc-for list="{{ modes }}" as="m" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 14px; {{ m.vars }}">
+<div style="font: 600 14px Inter; color: #000">{{ m.label }}</div>
+<div style="display: flex; gap: 40px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">B13 · Message actions (long-press)</div>
+    <div class="ph">
+      <div class="list" style="top: 140px">
+        <div class="out">leaving at 5<div class="meta">17:38</div></div>
+      </div>
+      <div class="hdr"><span class="av">A</span><div style="flex: 1"><div style="font: 600 16px Inter">Aatika</div><div class="sub">online</div></div></div>
+      <div class="scrim"></div>
+      <div style="position: absolute; left: 14px; right: 14px; top: 250px; z-index: 6; display: flex; flex-direction: column; gap: 10px">
+        <div style="align-self: flex-start; display: flex; gap: 6px; padding: 8px 10px; border-radius: 999px; border: 1px solid var(--ink); background: var(--sheet); backdrop-filter: blur(14px); font-size: 24px; align-items: center">
+          <span>❤️</span><span>😂</span><span>🥺</span><span>😮</span><span>🔥</span><span>👍</span><span style="width: 32px; height: 32px; border-radius: 16px; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-label="More reactions" role="img"><path d="{{ i.plus }}"></path></svg></span>
+        </div>
+        <div class="in" style="transform: scale(1.03); transform-origin: left">come home early today? i'm making rajma<div class="meta">17:40</div></div>
+      </div>
+      <div class="sheet">
+        <div class="hdl"></div>
+        <div class="row"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.reply }}"></path></svg>Reply</div>
+        <div class="row dv"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.copy }}"></path></svg>Copy</div>
+        <div class="row dv" style="opacity: .35"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.download }}"></path></svg>Save media</div>
+        <div class="row dv" style="align-items: flex-start"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.info }}"></path></svg><span style="flex: 1">Info<span class="sub" style="display: block; margin-top: 4px">Sent 17:40 · Delivered 17:40 · Seen 17:41<br>Copy on both phones · gone from the server</span></span></div>
+        <div class="row dv"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.delete }}"></path></svg>Delete for me</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C22 · Theme sheet (long-press the wallpaper)</div>
+    <div class="ph">
+      <div class="list" style="top: 140px">
+        <div class="in">try the dune one</div>
+        <div class="out">ooh</div>
+      </div>
+      <div class="tb"></div>
+      <div class="hdr"><span class="av">A</span><div style="flex: 1"><div style="font: 600 16px Inter">Aatika</div><div class="sub">online</div></div></div>
+      <div class="sheet" style="padding-bottom: 26px">
+        <div class="hdl"></div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font: 700 26px Doto, monospace">Theme</span><span class="sub">Changes for both of you</span></div>
+        <div class="eb" style="margin: 14px 0 10px">Palettes</div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{ swatches }}" as="w" hint-placeholder-count="8">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 5px; font: 500 11px Inter">
+              <span style="width: 58px; height: 58px; border-radius: 16px; background: {{ w.css }}; border: 1px solid var(--ink); box-shadow: {{ w.ring }}"></span>{{ w.name }}
+            </div>
+          </sc-for>
+        </div>
+        <div class="eb" style="margin: 16px 0 10px">Your photos</div>
+        <div style="display: flex; gap: 10px">
+          <span style="width: 58px; height: 58px; border-radius: 16px; background: linear-gradient(135deg, #6B3B1F, #24344F); border: 1px solid var(--ink)"></span>
+          <span style="width: 58px; height: 58px; border-radius: 16px; background: linear-gradient(200deg, #3D2536, #5A1A1A); border: 1px solid var(--ink)"></span>
+          <span style="width: 58px; height: 58px; border-radius: 16px; border: 1px dashed var(--ink); display: flex; align-items: center; justify-content: center"><svg class="ic" viewBox="0 0 24 24" aria-label="Add a photo" role="img"><path d="{{ i.plus }}"></path></svg></span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin: 16px 0 16px">
+          <sc-for list="{{ sliders }}" as="s" hint-placeholder-count="3">
+            <div class="sl">
+              <div style="display: flex; justify-content: space-between; font: 500 13px Inter"><span>{{ s.n }}</span><span style="font: 700 14px Doto, monospace">{{ s.v }}</span></div>
+              <div class="track"><div style="position: absolute; left: 0; right: 0; top: 11px; height: 2px; background: var(--ink)"></div><div style="position: absolute; left: 0; width: {{ s.p }}; top: 9px; height: 6px; border-radius: 3px; background: var(--ink)"></div><div style="position: absolute; left: calc({{ s.p }} - 11px); top: 1px; width: 22px; height: 22px; border-radius: 11px; background: var(--ink); box-shadow: 0 0 0 3px var(--paper)"></div></div>
+            </div>
+          </sc-for>
+        </div>
+        <button class="b1">Apply for both</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C23 · Wallpaper photo crop</div>
+    <div class="ph" style="background: linear-gradient(160deg, #6B3B1F 0%, #3D2536 45%, #24344F 100%)">
+      <div style="position: absolute; inset: 0; background: rgba(0,0,0,.30)"></div>
+      <div style="position: absolute; left: 22px; right: 22px; top: 110px; bottom: 170px; border: 2px solid #fff; border-radius: 28px; z-index: 2; box-shadow: 0 0 0 999px rgba(0,0,0,.45); display: flex; flex-direction: column; justify-content: flex-end; padding: 14px; box-sizing: border-box; gap: 6px; color: #fff">
+        <span style="align-self: flex-start; padding: 7px 11px; border-radius: 14px 14px 14px 4px; border: 1px solid #fff; font: 400 12px Inter; background: rgba(255,255,255,.08)">a preview of your chat</span>
+        <span style="align-self: flex-end; padding: 7px 11px; border-radius: 14px 14px 4px 14px; background: #fff; color: #000; font: 400 12px Inter">looks so good</span>
+        <span style="height: 34px; border-radius: 17px; border: 1px dashed #fff; margin-top: 8px"></span>
+      </div>
+      <div style="position: absolute; left: 0; right: 0; top: 56px; text-align: center; color: #fff; font: 500 14px Inter; z-index: 3">Pinch and drag to fit</div>
+      <div style="position: absolute; left: 16px; right: 16px; bottom: 34px; z-index: 3; display: flex; flex-direction: column; gap: 10px; color: #fff">
+        <div style="display: flex; justify-content: space-between; font: 400 12px Inter"><span>White ink suits this photo</span><span style="text-decoration: underline; text-underline-offset: 3px">Use black ink</span></div>
+        <div style="display: flex; gap: 10px">
+          <span style="flex: 1; text-align: center; padding: 15px; border-radius: 999px; border: 1px solid #fff; font: 500 15px Inter">Cancel</span>
+          <span style="flex: 1; text-align: center; padding: 16px; border-radius: 999px; background: #fff; color: #000; font: 600 16px Inter">Use</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C24 · Poke picker (long-press the poke button)</div>
+    <div class="ph">
+      <div class="list" style="top: 300px">
+        <div class="in">come home early today?</div>
+        <div class="out">yes yes yes</div>
+      </div>
+      <div class="tb"></div>
+      <div class="scrim"></div>
+      <div class="hdr" style="z-index: 6"><span class="av">A</span><div style="flex: 1"><div style="font: 600 16px Inter">Aatika</div><div class="sub">online</div></div><button class="icb" style="background: var(--ink); color: var(--paper); border: 0" aria-label="Poke"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.poke }}"></path></svg></button></div>
+      <div style="position: absolute; right: 14px; top: 108px; width: 300px; z-index: 7; border-radius: 28px; border: 1px solid var(--ink); background: var(--sheet); backdrop-filter: blur(14px); padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span class="eb">Send Aatika a…</span><span class="sub">tap to send</span></div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{ pokes }}" as="p" hint-placeholder-count="4">
+            <div style="position: relative; height: 112px; border-radius: 20px; background: {{ p.c }}; color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; opacity: {{ p.op }}">
+              <span style="font-size: 38px; line-height: 1">{{ p.e }}</span>
+              <span style="font: 600 13px Inter">{{ p.n }}</span>
+              <span style="position: absolute; top: 8px; right: 10px; font: 700 12px Doto, monospace">{{ p.wait }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div class="sub">One of each every 10 seconds, so they stay special.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"darkWallpaper":{"editor":"enum","options":["night","dune","moss","fog","ember","black"],"default":"night"},"lightWallpaper":{"editor":"enum","options":["paper","white"],"default":"paper"},"$preview":{"width":1760,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WP = {
+      night: [false, '#06070A', [['#24344F', 15, 10, 60], ['#3D2536', 95, 55, 50], ['#15322F', 30, 105, 60]]],
+      dune: [false, '#120B07', [['#6B3B1F', 80, 20, 65], ['#3A2416', 10, 90, 55]]],
+      paper: [true, '#EFE9E0', [['#F3E6D2', 85, 7, 60], ['#DCD0C0', 0, 60, 55], ['#CDBFA9', 70, 105, 55]]],
+      moss: [false, '#060A07', [['#1F3A26', 20, 90, 60], ['#2C3B2F', 90, 10, 50]]],
+      fog: [false, '#1A1D22', [['#5B6470', 50, 30, 65]]],
+      ember: [false, '#0B0505', [['#5A1A1A', 30, 80, 55]]],
+      black: [false, '#000000', []],
+      white: [true, '#FFFFFF', []]
+    };
+    const css = (key) => WP[key][2].map((b) => 'radial-gradient(' + b[3] + '% ' + Math.round(b[3] * 0.75) + '% at ' + b[1] + '% ' + b[2] + '%, ' + b[0] + ' 0%, transparent 100%)').concat([WP[key][1]]).join(', ');
+    const v = (k) => {
+      const wall = WP[k][2].map((b) => 'radial-gradient(' + b[3] + '% ' + Math.round(b[3] * 0.75) + '% at ' + b[1] + '% ' + b[2] + '%, ' + b[0] + ' 0%, transparent 100%)').concat([WP[k][1]]).join(', ');
+      return (WP[k][0]
+        ? '--ink:#000000;--paper:#FFFFFF;--bar:rgba(0,0,0,.06);--card:rgba(0,0,0,.05);--sheet:rgba(255,255,255,.60);--scrim:rgba(255,255,255,.40);--veil:rgba(255,255,255,.60);--fade:rgba(255,255,255,.6);'
+        : '--ink:#FFFFFF;--paper:#000000;--bar:rgba(255,255,255,.10);--card:rgba(255,255,255,.08);--sheet:rgba(0,0,0,.55);--scrim:rgba(0,0,0,.40);--veil:rgba(0,0,0,.60);--fade:rgba(0,0,0,.6);') + '--wall:' + wall + ';';
+    };
+    const dk = WP[this.props.darkWallpaper] && !WP[this.props.darkWallpaper][0] ? this.props.darkWallpaper : 'night';
+    const lk = WP[this.props.lightWallpaper] && WP[this.props.lightWallpaper][0] ? this.props.lightWallpaper : 'paper';
+    const modes = [{ label: 'Dark ink · ' + dk + ' wallpaper', vars: v(dk) }, { label: 'Light ink · ' + lk + ' wallpaper', vars: v(lk) }];
+    return {
+      modes,
+      swatches: Object.keys(WP).map((n) => ({ name: n, css: css(n), ring: n === 'dune' ? '0 0 0 3px var(--paper), 0 0 0 5px var(--ink)' : 'none' })),
+      sliders: [{ n: 'Dim', v: '30%', p: '30%' }, { n: 'Blur', v: '12', p: '40%' }, { n: 'Glass', v: '50%', p: '50%' }],
+      pokes: [
+        { n: 'Poke', e: '👉', c: '#FFC15E', op: 1, wait: '' },
+        { n: 'Hug', e: '🫂', c: '#FF8FA3', op: 0.45, wait: '8s' },
+        { n: 'Kiss', e: '💋', c: '#FF5C7A', op: 1, wait: '' },
+        { n: 'Miss you', e: '🥺', c: '#9DB2FF', op: 1, wait: '' }
+      ],
+      i: {
+        plus: 'M12 5v14 M5 12h14', reply: 'M10 8L5 12l5 4 M5 12h9a5 5 0 0 1 5 5v1', copy: 'M9 9h11v11H9z M5 15H4V4h11v1',
+        download: 'M12 4v11 M7 10l5 5l5-5 M5 20h14', info: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v5 M12 8h.01',
+        delete: 'M5 7h14 M10 7V4h4v3 M7 7l1 13h8l1-13',
+        poke: 'M12 10.5a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3 M7.8 7.8a6 6 0 0 0 0 8.4 M16.2 7.8a6 6 0 0 1 0 8.4 M5 5a10 10 0 0 0 0 14 M19 5a10 10 0 0 1 0 14'
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

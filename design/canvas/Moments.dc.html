@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moose poke moments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&amp;family=Inter:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#ecebe7;font-family:Inter,sans-serif;color:#000}
+.lbl{font:500 12px Inter;color:#000}
+.ph{width:390px;height:844px;border-radius:44px;overflow:hidden;position:relative;background:var(--wall);color:var(--ink);font-family:Inter,sans-serif;flex-shrink:0;box-shadow:0 0 0 8px #000}
+.sub{font:300 12px/1.4 Inter}
+.in{align-self:flex-start;background:var(--card);border:1px solid var(--ink);border-radius:20px 20px 20px 6px;padding:9px 13px;font:400 15px/1.4 Inter}
+.out{align-self:flex-end;background:var(--ink);color:var(--paper);border-radius:20px 20px 6px 20px;padding:9px 13px;font:400 15px/1.4 Inter}
+.fly{position:absolute;line-height:1;pointer-events:none;animation-name:rise;animation-timing-function:cubic-bezier(.2,.6,.3,1);animation-iteration-count:infinite;z-index:7}
+.bob{animation:beat 1.4s ease-in-out infinite}
+.pulse{animation:pulse 2.4s ease-out infinite}
+@keyframes rise{0%{transform:translate(0,0) scale(.5) rotate(0deg);opacity:0}12%{opacity:1}80%{opacity:.9}100%{transform:translate(var(--dx),-820px) scale(1.15) rotate(var(--r));opacity:0}}
+@keyframes beat{0%{transform:scale(1)}14%{transform:scale(1.14)}28%{transform:scale(1)}42%{transform:scale(1.09)}70%,100%{transform:scale(1)}}
+@keyframes pulse{0%{transform:scale(.7);opacity:.9}100%{transform:scale(1.35);opacity:0}}
+</style>
+</helmet>
+<div style="width: 1760px; height: 1960px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 48px; background: #ecebe7">
+<sc-for list="{{ modes }}" as="m" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 14px; {{ m.vars }}">
+<div style="font: 600 14px Inter; color: #000">{{ m.label }}</div>
+<div style="display: flex; gap: 40px">
+<sc-for list="{{ moments }}" as="v" hint-placeholder-count="4">
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">{{ v.label }}</div>
+    <div class="ph">
+      <div style="position: absolute; left: 14px; right: 14px; top: 150px; display: flex; flex-direction: column; gap: 8px; opacity: .45">
+        <div class="in">long day. can't wait to see you</div>
+        <div class="out">almost home</div>
+      </div>
+      <div style="position: absolute; inset: 0; background: {{ v.wash }}; backdrop-filter: blur(12px); z-index: 6"></div>
+      <sc-for list="{{ v.flyers }}" as="f" hint-placeholder-count="18">
+        <span class="fly" style="left: {{ f.x }}px; bottom: {{ f.y }}px; font-size: {{ f.s }}px; --dx: {{ f.dx }}px; --r: {{ f.r }}deg; animation-duration: {{ f.d }}s; animation-delay: {{ f.dl }}s">{{ f.e }}</span>
+      </sc-for>
+      <div style="position: absolute; inset: 0; z-index: 8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding-bottom: 40px; box-sizing: border-box">
+        <div style="position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center">
+          <span class="pulse" style="position: absolute; inset: 0; border-radius: 50%; border: 1px dashed {{ v.color }}"></span>
+          <span style="position: absolute; inset: 36px; border-radius: 50%; border: 1px solid {{ v.color }}; opacity: .45"></span>
+          <span style="position: absolute; inset: 72px; border-radius: 50%; border: 1px solid {{ v.color }}"></span>
+          <span class="bob" style="width: 112px; height: 112px; border-radius: 56px; background: {{ v.color }}; color: #000; display: flex; align-items: center; justify-content: center; box-shadow: 0 14px 50px {{ v.glow }}"><svg viewBox="0 0 24 24" style="width: 56px; height: 56px; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round" aria-hidden="true"><path d="{{ v.icon }}"></path></svg></span>
+        </div>
+        <div style="font: 900 58px/0.92 Doto, monospace; text-align: center; color: var(--ink)">{{ v.word }}</div>
+        <div style="font: 400 15px Inter">{{ v.line }}</div>
+        <div style="display: flex; gap: 10px; margin-top: 10px">
+          <span style="padding: 11px 18px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 14px Inter">{{ v.back }}</span>
+          <span style="padding: 10px 18px; border-radius: 999px; border: 1px solid var(--ink); font: 500 14px Inter">Close</span>
+        </div>
+      </div>
+      <div class="sub" style="position: absolute; left: 0; right: 0; bottom: 34px; text-align: center; z-index: 8">{{ v.haptic }}</div>
+    </div>
+  </div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"darkWallpaper":{"editor":"enum","options":["night","dune","moss","fog","ember","black"],"default":"night"},"lightWallpaper":{"editor":"enum","options":["paper","white"],"default":"paper"},"$preview":{"width":1760,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WP = {
+      night: [false, '#06070A', [['#24344F', 15, 10, 60], ['#3D2536', 95, 55, 50], ['#15322F', 30, 105, 60]]],
+      dune: [false, '#120B07', [['#6B3B1F', 80, 20, 65], ['#3A2416', 10, 90, 55]]],
+      paper: [true, '#EFE9E0', [['#F3E6D2', 85, 7, 60], ['#DCD0C0', 0, 60, 55], ['#CDBFA9', 70, 105, 55]]],
+      moss: [false, '#060A07', [['#1F3A26', 20, 90, 60], ['#2C3B2F', 90, 10, 50]]],
+      fog: [false, '#1A1D22', [['#5B6470', 50, 30, 65]]],
+      ember: [false, '#0B0505', [['#5A1A1A', 30, 80, 55]]],
+      black: [false, '#000000', []],
+      white: [true, '#FFFFFF', []]
+    };
+    const v = (k) => {
+      const wall = WP[k][2].map((b) => 'radial-gradient(' + b[3] + '% ' + Math.round(b[3] * 0.75) + '% at ' + b[1] + '% ' + b[2] + '%, ' + b[0] + ' 0%, transparent 100%)').concat([WP[k][1]]).join(', ');
+      return (WP[k][0]
+        ? '--ink:#000000;--paper:#FFFFFF;--bar:rgba(0,0,0,.06);--card:rgba(0,0,0,.05);--sheet:rgba(255,255,255,.60);--scrim:rgba(255,255,255,.40);--veil:rgba(255,255,255,.60);--fade:rgba(255,255,255,.6);'
+        : '--ink:#FFFFFF;--paper:#000000;--bar:rgba(255,255,255,.10);--card:rgba(255,255,255,.08);--sheet:rgba(0,0,0,.55);--scrim:rgba(0,0,0,.40);--veil:rgba(0,0,0,.60);--fade:rgba(0,0,0,.6);') + '--wall:' + wall + ';';
+    };
+    const dk = WP[this.props.darkWallpaper] && !WP[this.props.darkWallpaper][0] ? this.props.darkWallpaper : 'night';
+    const lk = WP[this.props.lightWallpaper] && WP[this.props.lightWallpaper][0] ? this.props.lightWallpaper : 'paper';
+    const modes = [{ label: 'Dark ink · ' + dk + ' wallpaper', vars: v(dk) }, { label: 'Light ink · ' + lk + ' wallpaper', vars: v(lk) }];
+    // Deterministic scatter: hearts drift across the whole screen, the
+    // gesture's own emoji rises slower and larger through the middle.
+    const flyers = (own, hearts) => {
+      const out = [];
+      for (let n = 0; n < 14; n++) {
+        out.push({ e: hearts[n % hearts.length], x: (n * 53 + 17) % 360, y: -40 - (n % 3) * 20, s: 18 + (n * 7) % 18, dx: ((n * 37) % 120) - 60, r: ((n * 29) % 50) - 25, d: 4.5 + (n % 4) * 0.8, dl: -((n * 0.63) % 5.5) });
+      }
+      for (let n = 0; n < 5; n++) {
+        out.push({ e: own, x: 60 + n * 62, y: -60, s: 34 + (n % 2) * 10, dx: ((n * 23) % 40) - 20, r: ((n * 13) % 16) - 8, d: 7 + (n % 3), dl: -((n * 1.7) % 7) });
+      }
+      return out;
+    };
+    const m = (label, word, emoji, color, glow, line, back, haptic, hearts, icon) => ({
+      label, word, emoji, color, glow, line, back, haptic, icon,
+      wash: 'radial-gradient(75% 55% at 50% 50%, ' + glow + ' 0%, transparent 100%), var(--scrim)',
+      flyers: flyers(emoji, hearts)
+    });
+    return {
+      modes,
+      moments: [
+        m('C25 · Hug', 'HUG', '🫂', '#FF8FA3', 'rgba(255,143,163,.55)', 'from Aatika · just now', 'Hug back', 'One long, soft vibration that swells and fades', ['❤️', '💗', '💕', '🩷'], 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z'),
+        m('C25 · Poke', 'POKE', '👉', '#FFC15E', 'rgba(255,193,94,.50)', 'from Aatika · just now', 'Poke back', 'Two quick taps, like a finger on your shoulder', ['💛', '✨', '❤️', '🧡'], 'M12 10.5a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3 M7.8 7.8a6 6 0 0 0 0 8.4 M16.2 7.8a6 6 0 0 1 0 8.4 M5 5a10 10 0 0 0 0 14 M19 5a10 10 0 0 1 0 14'),
+        m('C25 · Kiss', 'KISS', '💋', '#FF5C7A', 'rgba(255,92,122,.55)', 'from Aatika · just now', 'Kiss back', 'Short, short, then a little flutter', ['❤️', '💋', '💞', '💗'], 'M4 12c2-3 5-4 8-1c3-3 6-2 8 1c-2 3-5 4-8 4s-6-1-8-4z M4 12h16'),
+        m('C25 · Miss you', 'MISS YOU', '🥺', '#9DB2FF', 'rgba(157,178,255,.50)', 'from Aatika · just now', 'Miss you too', 'A slow heartbeat: lub-dub, lub-dub', ['💙', '🤍', '💜', '❤️'], 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M8.5 15.5c1-1 2.2-1.5 3.5-1.5s2.5.5 3.5 1.5 M9 9.5v.5 M15 9.5v.5 M16 11v2')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

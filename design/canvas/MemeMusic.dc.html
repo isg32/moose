@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moose memes and music</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&amp;family=Inter:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#ecebe7;font-family:Inter,sans-serif;color:#000}
+a{color:inherit;text-decoration:none}
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.lbl{font:500 12px Inter;color:#000}
+.eb{font:500 11px Inter;letter-spacing:.1em;text-transform:uppercase}
+.ttl{font:700 34px/1 Doto,monospace}
+.ph{width:390px;height:844px;border-radius:44px;overflow:hidden;position:relative;background:var(--wall);color:var(--ink);font-family:Inter,sans-serif;flex-shrink:0;box-shadow:0 0 0 8px #000}
+.veil{position:absolute;inset:0;background:var(--veil);backdrop-filter:blur(30px)}
+.icb{width:44px;height:44px;border-radius:50%;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;background:transparent;color:var(--ink);padding:0;flex-shrink:0}
+.sub{font:300 12px/1.4 Inter}
+.b1{background:var(--ink);color:var(--paper);border:0;border-radius:999px;padding:16px;font:600 16px Inter;width:100%;text-align:center;box-sizing:border-box;display:block}
+.sheet{position:absolute;left:0;right:0;bottom:0;top:110px;background:var(--sheet);backdrop-filter:blur(14px);border-top:1px solid var(--ink);border-radius:28px 28px 0 0;z-index:6;padding:10px 16px 0;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.hdl{width:36px;height:4px;border-radius:2px;background:var(--ink);margin:0 auto 2px}
+.scrim{position:absolute;inset:0;background:var(--scrim);backdrop-filter:blur(6px);z-index:5}
+.srch{border:1px solid var(--ink);border-radius:999px;padding:12px 16px;display:flex;align-items:center;gap:10px;font:400 15px Inter}
+.chip{padding:7px 12px;border-radius:999px;border:1px solid var(--ink);font:500 11px Inter;white-space:nowrap}
+.on{background:var(--ink);color:var(--paper);font-weight:600;font-size:12px;border-color:var(--ink)}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0}
+.dv{border-top:1px solid var(--ink)}
+</style>
+</helmet>
+<div style="width: 1330px; height: 1960px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 48px; background: #ecebe7">
+<sc-for list="{{ modes }}" as="m" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 14px; {{ m.vars }}">
+<div style="font: 600 14px Inter; color: #000">{{ m.label }}</div>
+<div style="display: flex; gap: 40px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C26 · Meme picker</div>
+    <div class="ph">
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="hdl"></div>
+        <div class="srch"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.search }}"></path></svg><span style="flex: 1">sleepy cat</span><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-label="Clear" role="img"><path d="{{ i.close }}"></path></svg></div>
+        <div style="display: flex; border: 1px solid var(--ink); border-radius: 999px; padding: 3px">
+          <span style="flex: 1; text-align: center; padding: 8px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 13px Inter">KLIPY</span>
+          <span style="flex: 1; text-align: center; padding: 8px; font: 500 13px Inter">Reddit</span>
+        </div>
+        <div style="display: flex; gap: 8px; overflow: hidden; margin: 0 -16px; padding: 0 16px">
+          <span class="chip on">Trending</span><span class="chip">GIFs</span><span class="chip">Stickers</span><span class="chip">Memes</span><span class="chip">Clips</span>
+        </div>
+        <div style="display: flex; gap: 8px; flex: 1">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+            <sc-for list="{{ colA }}" as="t" hint-placeholder-count="4"><span style="height: {{ t.h }}px; border-radius: 14px; background: {{ t.bg }}; position: relative; outline: {{ t.ol }}; outline-offset: 2px"><span style="position: absolute; left: 7px; top: 7px; padding: 1px 5px; border-radius: 5px; border: 1px solid #fff; color: #fff; font: 600 9px Inter">{{ t.tag }}</span></span></sc-for>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+            <sc-for list="{{ colB }}" as="t" hint-placeholder-count="4"><span style="height: {{ t.h }}px; border-radius: 14px; background: {{ t.bg }}; position: relative"><span style="position: absolute; left: 7px; top: 7px; padding: 1px 5px; border-radius: 5px; border: 1px solid #fff; color: #fff; font: 600 9px Inter">{{ t.tag }}</span></span></sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="position: absolute; left: 16px; right: 16px; bottom: 30px; z-index: 7; display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; border-radius: 22px; border: 1px solid var(--ink); background: var(--sheet); backdrop-filter: blur(14px)">
+        <span style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #6B3B1F, #24344F)"></span>
+        <span style="flex: 1; font: 500 13px Inter">Send this GIF?<span class="sub" style="display: block">via KLIPY · plays on loop</span></span>
+        <button class="icb" style="background: var(--ink); color: var(--paper); border: 0" aria-label="Send"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.send }}"></path></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C27 · Music search (YouTube)</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div style="position: relative; z-index: 1; padding: 56px 16px 0; display: flex; flex-direction: column; gap: 12px">
+        <a href="#" style="font: 400 14px Inter">‹ Chat</a>
+        <div class="ttl" style="padding-left: 4px">Music</div>
+        <div class="srch"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.search }}"></path></svg><span style="flex: 1">sienna the marias</span><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-label="Clear" role="img"><path d="{{ i.close }}"></path></svg></div>
+        <div class="eb" style="margin-top: 6px; padding-left: 4px">Results</div>
+        <div>
+          <sc-for list="{{ songs }}" as="s" hint-placeholder-count="6">
+            <div class="row {{ s.dv }}">
+              <span style="width: 52px; height: 52px; border-radius: 12px; background: {{ s.art }}; flex-shrink: 0"></span>
+              <span style="flex: 1; min-width: 0"><span style="display: block; font: 500 15px Inter; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ s.t }}</span><span class="sub">{{ s.a }}</span></span>
+              <span style="font: 700 14px Doto, monospace">{{ s.d }}</span>
+            </div>
+          </sc-for>
+          <div class="row dv"><span style="width: 52px; height: 52px; border-radius: 12px; border: 1px dashed var(--ink)"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="height: 10px; width: 70%; border-radius: 5px; border: 1px dashed var(--ink)"></span><span style="height: 10px; width: 40%; border-radius: 5px; border: 1px dashed var(--ink)"></span></span></div>
+        </div>
+        <div class="sub" style="padding-left: 4px">From YouTube. You'll pick 15 seconds next.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C28 · Pick the 15 seconds</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div style="position: relative; z-index: 1; padding: 56px 16px 0; display: flex; flex-direction: column; gap: 12px; align-items: center">
+        <a href="#" style="font: 400 14px Inter; align-self: flex-start">‹ Results</a>
+        <span style="width: 230px; height: 230px; border-radius: 28px; background: linear-gradient(135deg, #24344F, #15322F 60%, #3D2536); margin-top: 18px"></span>
+        <div style="text-align: center; margin-top: 8px"><div style="font: 700 24px Doto, monospace">Sienna</div><div class="sub" style="font-size: 13px">The Marías</div></div>
+      </div>
+      <div style="position: absolute; left: 0; right: 0; top: 520px; z-index: 1; display: flex; flex-direction: column; gap: 12px">
+        <div style="position: relative; height: 72px; overflow: hidden">
+          <div style="position: absolute; left: -40px; top: 0; bottom: 0; display: flex; align-items: center; gap: 3px">
+            <sc-for list="{{ wave }}" as="b" hint-placeholder-count="78"><span style="width: 3px; border-radius: 2px; height: {{ b.h }}px; background: var(--ink); opacity: {{ b.o }}"></span></sc-for>
+          </div>
+          <div style="position: absolute; left: 95px; width: 200px; top: 0; bottom: 0; border: 2px solid var(--ink); border-radius: 14px; box-sizing: border-box"></div>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 120px; font: 700 15px Doto, monospace"><span>0:41</span><span>0:56</span></div>
+        <div class="sub" style="text-align: center">Drag the wave to choose · <b style="font-weight: 600">15 s</b></div>
+      </div>
+      <div style="position: absolute; left: 16px; right: 16px; bottom: 34px; z-index: 2; display: flex; gap: 10px; align-items: center">
+        <button class="icb" style="width: 54px; height: 54px" aria-label="Play preview"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.play }}"></path></svg></button>
+        <a class="b1" href="#">Send to Aatika</a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"darkWallpaper":{"editor":"enum","options":["night","dune","moss","fog","ember","black"],"default":"night"},"lightWallpaper":{"editor":"enum","options":["paper","white"],"default":"paper"},"$preview":{"width":1330,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WP = {
+      night: [false, '#06070A', [['#24344F', 15, 10, 60], ['#3D2536', 95, 55, 50], ['#15322F', 30, 105, 60]]],
+      dune: [false, '#120B07', [['#6B3B1F', 80, 20, 65], ['#3A2416', 10, 90, 55]]],
+      paper: [true, '#EFE9E0', [['#F3E6D2', 85, 7, 60], ['#DCD0C0', 0, 60, 55], ['#CDBFA9', 70, 105, 55]]],
+      moss: [false, '#060A07', [['#1F3A26', 20, 90, 60], ['#2C3B2F', 90, 10, 50]]],
+      fog: [false, '#1A1D22', [['#5B6470', 50, 30, 65]]],
+      ember: [false, '#0B0505', [['#5A1A1A', 30, 80, 55]]],
+      black: [false, '#000000', []],
+      white: [true, '#FFFFFF', []]
+    };
+    const v = (k) => {
+      const wall = WP[k][2].map((b) => 'radial-gradient(' + b[3] + '% ' + Math.round(b[3] * 0.75) + '% at ' + b[1] + '% ' + b[2] + '%, ' + b[0] + ' 0%, transparent 100%)').concat([WP[k][1]]).join(', ');
+      return (WP[k][0]
+        ? '--ink:#000000;--paper:#FFFFFF;--bar:rgba(0,0,0,.06);--card:rgba(0,0,0,.05);--sheet:rgba(255,255,255,.60);--scrim:rgba(255,255,255,.40);--veil:rgba(255,255,255,.60);--fade:rgba(255,255,255,.6);'
+        : '--ink:#FFFFFF;--paper:#000000;--bar:rgba(255,255,255,.10);--card:rgba(255,255,255,.08);--sheet:rgba(0,0,0,.55);--scrim:rgba(0,0,0,.40);--veil:rgba(0,0,0,.60);--fade:rgba(0,0,0,.6);') + '--wall:' + wall + ';';
+    };
+    const dk = WP[this.props.darkWallpaper] && !WP[this.props.darkWallpaper][0] ? this.props.darkWallpaper : 'night';
+    const lk = WP[this.props.lightWallpaper] && WP[this.props.lightWallpaper][0] ? this.props.lightWallpaper : 'paper';
+    const modes = [{ label: 'Dark ink · ' + dk + ' wallpaper', vars: v(dk) }, { label: 'Light ink · ' + lk + ' wallpaper', vars: v(lk) }];
+    const G = ['linear-gradient(135deg, #6B3B1F, #24344F)', 'linear-gradient(160deg, #1F3A26, #5B6470)', 'linear-gradient(200deg, #3D2536, #5A1A1A)', 'linear-gradient(120deg, #3A2416, #CDBFA9)', 'linear-gradient(60deg, #15322F, #3D2536)'];
+    const H = [8, 14, 22, 30, 18, 26, 40, 34, 22, 14, 28, 44, 52, 38, 30, 46, 58, 50, 36, 28, 44, 60, 54, 40, 32, 48, 56, 42, 30, 22, 36, 50, 44, 30, 20, 34, 46, 38, 26, 18, 30, 42, 34, 22, 14, 26, 38, 30, 20, 12, 22, 34, 28, 18, 10, 20, 30, 24, 16, 10, 18, 26, 22, 14, 8, 16, 24, 18, 12, 8, 14, 20, 16, 10, 6, 12, 8, 6];
+    return {
+      modes,
+      colA: [{ h: 150, bg: G[0], tag: 'GIF', ol: '2px solid var(--ink)' }, { h: 110, bg: G[2], tag: 'GIF', ol: 'none' }, { h: 170, bg: G[4], tag: 'MEME', ol: 'none' }, { h: 120, bg: G[1], tag: 'GIF', ol: 'none' }],
+      colB: [{ h: 100, bg: G[3], tag: 'STICKER' }, { h: 160, bg: G[1], tag: 'GIF' }, { h: 130, bg: G[0], tag: 'GIF' }, { h: 150, bg: G[2], tag: 'MEME' }],
+      songs: [
+        { t: 'Sienna', a: 'The Marías', d: '2:57', art: 'linear-gradient(135deg, #24344F, #15322F)', dv: '' },
+        { t: 'Sienna (sped up)', a: 'The Marías', d: '2:41', art: G[2], dv: 'dv' },
+        { t: 'Sienna · live session', a: 'The Marías', d: '3:37', art: G[1], dv: 'dv' },
+        { t: 'Sienna (slowed + reverb)', a: 'Lofi Covers', d: '3:41', art: G[3], dv: 'dv' },
+        { t: 'Sienna · piano cover', a: 'Piano Dreamers', d: '2:48', art: G[4], dv: 'dv' }
+      ],
+      wave: H.map((h, n) => ({ h, o: n >= 22 && n < 55 ? 1 : 0.35 })),
+      i: {
+        search: 'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14 M16 16l5 5', close: 'M6 6l12 12 M18 6L6 18',
+        send: 'M4 12L20 4l-6 16l-3-7z M11 13l9-9', play: 'M8 5l11 7l-11 7z'
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

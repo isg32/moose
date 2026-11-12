@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moose: rules, type and wallpapers</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&amp;family=Inter:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#ecebe7;font-family:Inter,sans-serif;color:#000}
+a{color:#000}a:hover{text-decoration:underline;text-underline-offset:3px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 960px; box-sizing: border-box; padding: 56px; display: flex; gap: 56px; background: #ecebe7; color: #000; font-family: Inter, sans-serif">
+
+  <div style="width: 520px; display: flex; flex-direction: column; gap: 20px">
+    <div style="font: 700 44px/1 Doto, monospace; letter-spacing: -0.02em">MOOSE — SCREENS v1</div>
+    <div style="font: 400 15px/1.55 Inter">A quiet, private chat for two. Same language as Veronica, Idris and Cariño: only #000 and #FFF for the interface, Doto for titles and numbers, Inter for everything else. The couple's shared wallpaper is the one place colour comes in, and it decides the ink: dark wallpapers get white ink, light ones black.</div>
+    <div style="display: flex; flex-direction: column; gap: 10px; font: 400 14px/1.5 Inter">
+      <div style="font: 500 11px Inter; letter-spacing: .1em">RULES</div>
+      <div>1 · Two inks, no greys. Hierarchy comes from size, weight, outline vs fill, dashed vs solid, and inversion.</div>
+      <div>2 · Translucency only on the glass surfaces below. Disabled actions are the whole element at 0.35.</div>
+      <div>3 · Every screen sits on the shared wallpaper. Full pages (settings, sheets) lay a veil and a 30 px blur over it.</div>
+      <div>4 · Cariño's progressive blur at the top (under the status bar) and bottom (behind the composer and pill).</div>
+      <div>5 · Gutter 16 for cards, 20 for titles. Radii: card 20, bubble 20 (tail corner 6), sheet 28, pill 999.</div>
+      <div>6 · Icons are a 1.5 px round-cap line set on a 24 px grid. No emoji in the chrome; emoji belong to messages.</div>
+      <div>7 · Every screen board draws a dark-ink row and a light-ink row. Its tweaks pick the dark and light wallpaper.</div>
+      <div>8 · The one exception: <b style="font-weight: 600">moment colours</b>. Hugs, pokes, kisses and miss-yous get a warm colour, drifting hearts and their emoji floating up. Only in moments, the poke picker and poke notifications.</div>
+      <div style="display: flex; gap: 8px; margin-top: 2px">
+        <span style="padding: 6px 12px; border-radius: 999px; background: #FF8FA3; font: 600 12px Inter">🫂 Hug #FF8FA3</span>
+        <span style="padding: 6px 12px; border-radius: 999px; background: #FFC15E; font: 600 12px Inter">👉 Poke #FFC15E</span>
+        <span style="padding: 6px 12px; border-radius: 999px; background: #FF5C7A; font: 600 12px Inter">💋 Kiss #FF5C7A</span>
+        <span style="padding: 6px 12px; border-radius: 999px; background: #9DB2FF; font: 600 12px Inter">🥺 Miss you #9DB2FF</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 0; border: 1px solid #000; border-radius: 20px; font: 400 13px/1.4 Inter">
+      <div style="display: flex; padding: 10px 14px; font-weight: 600"><span style="width: 150px">Surface</span><span style="width: 170px">Dark ink fill</span><span style="width: 60px">Blur</span><span>Border</span></div>
+      <sc-for list="{{ glass }}" as="g" hint-placeholder-count="7">
+        <div style="display: flex; padding: 9px 14px; border-top: 1px solid #000"><span style="width: 150px">{{ g.name }}</span><span style="width: 170px">{{ g.fill }}</span><span style="width: 60px">{{ g.blur }}</span><span>{{ g.border }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="width: 520px; display: flex; flex-direction: column; gap: 18px">
+    <div style="height: 300px; border-radius: 28px; overflow: hidden; position: relative; background: {{ night }}; color: #fff; display: flex; flex-direction: column; justify-content: flex-end; padding: 32px; box-sizing: border-box">
+      <div style="font: 900 62px/0.9 Doto, monospace; letter-spacing: -0.02em">MO<br>OSE</div>
+      <div style="font: 300 18px/1.35 Inter; margin-top: 14px">Just the two of you.</div>
+    </div>
+    <div style="font: 500 11px Inter; letter-spacing: .1em">TYPE</div>
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font: 500 12px Inter">Wordmark</span><span style="font: 900 40px/0.9 Doto, monospace">MOOSE</span><span style="font: 300 12px Inter">Doto 900 / 62</span></div>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font: 500 12px Inter">Page title</span><span style="font: 700 34px/1 Doto, monospace">Doodles</span><span style="font: 300 12px Inter">Doto 700 / 34</span></div>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font: 500 12px Inter">Hero number</span><span style="font: 900 44px/1 Doto, monospace">K7Q2MX</span><span style="font: 300 12px Inter">Doto 900 / 44–112</span></div>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font: 500 12px Inter">Eyebrow</span><span style="font: 500 11px Inter; letter-spacing: .1em">PAIRED SINCE 14 FEB</span><span style="font: 300 12px Inter">Inter 500 / 11, +0.1 em</span></div>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font: 500 12px Inter">Body</span><span style="font: 400 15px Inter">dinner at 8? i'll bring the mangoes</span><span style="font: 300 12px Inter">Inter 400 / 15</span></div>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font: 500 12px Inter">Secondary</span><span style="font: 300 12px Inter">Seen 21:04 · from Aatika's phone</span><span style="font: 300 12px Inter">Inter 300 / 12</span></div>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font: 500 12px Inter">Button</span><span style="font: 600 16px Inter">Start chatting</span><span style="font: 300 12px Inter">Inter 600 / 16</span></div>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font: 500 12px Inter">Mono</span><span style="font: 400 12px ui-monospace, Menlo, monospace">a3f9 · 77c1 · 0e42 · b8d5</span><span style="font: 300 12px Inter">ui-monospace 400 / 12</span></div>
+    </div>
+  </div>
+
+  <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+    <div style="font: 500 11px Inter; letter-spacing: .1em">SHARED WALLPAPERS (CARIÑO PALETTES)</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+      <sc-for list="{{ walls }}" as="w" hint-placeholder-count="8">
+        <div style="height: 150px; border-radius: 20px; background: {{ w.css }}; color: {{ w.ink }}; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #000">
+          <span style="font: 700 22px/1 Doto, monospace">{{ w.name }}</span>
+          <span style="font: 300 12px Inter">{{ w.note }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font: 300 12px/1.5 Inter">Plus your own photos, with dim and blur. A photo's ink is picked from its brightness and can be flipped in the theme sheet.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WP = {
+      night: [false, '#06070A', [['#24344F', 15, 10, 60], ['#3D2536', 95, 55, 50], ['#15322F', 30, 105, 60]]],
+      dune: [false, '#120B07', [['#6B3B1F', 80, 20, 65], ['#3A2416', 10, 90, 55]]],
+      paper: [true, '#EFE9E0', [['#F3E6D2', 85, 7, 60], ['#DCD0C0', 0, 60, 55], ['#CDBFA9', 70, 105, 55]]],
+      moss: [false, '#060A07', [['#1F3A26', 20, 90, 60], ['#2C3B2F', 90, 10, 50]]],
+      fog: [false, '#1A1D22', [['#5B6470', 50, 30, 65]]],
+      ember: [false, '#0B0505', [['#5A1A1A', 30, 80, 55]]],
+      black: [false, '#000000', []],
+      white: [true, '#FFFFFF', []]
+    };
+    const css = (k) => WP[k][2].map((b) => 'radial-gradient(' + b[3] + '% ' + Math.round(b[3] * 0.75) + '% at ' + b[1] + '% ' + b[2] + '%, ' + b[0] + ' 0%, transparent 100%)').concat([WP[k][1]]).join(', ');
+    const walls = Object.keys(WP).map((k) => ({ name: k, css: css(k), ink: WP[k][0] ? '#000' : '#fff', note: (WP[k][0] ? 'Black ink' : 'White ink') + (k === 'night' ? ' · default' : '') }));
+    return {
+      night: css('night'),
+      walls,
+      glass: [
+        { name: 'Tab pill', fill: 'white @ 0.10', blur: '18', border: '1 px ink' },
+        { name: 'Glass card / bubble', fill: 'white @ 0.08', blur: '16', border: '1 px ink' },
+        { name: 'Bottom sheet', fill: 'black @ 0.55', blur: '14', border: 'top only' },
+        { name: 'Page veil', fill: 'black @ 0.60', blur: '30', border: 'none' },
+        { name: 'Popup scrim', fill: 'black @ 0.40', blur: '6', border: 'none' },
+        { name: 'Top / bottom blur', fill: 'paper @ 0.6 → 0', blur: '≤ 11', border: 'none' },
+        { name: 'Disabled action', fill: 'whole @ 0.35', blur: '–', border: '–' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moose pairing</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&amp;family=Inter:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#ecebe7;font-family:Inter,sans-serif;color:#000}
+a{color:inherit;text-decoration:none}a:hover{text-decoration:underline;text-underline-offset:3px}
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.lbl{font:500 12px Inter;color:#000}
+.ph{width:390px;height:844px;border-radius:44px;overflow:hidden;position:relative;background:var(--wall);color:var(--ink);font-family:Inter,sans-serif;flex-shrink:0;box-shadow:0 0 0 8px #000;display:flex;flex-direction:column}
+.eb{font:500 11px Inter;letter-spacing:.1em;text-transform:uppercase}
+.ttl{font:700 34px/1 Doto,monospace}
+.tb{position:absolute;left:0;right:0;top:0;height:96px;background:linear-gradient(var(--fade),transparent);backdrop-filter:blur(11px);-webkit-mask-image:linear-gradient(#000 45%,transparent);mask-image:linear-gradient(#000 45%,transparent);z-index:3;pointer-events:none}
+.b1{background:var(--ink);color:var(--paper);border:0;border-radius:999px;padding:16px;font:600 16px Inter;width:100%;text-align:center;box-sizing:border-box;display:block}
+.b2{background:transparent;color:var(--ink);border:1px solid var(--ink);border-radius:999px;padding:15px;font:500 15px Inter;width:100%;text-align:center;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px}
+.b3{background:transparent;color:var(--ink);border:1px dashed var(--ink);border-radius:999px;padding:15px;font:500 15px Inter;width:100%;text-align:center;box-sizing:border-box;display:block}
+.icb{width:44px;height:44px;border-radius:50%;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;background:transparent;color:var(--ink);padding:0;flex-shrink:0}
+.card{border:1px solid var(--ink);border-radius:20px}
+.glass{background:var(--card);backdrop-filter:blur(16px)}
+.sub{font:300 12px/1.4 Inter}
+.body{position:relative;z-index:1;flex:1;display:flex;flex-direction:column}
+.code{flex:1;height:56px;border-radius:14px;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;font:900 28px Doto,monospace}
+.sc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 6px;font:700 17px Doto,monospace;text-align:center}
+</style>
+</helmet>
+<div style="width: 2620px; height: 1960px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 48px; background: #ecebe7">
+<sc-for list="{{ modes }}" as="m" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 14px; {{ m.vars }}">
+<div style="font: 600 14px Inter; color: #000">{{ m.label }}</div>
+<div style="display: flex; gap: 40px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C5 · Create pair</div>
+    <div class="ph">
+      <div class="tb"></div>
+      <div class="body" style="padding: 56px 20px 0; gap: 8px">
+        <a href="#" style="font: 400 14px Inter; margin-bottom: 12px">‹ Back</a>
+        <div class="eb">Step 3 of 3</div>
+        <div class="ttl">Pair with your person</div>
+        <div class="sub" style="font-size: 14px">Show them this code, or send it. It works once.</div>
+        <div style="font: 900 52px/1 Doto, monospace; letter-spacing: .06em; text-align: center; margin-top: 18px">K7Q2MX</div>
+        <div class="card" style="align-self: center; padding: 14px; margin-top: 10px; background: #fff">
+          <div style="display: grid; grid-template-columns: repeat(21, 7px); gap: 0">
+            <sc-for list="{{ qr }}" as="c" hint-placeholder-count="441"><span style="width: 7px; height: 7px; background: {{ c.f }}"></span></sc-for>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 12px">
+          <button class="b2" style="padding: 11px; font-size: 14px"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.share }}"></path></svg>Share</button>
+          <button class="b2" style="padding: 11px; font-size: 14px"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.copy }}"></path></svg>Copy</button>
+        </div>
+      </div>
+      <div class="body" style="flex: 0; padding: 0 24px 40px; gap: 6px; align-items: center; text-align: center">
+        <div style="display: flex; align-items: center; gap: 10px; font: 500 14px Inter"><span style="font: 900 18px Doto, monospace; letter-spacing: .15em">· · ·</span>Waiting for your person</div>
+        <div class="sub">Expires in <span style="font: 700 13px Doto, monospace">09:42</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C6 · Enter code (error state)</div>
+    <div class="ph">
+      <div class="tb"></div>
+      <div class="body" style="padding: 56px 20px 0; gap: 8px">
+        <a href="#" style="font: 400 14px Inter; margin-bottom: 12px">‹ Back</a>
+        <div class="eb">Step 3 of 3</div>
+        <div class="ttl">Enter their code</div>
+        <div class="sub" style="font-size: 14px">Six letters and numbers, from their Moose.</div>
+        <div style="display: flex; gap: 8px; margin-top: 24px">
+          <span class="code">K</span><span class="code">7</span><span class="code">Q</span><span class="code">2</span><span class="code">M</span><span class="code" style="border-width: 2px">X</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font: 500 13px Inter; margin-top: 6px"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.warning }}"></path></svg>That code has expired. Ask for a new one.</div>
+        <button class="b2" style="margin-top: 24px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.qr }}"></path></svg>Scan their QR instead</button>
+      </div>
+      <div class="body" style="flex: 0; padding: 0 24px 40px">
+        <a class="b1" href="#">Join</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C7 · QR scanner</div>
+    <div class="ph" style="background: radial-gradient(70% 50% at 50% 45%, #3A2416 0%, transparent 100%), #050505; color: #fff">
+      <div class="body" style="padding: 56px 20px 0">
+        <button class="icb" style="border-color: #fff; color: #fff" aria-label="Close"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.close }}"></path></svg></button>
+      </div>
+      <div style="position: absolute; left: 75px; top: 262px; width: 240px; height: 240px; z-index: 2">
+        <span style="position: absolute; left: 0; top: 0; width: 44px; height: 44px; border-left: 3px solid #fff; border-top: 3px solid #fff; border-radius: 20px 0 0 0"></span>
+        <span style="position: absolute; right: 0; top: 0; width: 44px; height: 44px; border-right: 3px solid #fff; border-top: 3px solid #fff; border-radius: 0 20px 0 0"></span>
+        <span style="position: absolute; left: 0; bottom: 0; width: 44px; height: 44px; border-left: 3px solid #fff; border-bottom: 3px solid #fff; border-radius: 0 0 0 20px"></span>
+        <span style="position: absolute; right: 0; bottom: 0; width: 44px; height: 44px; border-right: 3px solid #fff; border-bottom: 3px solid #fff; border-radius: 0 0 20px 0"></span>
+      </div>
+      <div class="body" style="flex: 0; padding: 0 24px 64px; align-items: center; text-align: center; gap: 6px">
+        <div style="font: 500 15px Inter">Point at the code on their phone</div>
+        <div class="sub">It joins as soon as it reads it.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C8 · Paired!</div>
+    <div class="ph">
+      <div class="tb"></div>
+      <div class="body" style="padding: 96px 20px 0; gap: 10px; align-items: center; text-align: center">
+        <div style="display: flex; align-items: center; gap: 0">
+          <span style="width: 72px; height: 72px; border-radius: 36px; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; font: 900 34px Doto, monospace">S</span>
+          <span style="width: 34px; border-top: 1px dashed var(--ink)"></span>
+          <svg class="ic" viewBox="0 0 24 24" style="width: 28px; height: 28px" aria-hidden="true"><path d="{{ i.heart }}"></path></svg>
+          <span style="width: 34px; border-top: 1px dashed var(--ink)"></span>
+          <span style="width: 72px; height: 72px; border-radius: 36px; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; font: 900 34px Doto, monospace">A</span>
+        </div>
+        <div style="font: 900 44px/1 Doto, monospace; margin-top: 18px">Sapan &amp; Aatika</div>
+        <div class="sub" style="font-size: 14px; max-width: 290px">Paired. Everything you send is locked for just the two of you.</div>
+        <div class="card glass" style="width: 100%; padding: 18px 16px; box-sizing: border-box; margin-top: 18px; display: flex; flex-direction: column; gap: 12px">
+          <div class="eb">Security code</div>
+          <div class="sc"><sc-for list="{{ sec }}" as="s" hint-placeholder-count="12"><span>{{ s }}</span></sc-for></div>
+          <div class="sub">Compare with Aatika's screen. If they match, nobody is in between.</div>
+        </div>
+      </div>
+      <div class="body" style="flex: 0; padding: 0 24px 40px">
+        <a class="b1" href="#">Start chatting</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C9 · Re-pair request (on Sapan's phone)</div>
+    <div class="ph">
+      <div class="tb"></div>
+      <div class="body" style="padding: 96px 20px 0; gap: 10px">
+        <div class="eb">New phone</div>
+        <div class="ttl">Aatika has a new phone</div>
+        <div class="sub" style="font-size: 14px">Her old one is gone, so Moose made her a new key. Only approve if you're sure it's Aatika. A quick call is the easiest way to check.</div>
+        <div class="card glass" style="padding: 18px 16px; margin-top: 14px; display: flex; flex-direction: column; gap: 12px">
+          <div class="eb">New security code</div>
+          <div class="sc"><sc-for list="{{ sec2 }}" as="s" hint-placeholder-count="12"><span>{{ s }}</span></sc-for></div>
+          <div class="sub">Ask Aatika to read hers out. Every group should match.</div>
+        </div>
+        <div class="sub" style="padding: 4px">Your history stays here. Aatika's new phone starts empty.</div>
+      </div>
+      <div class="body" style="flex: 0; padding: 0 24px 40px; gap: 12px">
+        <a class="b1" href="#">It's Aatika, approve</a>
+        <a class="b3" href="#">Not them</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C10 · Re-pair waiting (Aatika's new phone)</div>
+    <div class="ph">
+      <div class="tb"></div>
+      <div class="body" style="padding: 96px 20px 0; gap: 10px">
+        <div class="eb">Welcome back</div>
+        <div class="ttl">Ask Sapan to approve</div>
+        <div class="sub" style="font-size: 14px">We've sent a request to Sapan's phone. It reaches him within about 6 minutes, or straight away if Moose is open.</div>
+        <div style="display: flex; align-items: center; gap: 10px; font: 500 14px Inter; margin-top: 14px"><span style="font: 900 18px Doto, monospace; letter-spacing: .15em">· · ·</span>Waiting for Sapan</div>
+        <div class="card glass" style="padding: 18px 16px; margin-top: 14px; display: flex; flex-direction: column; gap: 12px">
+          <div class="eb">Your security code</div>
+          <div class="sc"><sc-for list="{{ sec2 }}" as="s" hint-placeholder-count="12"><span>{{ s }}</span></sc-for></div>
+        </div>
+      </div>
+      <div class="body" style="flex: 0; padding: 0 24px 40px">
+        <a class="b3" href="#">Cancel</a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"darkWallpaper":{"editor":"enum","options":["night","dune","moss","fog","ember","black"],"default":"night"},"lightWallpaper":{"editor":"enum","options":["paper","white"],"default":"paper"},"$preview":{"width":2620,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WP = {
+      night: [false, '#06070A', [['#24344F', 15, 10, 60], ['#3D2536', 95, 55, 50], ['#15322F', 30, 105, 60]]],
+      dune: [false, '#120B07', [['#6B3B1F', 80, 20, 65], ['#3A2416', 10, 90, 55]]],
+      paper: [true, '#EFE9E0', [['#F3E6D2', 85, 7, 60], ['#DCD0C0', 0, 60, 55], ['#CDBFA9', 70, 105, 55]]],
+      moss: [false, '#060A07', [['#1F3A26', 20, 90, 60], ['#2C3B2F', 90, 10, 50]]],
+      fog: [false, '#1A1D22', [['#5B6470', 50, 30, 65]]],
+      ember: [false, '#0B0505', [['#5A1A1A', 30, 80, 55]]],
+      black: [false, '#000000', []],
+      white: [true, '#FFFFFF', []]
+    };
+    const v = (k) => {
+      const wall = WP[k][2].map((b) => 'radial-gradient(' + b[3] + '% ' + Math.round(b[3] * 0.75) + '% at ' + b[1] + '% ' + b[2] + '%, ' + b[0] + ' 0%, transparent 100%)').concat([WP[k][1]]).join(', ');
+      return (WP[k][0]
+        ? '--ink:#000000;--paper:#FFFFFF;--bar:rgba(0,0,0,.06);--card:rgba(0,0,0,.05);--sheet:rgba(255,255,255,.60);--scrim:rgba(255,255,255,.40);--veil:rgba(255,255,255,.60);--fade:rgba(255,255,255,.6);'
+        : '--ink:#FFFFFF;--paper:#000000;--bar:rgba(255,255,255,.10);--card:rgba(255,255,255,.08);--sheet:rgba(0,0,0,.55);--scrim:rgba(0,0,0,.40);--veil:rgba(0,0,0,.60);--fade:rgba(0,0,0,.6);') + '--wall:' + wall + ';';
+    };
+    const dk = WP[this.props.darkWallpaper] && !WP[this.props.darkWallpaper][0] ? this.props.darkWallpaper : 'night';
+    const lk = WP[this.props.lightWallpaper] && WP[this.props.lightWallpaper][0] ? this.props.lightWallpaper : 'paper';
+    const modes = [{ label: 'Dark ink · ' + dk + ' wallpaper', vars: v(dk) }, { label: 'Light ink · ' + lk + ' wallpaper', vars: v(lk) }];
+    const qr = [];
+    const finder = (x, y) => {
+      for (const [ox, oy] of [[0, 0], [14, 0], [0, 14]]) {
+        const dx = x - ox, dy = y - oy;
+        if (dx >= 0 && dx < 7 && dy >= 0 && dy < 7) {
+          return dx === 0 || dx === 6 || dy === 0 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4);
+        }
+      }
+      return null;
+    };
+    for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) {
+      const f = finder(x, y);
+      const on = f === null ? ((x * 7 + y * 13 + x * y * 3) % 5 < 2) : f;
+      qr.push({ f: on ? '#000' : '#fff' });
+    }
+    return {
+      modes, qr,
+      sec: ['41073', '93225', '68120', '57734', '20918', '33461', '87102', '46659', '12890', '75341', '09826', '61470'],
+      sec2: ['88214', '30957', '14402', '69183', '27560', '51348', '93017', '40625', '78891', '05233', '64719', '22806'],
+      i: {
+        share: 'M12 15V3 M7 8l5-5l5 5 M5 13v7h14v-7', copy: 'M9 9h11v11H9z M5 15H4V4h11v1',
+        warning: 'M12 3l10 18H2z M12 10v5 M12 18h.01', qr: 'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h2v2h-2z M18 18h2v2h-2z M14 18h2 M18 14h2',
+        close: 'M6 6l12 12 M18 6L6 18', heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z'
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

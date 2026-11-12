@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moose settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&amp;family=Inter:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#ecebe7;font-family:Inter,sans-serif;color:#000}
+a{color:inherit;text-decoration:none}
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.ch{width:18px;height:18px}
+.lbl{font:500 12px Inter;color:#000}
+.eb{font:500 11px Inter;letter-spacing:.1em;text-transform:uppercase;padding:0 4px}
+.ttl{font:700 34px/1 Doto,monospace}
+.ph{width:390px;height:844px;border-radius:44px;overflow:hidden;position:relative;background:var(--wall);color:var(--ink);font-family:Inter,sans-serif;flex-shrink:0;box-shadow:0 0 0 8px #000}
+.veil{position:absolute;inset:0;background:var(--veil);backdrop-filter:blur(30px)}
+.tb{position:absolute;left:0;right:0;top:0;height:100px;background:linear-gradient(var(--fade),transparent);backdrop-filter:blur(11px);-webkit-mask-image:linear-gradient(#000 50%,transparent);mask-image:linear-gradient(#000 50%,transparent);z-index:3;pointer-events:none}
+.bb{position:absolute;left:0;right:0;bottom:0;height:150px;background:linear-gradient(transparent,var(--fade));backdrop-filter:blur(11px);-webkit-mask-image:linear-gradient(transparent,#000 50%);mask-image:linear-gradient(transparent,#000 50%);z-index:3;pointer-events:none}
+.page{position:relative;z-index:1;padding:56px 16px 0;display:flex;flex-direction:column;gap:10px}
+.sub{font:300 12px/1.4 Inter}
+.card{border:1px solid var(--ink);border-radius:20px}
+.row{display:flex;align-items:center;gap:12px;padding:13px 14px;font:500 15px Inter}
+.dv{border-top:1px solid var(--ink)}
+.val{font:400 14px Inter}
+.sw{width:46px;height:28px;border-radius:14px;box-sizing:border-box;position:relative;flex-shrink:0}
+.on{background:var(--ink)}
+.on::after{content:"";position:absolute;right:3px;top:3px;width:22px;height:22px;border-radius:11px;background:var(--paper)}
+.off{border:1px solid var(--ink)}
+.off::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:10px;border:1px solid var(--ink);box-sizing:border-box}
+.b1{background:var(--ink);color:var(--paper);border:0;border-radius:999px;padding:15px;font:600 15px Inter;width:100%;text-align:center;box-sizing:border-box;display:block}
+.b2{background:transparent;color:var(--ink);border:1px solid var(--ink);border-radius:999px;padding:14px;font:500 15px Inter;width:100%;text-align:center;box-sizing:border-box;display:block}
+.b3{background:transparent;color:var(--ink);border:1px dashed var(--ink);border-radius:999px;padding:14px;font:500 15px Inter;width:100%;text-align:center;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px}
+.pill{position:absolute;left:12px;right:12px;bottom:22px;height:62px;border-radius:31px;background:var(--bar);backdrop-filter:blur(18px);border:1px solid var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 7px;box-sizing:border-box;z-index:4}
+.act{display:flex;align-items:center;gap:6px;background:var(--ink);color:var(--paper);border-radius:24px;padding:12px 18px;font:600 12px Inter}
+.chip{padding:6px 12px;border-radius:999px;border:1px solid var(--ink);font:500 12px Inter}
+.sc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 6px;font:700 15px Doto,monospace;text-align:center}
+</style>
+</helmet>
+<div style="width: 3480px; height: 1960px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 48px; background: #ecebe7">
+<sc-for list="{{ modes }}" as="m" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 14px; {{ m.vars }}">
+<div style="font: 600 14px Inter; color: #000">{{ m.label }}</div>
+<div style="display: flex; gap: 40px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C36 · Settings (scrolls)</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div class="page" style="padding-top: 64px">
+        <div class="ttl" style="padding-left: 4px; margin-bottom: 4px">Settings</div>
+        <div class="card"><div class="row"><span style="width: 44px; height: 44px; border-radius: 22px; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; font: 900 20px Doto, monospace">S</span><span style="flex: 1">Sapan<span class="sub" style="display: block">Your name and picture</span></span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div></div>
+        <div class="eb" style="margin-top: 6px">Partner</div>
+        <div class="card"><div class="row"><span style="width: 32px; height: 32px; border-radius: 16px; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; font: 900 15px Doto, monospace">A</span><span style="flex: 1">Aatika<span class="sub" style="display: block">Paired since 14 Feb 2025</span></span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div></div>
+        <div class="eb" style="margin-top: 6px">Chat</div>
+        <div class="card">
+          <div class="row"><span style="flex: 1">Enter sends</span><span class="sw off"></span></div>
+          <div class="row dv"><span style="flex: 1">Autoplay GIFs</span><span class="sw on"></span></div>
+          <div class="row dv"><span style="flex: 1">Download media</span><span class="val">On Wi-Fi</span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div>
+        </div>
+        <div class="eb" style="margin-top: 6px">Notifications</div>
+        <div class="card">
+          <div class="row"><span style="flex: 1">Pokes and messages</span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div>
+          <div class="row dv"><span style="flex: 1">Background check<span class="sub" style="display: block">Every 6 min · last 2 min ago</span></span><span class="val">Running</span></div>
+        </div>
+        <div class="eb" style="margin-top: 6px">Privacy</div>
+        <div class="card">
+          <div class="row"><span style="flex: 1">App lock</span><span class="sw on"></span></div>
+          <div class="row dv"><span style="flex: 1">Change PIN</span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div>
+        </div>
+      </div>
+      <div class="tb"></div>
+      <div class="bb"></div>
+      <div class="pill">
+        <span style="padding: 12px 22px"><svg class="ic" viewBox="0 0 24 24" aria-label="Chat" role="img"><path d="{{ i.chat }}"></path></svg></span>
+        <span style="padding: 12px 22px"><svg class="ic" viewBox="0 0 24 24" aria-label="Doodles" role="img"><path d="{{ i.doodle }}"></path></svg></span>
+        <span class="act"><svg class="ic" viewBox="0 0 24 24" style="stroke-width: 2" aria-hidden="true"><path d="{{ i.settings }}"></path></svg>Settings</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C36 · Settings, scrolled to the end</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div class="page" style="padding-top: 70px">
+        <div class="eb">Privacy</div>
+        <div class="card">
+          <div class="row"><span style="flex: 1">App lock</span><span class="sw on"></span></div>
+          <div class="row dv"><span style="flex: 1">Change PIN</span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div>
+          <div class="row dv"><span style="flex: 1">Decoy PIN<span class="sub" style="display: block">Opens an empty chat with Neha</span></span><span class="val">Set</span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div>
+          <div class="row dv"><span style="flex: 1">Lock after</span><span style="font: 700 15px Doto, monospace">30s</span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div>
+          <div class="row dv"><span style="flex: 1">Hide in recent apps</span><span class="sw on"></span></div>
+        </div>
+        <div class="eb" style="margin-top: 6px">Storage</div>
+        <div class="card">
+          <div class="row"><span style="flex: 1">Media on this phone</span><span style="font: 700 15px Doto, monospace">1.4 GB</span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div>
+          <div class="row dv"><span style="flex: 1">Clear cache<span class="sub" style="display: block">Meme and song previews</span></span><span style="font: 700 15px Doto, monospace">86 MB</span></div>
+        </div>
+        <div class="card" style="margin-top: 10px"><div class="row"><span style="width: 44px; height: 44px; border-radius: 12px; background: {{ mark }}; color: #fff; display: flex; align-items: center; justify-content: center; font: 900 11px/0.9 Doto, monospace">MO<br>OSE</span><span style="flex: 1">Moose<span class="sub" style="display: block">Version 0.1.0 · licences, developer</span></span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div></div>
+        <div class="sub" style="text-align: center; margin-top: 10px">Your chats live on your phones. The server only holds sealed messages until they're delivered.</div>
+      </div>
+      <div class="tb"></div>
+      <div class="bb"></div>
+      <div class="pill">
+        <span style="padding: 12px 22px"><svg class="ic" viewBox="0 0 24 24" aria-label="Chat" role="img"><path d="{{ i.chat }}"></path></svg></span>
+        <span style="padding: 12px 22px"><svg class="ic" viewBox="0 0 24 24" aria-label="Doodles" role="img"><path d="{{ i.doodle }}"></path></svg></span>
+        <span class="act"><svg class="ic" viewBox="0 0 24 24" style="stroke-width: 2" aria-hidden="true"><path d="{{ i.settings }}"></path></svg>Settings</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C37 · Partner</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div class="page">
+        <a href="#" style="font: 400 14px Inter; padding-left: 4px">‹ Settings</a>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 18px; text-align: center">
+          <span style="width: 96px; height: 96px; border-radius: 48px; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; font: 900 46px Doto, monospace">A</span>
+          <div style="font: 900 44px/1 Doto, monospace; margin-top: 6px">Aatika</div>
+          <div class="sub" style="font-size: 13px">Paired since 14 Feb 2025 · <span style="font: 700 13px Doto, monospace">271</span> days</div>
+        </div>
+        <div class="card" style="margin-top: 16px">
+          <div class="row"><span style="flex: 1">Last seen</span><span class="val">online</span></div>
+          <div class="row dv"><span style="flex: 1">Messages waiting<span class="sub" style="display: block">Sealed on the server for Aatika</span></span><span style="font: 700 15px Doto, monospace">0</span></div>
+        </div>
+        <div class="card" style="padding: 16px 14px; display: flex; flex-direction: column; gap: 12px; margin-top: 4px">
+          <div class="eb" style="padding: 0">Security code</div>
+          <div class="sc"><sc-for list="{{ sec }}" as="s" hint-placeholder-count="12"><span>{{ s }}</span></sc-for></div>
+          <div class="sub">Matches Aatika's screen? Then only you two can read your chat.</div>
+        </div>
+      </div>
+      <div style="position: absolute; left: 16px; right: 16px; bottom: 34px; z-index: 2"><button class="b3"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.unlink }}"></path></svg>Unpair</button></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C38 · Storage</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div class="page">
+        <a href="#" style="font: 400 14px Inter; padding-left: 4px">‹ Settings</a>
+        <div class="ttl" style="padding-left: 4px; margin-top: 6px">Storage</div>
+        <div style="padding: 10px 4px 4px; display: flex; align-items: baseline; gap: 10px"><span style="font: 900 64px/1 Doto, monospace">1.4</span><span style="font: 700 22px Doto, monospace">GB</span><span class="sub">on this phone</span></div>
+        <div class="card">
+          <sc-for list="{{ store }}" as="s" hint-placeholder-count="6">
+            <div class="row {{ s.dv }}" style="flex-direction: column; align-items: stretch; gap: 8px">
+              <div style="display: flex; align-items: center; gap: 10px"><span style="flex: 1">{{ s.n }}</span><span style="font: 700 14px Doto, monospace">{{ s.v }}</span><span class="chip">Clear</span></div>
+              <div style="height: 6px; border-radius: 3px; border: 1px solid var(--ink); overflow: hidden"><div style="height: 100%; width: {{ s.p }}; background: var(--ink)"></div></div>
+            </div>
+          </sc-for>
+        </div>
+        <div class="sub" style="padding: 4px">Clearing only removes it from this phone. Aatika keeps her copy, and can send it again if her phone is on.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C39 · Notifications</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div class="page">
+        <a href="#" style="font: 400 14px Inter; padding-left: 4px">‹ Settings</a>
+        <div class="ttl" style="padding-left: 4px; margin: 6px 0 4px">Notifications</div>
+        <div class="eb">Messages</div>
+        <div class="card">
+          <div class="row"><span style="flex: 1">Show message text<span class="sub" style="display: block">Off shows "New message from Aatika"</span></span><span class="sw off"></span></div>
+        </div>
+        <div class="eb" style="margin-top: 6px">Pokes</div>
+        <div class="card">
+          <sc-for list="{{ pokes }}" as="p" hint-placeholder-count="4">
+            <div class="row {{ p.dv }}"><span style="width: 34px; height: 34px; border-radius: 17px; background: {{ p.c }}; display: flex; align-items: center; justify-content: center; font-size: 17px">{{ p.e }}</span><span style="flex: 1">{{ p.n }}<span class="sub" style="display: block">{{ p.s }}</span></span><span class="chip" style="display: flex; align-items: center; gap: 4px"><svg class="ic" viewBox="0 0 24 24" style="width: 14px; height: 14px" aria-hidden="true"><path d="{{ i.play }}"></path></svg>Hear</span></div>
+          </sc-for>
+        </div>
+        <div class="eb" style="margin-top: 6px">Background check</div>
+        <div class="card"><div class="row"><span style="width: 10px; height: 10px; border-radius: 5px; background: var(--ink)"></span><span style="flex: 1">Running<span class="sub" style="display: block">Every 6 min · last check 2 min ago</span></span></div></div>
+        <div class="card" style="border-style: dashed"><div class="row"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.warning }}"></path></svg><span style="flex: 1">If Android stops it<span class="sub" style="display: block">Pokes would wait until you open Moose</span></span><span class="chip" style="background: var(--ink); color: var(--paper); border-color: var(--ink); font-weight: 600">Fix</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C40 · About (as Idris)</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div class="page" style="gap: 8px">
+        <a href="#" style="font: 400 14px Inter; padding-left: 4px">‹ Settings</a>
+        <div class="ttl" style="padding-left: 4px">About</div>
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 12px 10px 4px">
+          <span style="width: 132px; height: 132px; border-radius: 34px; background: {{ mark }}; color: #fff; display: flex; align-items: center; justify-content: center; font: 900 34px/0.9 Doto, monospace; border: 1px solid var(--ink)">MO<br>OSE</span>
+          <div style="font: 700 40px/1 Doto, monospace; margin-top: 18px">Moose</div>
+          <div style="font: 300 13px Inter; margin-top: 8px">Version 0.1.0</div>
+          <div class="sub" style="margin-top: 4px">A quiet, private chat for two.</div>
+        </div>
+        <div class="eb" style="margin-top: 6px">Licences</div>
+        <div class="card">
+          <sc-for list="{{ lic }}" as="l" hint-placeholder-count="5"><div class="row {{ l.dv }}"><span style="flex: 1">{{ l.n }}</span><span class="val">{{ l.v }}</span></div></sc-for>
+        </div>
+      </div>
+      <div class="bb"></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C40 · About, scrolled: developer</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div class="page" style="gap: 8px; padding-top: 70px">
+        <div class="card">
+          <sc-for list="{{ lic2 }}" as="l" hint-placeholder-count="6"><div class="row {{ l.dv }}"><span style="flex: 1">{{ l.n }}</span><span class="val">{{ l.v }}</span></div></sc-for>
+        </div>
+        <div class="eb" style="margin-top: 8px">Developer</div>
+        <div class="card">
+          <div class="row"><span style="width: 44px; height: 44px; border-radius: 22px; background: linear-gradient(135deg, #6B3B1F, #24344F); border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; font: 500 9px Inter; color: #fff">photo</span><span style="flex: 1">Sapan Gajjar<span class="sub" style="display: block">You've probably guessed who made this app</span></span></div>
+          <div class="row dv"><span style="flex: 1">GitHub</span><span class="val">isg32</span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div>
+          <div class="row dv"><span style="flex: 1">LinkedIn</span><span class="val">sapangajjar101105</span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div>
+        </div>
+        <div class="eb" style="margin-top: 8px">Help</div>
+        <div class="card"><div class="row"><span style="flex: 1">See a test crash report<span class="sub" style="display: block">What Moose shows if something goes wrong</span></span><svg class="ic ch" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.chev }}"></path></svg></div></div>
+        <div class="sub" style="padding: 4px">Your chats live on your two phones. The server only holds sealed messages until they're delivered, then wipes them. Nothing is collected.</div>
+      </div>
+      <div class="tb"></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="lbl">C41 · Unpair confirm</div>
+    <div class="ph">
+      <div class="veil"></div>
+      <div class="page">
+        <a href="#" style="font: 400 14px Inter; padding-left: 4px">‹ Settings</a>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 18px">
+          <span style="width: 96px; height: 96px; border-radius: 48px; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; font: 900 46px Doto, monospace">A</span>
+          <div style="font: 900 44px/1 Doto, monospace; margin-top: 6px">Aatika</div>
+        </div>
+      </div>
+      <div style="position: absolute; inset: 0; background: var(--scrim); backdrop-filter: blur(6px); z-index: 5"></div>
+      <div style="position: absolute; left: 18px; right: 18px; top: 250px; z-index: 6; border-radius: 28px; border: 1px solid var(--ink); background: var(--sheet); backdrop-filter: blur(14px); padding: 20px 18px 18px; display: flex; flex-direction: column; gap: 12px">
+        <div style="font: 700 26px/1.05 Doto, monospace">Unpair from Aatika?</div>
+        <div style="display: flex; flex-direction: column; gap: 6px; font: 400 13px/1.4 Inter">
+          <span>· You'll stop getting her messages, pokes and doodles.</span>
+          <span>· Anything still sealed on the server is deleted.</span>
+          <span>· Your history stays on this phone unless you tick below.</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; font: 500 14px Inter"><span style="width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--ink); box-sizing: border-box"></span>Also delete history here</div>
+        <label style="display: flex; flex-direction: column; gap: 6px"><span class="eb" style="padding: 0">Type UNPAIR to confirm</span><input value="UNPAIR" style="background: transparent; border: 1px solid var(--ink); border-radius: 16px; padding: 12px 14px; font: 700 16px Doto, monospace; color: var(--ink); outline: none"></label>
+        <div style="display: flex; gap: 10px"><button class="b2">Keep</button><button class="b1">Unpair</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"darkWallpaper":{"editor":"enum","options":["night","dune","moss","fog","ember","black"],"default":"night"},"lightWallpaper":{"editor":"enum","options":["paper","white"],"default":"paper"},"$preview":{"width":3480,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WP = {
+      night: [false, '#06070A', [['#24344F', 15, 10, 60], ['#3D2536', 95, 55, 50], ['#15322F', 30, 105, 60]]],
+      dune: [false, '#120B07', [['#6B3B1F', 80, 20, 65], ['#3A2416', 10, 90, 55]]],
+      paper: [true, '#EFE9E0', [['#F3E6D2', 85, 7, 60], ['#DCD0C0', 0, 60, 55], ['#CDBFA9', 70, 105, 55]]],
+      moss: [false, '#060A07', [['#1F3A26', 20, 90, 60], ['#2C3B2F', 90, 10, 50]]],
+      fog: [false, '#1A1D22', [['#5B6470', 50, 30, 65]]],
+      ember: [false, '#0B0505', [['#5A1A1A', 30, 80, 55]]],
+      black: [false, '#000000', []],
+      white: [true, '#FFFFFF', []]
+    };
+    const v = (k) => {
+      const wall = WP[k][2].map((b) => 'radial-gradient(' + b[3] + '% ' + Math.round(b[3] * 0.75) + '% at ' + b[1] + '% ' + b[2] + '%, ' + b[0] + ' 0%, transparent 100%)').concat([WP[k][1]]).join(', ');
+      return (WP[k][0]
+        ? '--ink:#000000;--paper:#FFFFFF;--bar:rgba(0,0,0,.06);--card:rgba(0,0,0,.05);--sheet:rgba(255,255,255,.60);--scrim:rgba(255,255,255,.40);--veil:rgba(255,255,255,.60);--fade:rgba(255,255,255,.6);'
+        : '--ink:#FFFFFF;--paper:#000000;--bar:rgba(255,255,255,.10);--card:rgba(255,255,255,.08);--sheet:rgba(0,0,0,.55);--scrim:rgba(0,0,0,.40);--veil:rgba(0,0,0,.60);--fade:rgba(0,0,0,.6);') + '--wall:' + wall + ';';
+    };
+    const dk = WP[this.props.darkWallpaper] && !WP[this.props.darkWallpaper][0] ? this.props.darkWallpaper : 'night';
+    const lk = WP[this.props.lightWallpaper] && WP[this.props.lightWallpaper][0] ? this.props.lightWallpaper : 'paper';
+    const modes = [{ label: 'Dark ink · ' + dk + ' wallpaper', vars: v(dk) }, { label: 'Light ink · ' + lk + ' wallpaper', vars: v(lk) }];
+    const LIC = [['Doto', 'OFL'], ['Inter', 'OFL'], ['NewPipe Extractor', 'GPL-3.0'], ['youtube_explode_dart', 'BSD-3'], ['OkHttp', 'Apache 2.0'], ['flutter_webrtc', 'MIT'], ['cryptography', 'Apache 2.0'], ['drift', 'MIT'], ['just_audio', 'MIT'], ['camera', 'BSD-3']];
+    const lic = LIC.slice(0, 5).map(([n, v], x) => ({ n, v, dv: x ? 'dv' : '' }));
+    const lic2 = LIC.slice(5).map(([n, v], x) => ({ n, v, dv: x ? 'dv' : '' }));
+    return {
+      modes, lic, lic2,
+      mark: 'radial-gradient(60% 45% at 15% 10%, #24344F 0%, transparent 100%), radial-gradient(50% 38% at 95% 55%, #3D2536 0%, transparent 100%), #06070A',
+      sec: ['41073', '93225', '68120', '57734', '20918', '33461', '87102', '46659', '12890', '75341', '09826', '61470'],
+      store: [
+        { n: 'Photos', v: '820 MB', p: '58%', dv: '' }, { n: 'Videos', v: '410 MB', p: '29%', dv: 'dv' },
+        { n: 'Round videos', v: '96 MB', p: '7%', dv: 'dv' }, { n: 'Voice notes', v: '48 MB', p: '4%', dv: 'dv' },
+        { n: 'Doodles', v: '12 MB', p: '1%', dv: 'dv' }, { n: 'Wallpapers', v: '9 MB', p: '1%', dv: 'dv' }
+      ],
+      pokes: [
+        { n: 'Poke', e: '👉', c: '#FFC15E', s: 'Two taps · Knock', dv: '' },
+        { n: 'Hug', e: '🫂', c: '#FF8FA3', s: 'Long swell · Warm hum', dv: 'dv' },
+        { n: 'Kiss', e: '💋', c: '#FF5C7A', s: 'Short, short, flutter · Smooch', dv: 'dv' },
+        { n: 'Miss you', e: '🥺', c: '#9DB2FF', s: 'Heartbeat · Soft chime', dv: 'dv' }
+      ],
+      i: {
+        chev: 'M9 6l6 6l-6 6', chat: 'M4 5h16v11H9l-5 4z', doodle: 'M14.5 4.5l5 5L9 20H4v-5z M12.5 6.5l5 5',
+        settings: 'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M4.9 19.1L7 17 M17 7l2.1-2.1',
+        unlink: 'M9 15l-2 2a3 3 0 0 1-4-4l3-3a3 3 0 0 1 4 0 M15 9l2-2a3 3 0 0 1 4 4l-3 3a3 3 0 0 1-4 0 M4 4l16 16',
+        play: 'M8 5l11 7l-11 7z', warning: 'M12 3l10 18H2z M12 10v5 M12 18h.01'
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

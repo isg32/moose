@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moose shared components</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;700;900&amp;family=Inter:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#ecebe7;font-family:Inter,sans-serif;color:#000}
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.eb{font:500 11px Inter;letter-spacing:.1em;text-transform:uppercase}
+.sec{display:flex;flex-direction:column;gap:12px}
+.b1{background:var(--ink);color:var(--paper);border:0;border-radius:999px;padding:16px;font:600 16px Inter;width:100%;text-align:center;box-sizing:border-box}
+.b2{background:transparent;color:var(--ink);border:1px solid var(--ink);border-radius:999px;padding:15px;font:500 15px Inter;width:100%;text-align:center;box-sizing:border-box}
+.b3{background:transparent;color:var(--ink);border:1px dashed var(--ink);border-radius:999px;padding:15px;font:500 15px Inter;width:100%;text-align:center;box-sizing:border-box}
+.icb{width:44px;height:44px;border-radius:50%;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;background:transparent;color:var(--ink);padding:0;flex-shrink:0}
+.card{border:1px solid var(--ink);border-radius:20px}
+.glass{background:var(--card);backdrop-filter:blur(16px)}
+.row{display:flex;align-items:center;gap:12px;padding:14px}
+.dv{border-top:1px solid var(--ink)}
+.sub{font:300 12px/1.4 Inter}
+.sw{width:46px;height:28px;border-radius:14px;box-sizing:border-box;position:relative;flex-shrink:0}
+.key{height:60px;border-radius:30px;border:1px solid var(--ink);display:flex;align-items:center;justify-content:center;font:700 26px Doto,monospace;background:transparent;color:var(--ink)}
+</style>
+</helmet>
+<div style="width: 2620px; height: 1900px; box-sizing: border-box; padding: 40px; display: flex; gap: 40px; background: #ecebe7">
+<sc-for list="{{ panels }}" as="k" hint-placeholder-count="2">
+<div style="flex: 1; border-radius: 36px; overflow: hidden; position: relative; background: {{ k.wall }}; color: var(--ink); padding: 32px; box-sizing: border-box; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; align-content: start; {{ k.vars }}">
+
+  <!-- Column 1: type, glass, pill, buttons -->
+  <div style="display: flex; flex-direction: column; gap: 28px">
+    <div class="sec">
+      <div style="font: 700 34px/1 Doto, monospace">{{ k.name }}</div>
+      <div class="sub">{{ k.note }}</div>
+    </div>
+
+    <div class="sec">
+      <div class="eb">A10 · Tab pill</div>
+      <div style="height: 62px; border-radius: 31px; background: var(--bar); backdrop-filter: blur(18px); border: 1px solid var(--ink); display: flex; align-items: center; justify-content: space-between; padding: 0 7px; box-sizing: border-box">
+        <span style="display: flex; align-items: center; gap: 6px; background: var(--ink); color: var(--paper); border-radius: 24px; padding: 12px 18px; font: 600 12px Inter"><svg class="ic" viewBox="0 0 24 24" style="stroke-width: 2" aria-hidden="true"><path d="{{ i.chat }}"></path></svg>Chat<span style="min-width: 18px; height: 18px; border-radius: 9px; border: 1px solid var(--paper); font: 600 10px/16px Inter; text-align: center; box-sizing: border-box">3</span></span>
+        <span style="padding: 12px 22px"><svg class="ic" viewBox="0 0 24 24" aria-label="Doodles" role="img"><path d="{{ i.doodle }}"></path></svg></span>
+        <span style="padding: 12px 22px"><svg class="ic" viewBox="0 0 24 24" aria-label="Settings" role="img"><path d="{{ i.settings }}"></path></svg></span>
+      </div>
+      <div style="height: 62px; border-radius: 31px; background: var(--bar); backdrop-filter: blur(18px); border: 1px solid var(--ink); display: flex; align-items: center; justify-content: space-between; padding: 0 7px; box-sizing: border-box">
+        <span style="padding: 12px 22px; position: relative"><svg class="ic" viewBox="0 0 24 24" aria-label="Chat" role="img"><path d="{{ i.chat }}"></path></svg><span style="position: absolute; top: 8px; right: 16px; width: 8px; height: 8px; border-radius: 4px; background: var(--ink)"></span></span>
+        <span style="display: flex; align-items: center; gap: 6px; background: var(--ink); color: var(--paper); border-radius: 24px; padding: 12px 18px; font: 600 12px Inter"><svg class="ic" viewBox="0 0 24 24" style="stroke-width: 2" aria-hidden="true"><path d="{{ i.doodle }}"></path></svg>Doodles</span>
+        <span style="padding: 12px 22px"><svg class="ic" viewBox="0 0 24 24" aria-label="Settings" role="img"><path d="{{ i.settings }}"></path></svg></span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="eb">A2 · Glass surfaces</div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <div class="card glass" style="padding: 16px; height: 84px; box-sizing: border-box"><div style="font: 500 15px Inter">Glass card</div><div class="sub">card @ blur 16, 1 px ink</div></div>
+        <div style="border-radius: 28px; border: 1px solid var(--ink); background: var(--card); backdrop-filter: blur(16px); padding: 16px; height: 84px; box-sizing: border-box"><div style="font: 500 15px Inter">Overlay card</div><div class="sub">radius 28, centred</div></div>
+        <div style="border-radius: 28px 28px 0 0; border-top: 1px solid var(--ink); background: var(--sheet); backdrop-filter: blur(14px); padding: 10px 16px 16px; height: 84px; box-sizing: border-box"><div style="width: 36px; height: 4px; border-radius: 2px; background: var(--ink); margin: 0 auto 10px"></div><div style="font: 500 15px Inter">Bottom sheet</div></div>
+        <div style="border-radius: 20px; background: var(--scrim); backdrop-filter: blur(6px); padding: 16px; height: 84px; box-sizing: border-box"><div style="font: 500 15px Inter">Scrim</div><div class="sub">behind dialogs</div></div>
+        <div style="border-radius: 20px; background: var(--veil); backdrop-filter: blur(30px); padding: 16px; height: 84px; box-sizing: border-box"><div style="font: 500 15px Inter">Page veil</div><div class="sub">settings, full pages</div></div>
+        <div style="border-radius: 20px; height: 84px; position: relative; overflow: hidden; border: 1px solid var(--ink)"><div style="position: absolute; left: 0; right: 0; top: 0; height: 60px; background: linear-gradient(var(--fade), transparent); backdrop-filter: blur(11px); -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent)"></div><div style="position: absolute; left: 16px; bottom: 12px; font: 500 15px Inter">Progressive blur</div></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="eb">A3 · Buttons</div>
+      <button class="b1">Start chatting</button>
+      <button class="b1" style="opacity: .35">Join</button>
+      <button class="b2">I have a code</button>
+      <button class="b3">Skip for now</button>
+      <button class="b3" style="display: flex; align-items: center; justify-content: center; gap: 8px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.plus }}"></path></svg>New doodle</button>
+      <button class="b3" style="display: flex; align-items: center; justify-content: center; gap: 8px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.delete }}"></path></svg>Unpair</button>
+      <div style="display: flex; align-items: center; gap: 14px">
+        <button class="icb" aria-label="Back"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.back }}"></path></svg></button>
+        <button class="icb" aria-label="Poke"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.poke }}"></path></svg></button>
+        <button class="icb" style="background: var(--ink); color: var(--paper); border: 0" aria-label="Send"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.send }}"></path></svg></button>
+        <button style="width: 64px; height: 64px; border-radius: 50%; background: var(--ink); color: var(--paper); border: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 8px var(--card), 0 0 0 9px var(--ink)" aria-label="Hold to record"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.mic }}"></path></svg></button>
+        <span class="sub">Hold to record:<br>ring grows while held</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Column 2: controls, lists -->
+  <div style="display: flex; flex-direction: column; gap: 28px">
+    <div class="sec">
+      <div class="eb">A4 · Controls</div>
+      <div style="display: flex; align-items: center; gap: 16px">
+        <span class="sw" style="background: var(--ink)"><span style="position: absolute; right: 3px; top: 3px; width: 22px; height: 22px; border-radius: 11px; background: var(--paper)"></span></span>
+        <span class="sw" style="border: 1px solid var(--ink)"><span style="position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; border: 1px solid var(--ink); box-sizing: border-box"></span></span>
+        <span style="display: flex; align-items: center; gap: 10px"><span style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; font: 400 18px Inter">−</span><span style="font: 700 22px Doto, monospace">5</span><span style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; font: 400 18px Inter">+</span></span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; justify-content: space-between; font: 500 13px Inter"><span>Dim</span><span style="font: 700 14px Doto, monospace">40%</span></div>
+        <div style="height: 28px; position: relative"><div style="position: absolute; left: 0; right: 0; top: 13px; height: 2px; background: var(--ink); opacity: 1"></div><div style="position: absolute; left: 0; width: 40%; top: 11px; height: 6px; border-radius: 3px; background: var(--ink)"></div><div style="position: absolute; left: calc(40% - 12px); top: 2px; width: 24px; height: 24px; border-radius: 12px; background: var(--ink); box-shadow: 0 0 0 3px var(--paper)"></div></div>
+      </div>
+      <div style="display: flex; border: 1px solid var(--ink); border-radius: 999px; padding: 3px">
+        <span style="flex: 1; text-align: center; padding: 9px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 13px Inter">KLIPY</span>
+        <span style="flex: 1; text-align: center; padding: 9px; font: 500 13px Inter">Reddit</span>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <span style="padding: 7px 12px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 12px Inter">Trending</span>
+        <span style="padding: 7px 12px; border-radius: 999px; border: 1px solid var(--ink); font: 500 11px Inter">GIFs</span>
+        <span style="padding: 7px 12px; border-radius: 999px; border: 1px solid var(--ink); font: 500 11px Inter">Stickers</span>
+        <span style="padding: 7px 12px; border-radius: 999px; border: 1px dashed var(--ink); font: 500 11px Inter">+ r/wholesomememes</span>
+        <span style="padding: 4px 9px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 11px Inter">Live</span>
+      </div>
+      <div class="card">
+        <div class="row"><span style="width: 22px; height: 22px; border-radius: 6px; background: var(--ink); display: flex; align-items: center; justify-content: center; color: var(--paper)"><svg class="ic" viewBox="0 0 24 24" style="width: 16px; height: 16px; stroke-width: 2.5" aria-hidden="true"><path d="{{ i.check }}"></path></svg></span><span style="font: 500 15px Inter">Autoplay GIFs</span></div>
+        <div class="row dv"><span style="width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--ink); box-sizing: border-box"></span><span style="font: 500 15px Inter">Enter sends</span></div>
+        <div class="row dv"><span style="width: 22px; height: 22px; border-radius: 11px; border: 1px solid var(--ink); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><span style="width: 12px; height: 12px; border-radius: 6px; background: var(--ink)"></span></span><span style="font: 500 15px Inter">After 30 seconds</span></div>
+        <div class="row dv"><span style="width: 22px; height: 22px; border-radius: 11px; border: 1px solid var(--ink); box-sizing: border-box"></span><span style="font: 500 15px Inter">Immediately</span></div>
+      </div>
+      <div style="display: flex; gap: 20px; align-items: center">
+        <div style="width: 120px; display: flex; flex-direction: column; align-items: center; font-family: Doto, monospace">
+          <span style="font: 500 18px Doto, monospace; opacity: 1">0:42</span>
+          <span style="font: 900 38px/1.2 Doto, monospace; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); width: 100%; text-align: center">0:47</span>
+          <span style="font: 500 18px Doto, monospace">0:52</span>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+          <div style="height: 6px; border-radius: 3px; border: 1px solid var(--ink); overflow: hidden"><div style="width: 62%; height: 100%; background: var(--ink)"></div></div>
+          <div style="display: flex; align-items: center; gap: 12px">
+            <svg viewBox="0 0 48 48" style="width: 48px; height: 48px" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="1 4"></circle><path d="M24 4a20 20 0 0 1 17.3 30" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"></path></svg>
+            <span class="sub">Ring: dotted track,<br>6 px arc from 12 o'clock</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="eb">A5 · Lists</div>
+      <div class="eb" style="padding-left: 4px">Chat</div>
+      <div class="card">
+        <div class="row"><div style="flex: 1"><div style="font: 500 15px Inter">Media auto-download</div><div class="sub">Wi-Fi and mobile</div></div><span style="font: 400 14px Inter">On Wi-Fi</span><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.chevron }}"></path></svg></div>
+        <div class="row dv"><div style="flex: 1"><div style="font: 500 15px Inter">Message previews</div><div class="sub">Show text in notifications</div></div><span class="sw" style="background: var(--ink)"><span style="position: absolute; right: 3px; top: 3px; width: 22px; height: 22px; border-radius: 11px; background: var(--paper)"></span></span></div>
+        <div class="row dv"><div style="flex: 1; font: 500 15px Inter">Lock after</div><span style="font: 700 16px Doto, monospace">30s</span><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.chevron }}"></path></svg></div>
+      </div>
+      <div class="card" style="border-style: dashed; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center">
+        <div style="font: 700 22px Doto, monospace">Nothing here yet</div>
+        <div class="sub">Start a doodle and Aatika can draw on it too.</div>
+        <button class="b2" style="width: auto; padding: 10px 18px; font-size: 14px">New doodle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Column 3: inputs, feedback, avatars -->
+  <div style="display: flex; flex-direction: column; gap: 28px">
+    <div class="sec">
+      <div class="eb">A6 · Inputs</div>
+      <div style="border: 1px solid var(--ink); border-radius: 18px; padding: 14px 16px; font: 400 15px Inter">Aatika<span style="display: inline-block; width: 1px; height: 18px; background: var(--ink); vertical-align: middle; margin-left: 1px"></span></div>
+      <div style="border: 1px solid var(--ink); border-radius: 999px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; font: 400 15px Inter"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.search }}"></path></svg><span style="flex: 1">we found love</span><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-label="Clear" role="img"><path d="{{ i.close }}"></path></svg></div>
+      <div style="display: flex; gap: 8px">
+        <sc-for list="{{ code }}" as="c" hint-placeholder-count="6">
+          <span style="flex: 1; height: 56px; border-radius: 14px; border: {{ c.border }}; display: flex; align-items: center; justify-content: center; font: 900 28px Doto, monospace">{{ c.ch }}</span>
+        </sc-for>
+      </div>
+      <div style="display: flex; justify-content: center; gap: 18px; padding: 6px 0">
+        <span style="width: 14px; height: 14px; border-radius: 7px; background: var(--ink)"></span>
+        <span style="width: 14px; height: 14px; border-radius: 7px; background: var(--ink)"></span>
+        <span style="width: 14px; height: 14px; border-radius: 7px; background: var(--ink)"></span>
+        <span style="width: 14px; height: 14px; border-radius: 7px; border: 1px solid var(--ink); box-sizing: border-box"></span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+        <sc-for list="{{ keys }}" as="n" hint-placeholder-count="12">
+          <span class="key" style="border-color: {{ n.bc }}">{{ n.k }}</span>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="eb">A7 · Feedback</div>
+      <div style="align-self: flex-start; display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 500 13px Inter"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.check }}"></path></svg>Code copied</div>
+      <div style="display: flex; align-items: center; gap: 8px; font: 500 13px Inter"><svg class="ic" viewBox="0 0 24 24" style="width: 18px; height: 18px" aria-hidden="true"><path d="{{ i.warning }}"></path></svg>That code has expired. Ask Aatika for a new one.</div>
+      <div style="display: flex; align-items: center; gap: 14px">
+        <span style="font: 900 28px Doto, monospace; letter-spacing: .1em">· · ·</span><span class="sub">Loading: three Doto dots, pulsing in turn</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px"><span style="width: 40px; height: 40px; border-radius: 20px; border: 1px dashed var(--ink)"></span><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="height: 10px; width: 70%; border-radius: 5px; border: 1px dashed var(--ink)"></span><span style="height: 10px; width: 40%; border-radius: 5px; border: 1px dashed var(--ink)"></span></div></div>
+      <div style="border-radius: 28px; border: 1px solid var(--ink); background: var(--sheet); backdrop-filter: blur(14px); padding: 20px; display: flex; flex-direction: column; gap: 10px">
+        <div style="font: 700 22px Doto, monospace">Delete this doodle?</div>
+        <div class="sub" style="font-size: 13px">It goes for both of you. This can't be undone.</div>
+        <div style="display: flex; gap: 10px"><button class="b2" style="padding: 11px; font-size: 14px">Keep</button><button class="b1" style="padding: 12px; font-size: 14px">Delete</button></div>
+      </div>
+      <div class="card glass" style="padding: 16px; display: flex; gap: 12px; align-items: flex-start">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ i.poke }}"></path></svg>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px"><div style="font: 500 15px Inter">Allow notifications</div><div class="sub">So pokes and messages can reach you.</div></div>
+        <span style="padding: 7px 12px; border-radius: 999px; border: 1px solid var(--ink); font: 500 12px Inter">Allow</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="eb">A8 · Avatars and presence</div>
+      <div style="display: flex; align-items: center; gap: 18px">
+        <span style="position: relative; width: 48px; height: 48px; border-radius: 24px; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; font: 900 22px Doto, monospace">A<span style="position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 6px; background: var(--ink); box-shadow: 0 0 0 2px var(--paper)"></span></span>
+        <span style="width: 48px; height: 48px; border-radius: 24px; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; font: 900 22px Doto, monospace">S</span>
+        <div style="display: flex; flex-direction: column; gap: 2px"><span style="font: 600 16px Inter">Aatika</span><span class="sub">online</span></div>
+        <div style="display: flex; flex-direction: column; gap: 2px"><span style="font: 600 16px Inter">Aatika</span><span class="sub">last seen 21:04</span></div>
+        <span style="display: flex; gap: 4px; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--ink)"><span style="width: 6px; height: 6px; border-radius: 3px; background: var(--ink)"></span><span style="width: 6px; height: 6px; border-radius: 3px; background: var(--ink); opacity: .35"></span><span style="width: 6px; height: 6px; border-radius: 3px; background: var(--ink); opacity: .35"></span></span>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2620,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WP = {
+      night: [false, '#06070A', [['#24344F', 15, 10, 60], ['#3D2536', 95, 55, 50], ['#15322F', 30, 105, 60]]],
+      paper: [true, '#EFE9E0', [['#F3E6D2', 85, 7, 60], ['#DCD0C0', 0, 60, 55], ['#CDBFA9', 70, 105, 55]]]
+    };
+    const css = (k) => WP[k][2].map((b) => 'radial-gradient(' + b[3] + '% ' + Math.round(b[3] * 0.75) + '% at ' + b[1] + '% ' + b[2] + '%, ' + b[0] + ' 0%, transparent 100%)').concat([WP[k][1]]).join(', ');
+    const D = '--ink:#FFFFFF;--paper:#000000;--bar:rgba(255,255,255,.10);--card:rgba(255,255,255,.08);--sheet:rgba(0,0,0,.55);--scrim:rgba(0,0,0,.40);--veil:rgba(0,0,0,.60);--fade:rgba(0,0,0,.6);';
+    const L = '--ink:#000000;--paper:#FFFFFF;--bar:rgba(0,0,0,.06);--card:rgba(0,0,0,.05);--sheet:rgba(255,255,255,.60);--scrim:rgba(255,255,255,.40);--veil:rgba(255,255,255,.60);--fade:rgba(255,255,255,.6);';
+    const i = {
+      chat: 'M4 5h16v11H9l-5 4z', doodle: 'M14.5 4.5l5 5L9 20H4v-5z M12.5 6.5l5 5',
+      settings: 'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M4.9 19.1L7 17 M17 7l2.1-2.1',
+      plus: 'M12 5v14 M5 12h14', delete: 'M5 7h14 M10 7V4h4v3 M7 7l1 13h8l1-13', back: 'M15 6l-6 6l6 6',
+      poke: 'M12 10.5a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3 M7.8 7.8a6 6 0 0 0 0 8.4 M16.2 7.8a6 6 0 0 1 0 8.4 M5 5a10 10 0 0 0 0 14 M19 5a10 10 0 0 1 0 14',
+      send: 'M4 12L20 4l-6 16l-3-7z M11 13l9-9', mic: 'M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z M6 11a6 6 0 0 0 12 0 M12 17v4',
+      check: 'M5 12l5 5l9-10', chevron: 'M9 6l6 6l-6 6', search: 'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14 M16 16l5 5',
+      close: 'M6 6l12 12 M18 6L6 18', warning: 'M12 3l10 18H2z M12 10v5 M12 18h.01'
+    };
+    const code = ['K', '7', 'Q', '2', '', ''].map((ch, n) => ({ ch, border: n === 4 ? '2px solid var(--ink)' : n > 4 ? '1px dashed var(--ink)' : '1px solid var(--ink)' }));
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'].map((k) => ({ k, bc: k === '' ? 'transparent' : 'var(--ink)' }));
+    return {
+      i, code, keys,
+      panels: [
+        { name: 'Dark ink', note: 'White ink on a dark wallpaper (night, the default).', wall: css('night'), vars: D },
+        { name: 'Light ink', note: 'Black ink on a light wallpaper (paper). Exact inverse.', wall: css('paper'), vars: L }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
