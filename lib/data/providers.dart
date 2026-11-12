@@ -411,6 +411,19 @@ final songSearchProvider = FutureProvider.autoDispose
       (ref, q) => ref.read(musicRepositoryProvider).search(q),
     );
 
+/// Whether this phone can reach the server (C44's banner). Always online
+/// in the mock.
+final onlineProvider = NotifierProvider<OnlineNotifier, bool>(
+  OnlineNotifier.new,
+);
+
+class OnlineNotifier extends Notifier<bool> {
+  @override
+  bool build() => true;
+
+  void set(bool v) => state = v;
+}
+
 // Settings and storage.
 
 final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(

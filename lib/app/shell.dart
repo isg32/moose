@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/icons/v_icons.dart';
@@ -9,6 +10,8 @@ import '../core/theme/v_text.dart';
 import '../core/theme/v_tokens.dart';
 import '../core/widgets/v_glass.dart';
 import '../core/widgets/v_ink.dart';
+import '../data/providers.dart';
+import '../features/moments/moment_burst.dart';
 
 /// The three tabs with the floating glass pill over them, and Cariño's
 /// progressive blur along the bottom edge (as Idris's shell).
@@ -129,6 +132,28 @@ class _AppShellState extends State<AppShell> {
               onTap: (i) =>
                   shell.goBranch(i, initialLocation: i == shell.currentIndex),
             ),
+          ),
+          // A hug, poke, kiss or miss-you arriving covers everything (C25).
+          Consumer(
+            builder: (context, ref, _) {
+              final moment = ref.watch(incomingMomentProvider);
+              if (moment == null) return const SizedBox.shrink();
+              final partner = ref.read(pairingProvider).partner.name;
+              void close() =>
+                  ref.read(incomingMomentProvider.notifier).dismiss();
+              return Positioned.fill(
+                child: MomentBurst(
+                  key: ValueKey(moment),
+                  moment: moment,
+                  from: partner,
+                  onClose: close,
+                  onBack: () {
+                    close();
+                    ref.read(momentCooldownProvider.notifier).send(moment);
+                  },
+                ),
+              );
+            },
           ),
         ],
       ),

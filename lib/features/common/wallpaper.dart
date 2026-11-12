@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 
 import '../../core/theme/v_colors.dart';
+import 'art.dart';
 import '../../data/chat_theme.dart';
 
 /// The image a photo wallpaper is drawn from: the blurred copy when one is
@@ -127,6 +128,26 @@ class _Shown {
         'b:${w.wallpaper.builtin}:$dim',
         null,
         () => withDim(_Palette(palette)),
+      );
+    }
+    // A photo stand-in from the mock data ('mock:<art>') until real photos
+    // arrive in Phase 4.
+    if (photo.startsWith('mock:')) {
+      final art = int.tryParse(photo.substring(5)) ?? 0;
+      final b = w.soft ? 0.0 : w.blur;
+      return _Shown(
+        'm:$photo:$b:$dim',
+        null,
+        () => withDim(
+          ImageFiltered(
+            imageFilter: ui.ImageFilter.blur(sigmaX: b * 30, sigmaY: b * 30),
+            child: ArtBox(
+              art: art,
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
       );
     }
     final blur = w.soft ? 0.0 : w.blur;

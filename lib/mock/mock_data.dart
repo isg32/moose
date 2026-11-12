@@ -14,6 +14,12 @@ abstract final class MockData {
   static DateTime today(int h, int m) =>
       DateTime(mockNow.year, mockNow.month, mockNow.day, h, m);
 
+  /// When you last read the chat: what came after is unread (C15).
+  static DateTime get lastRead => today(17, 0);
+
+  /// Photos saved as wallpapers in the theme sheet (C22).
+  static const themePhotos = ['mock:0', 'mock:2'];
+
   static const sapan = Person(id: 'me', name: 'Sapan');
   static const aatika = Person(id: 'partner', name: 'Aatika');
 

@@ -11,14 +11,19 @@ import 'router.dart';
 /// The app root: the shared theme's wallpaper, ink and glass apply
 /// everywhere.
 class MooseApp extends ConsumerStatefulWidget {
-  const MooseApp({super.key});
+  const MooseApp({super.key, this.initialRoute});
+
+  /// Where to start (tests and previews); the chat otherwise.
+  final String? initialRoute;
 
   @override
   ConsumerState<MooseApp> createState() => _MooseAppState();
 }
 
 class _MooseAppState extends ConsumerState<MooseApp> {
-  late final GoRouter _router = buildRouter();
+  late final GoRouter _router = widget.initialRoute == null
+      ? buildRouter()
+      : buildRouter(initial: widget.initialRoute!);
 
   @override
   void dispose() {
