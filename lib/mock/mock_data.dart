@@ -10,9 +10,19 @@ import '../data/models.dart';
 abstract final class MockData {
   static DateTime mockNow = DateTime.now();
 
-  /// Today at [h]:[m].
+  /// The sample conversation's last message is at 23:05. Before then it
+  /// would sit in the future, so until that time the sample "today" is
+  /// yesterday and anything new comes after it.
+  static DateTime get _day {
+    final late = DateTime(mockNow.year, mockNow.month, mockNow.day, 23, 6);
+    return mockNow.isBefore(late)
+        ? mockNow.subtract(const Duration(days: 1))
+        : mockNow;
+  }
+
+  /// The sample day at [h]:[m].
   static DateTime today(int h, int m) =>
-      DateTime(mockNow.year, mockNow.month, mockNow.day, h, m);
+      DateTime(_day.year, _day.month, _day.day, h, m);
 
   /// When you last read the chat: what came after is unread (C15).
   static DateTime get lastRead => today(17, 0);
@@ -455,7 +465,7 @@ abstract final class MockData {
       reply: reply,
       reactions: r,
     );
-    final yesterday = mockNow.subtract(const Duration(days: 1));
+    final yesterday = _day.subtract(const Duration(days: 1));
     DateTime y(int h, int m) =>
         DateTime(yesterday.year, yesterday.month, yesterday.day, h, m);
     return [
