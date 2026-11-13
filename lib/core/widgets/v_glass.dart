@@ -1,8 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../icons/v_icons.dart';
@@ -11,14 +9,13 @@ import '../theme/v_palette.dart';
 import '../theme/v_text.dart';
 import '../theme/v_tokens.dart';
 import 'v_ink.dart';
-import 'v_page.dart' show VVeilBackdrop;
 import 'v_surface.dart';
 
 /// A panel over the wallpaper: sheets, cards, the composer, chips.
 ///
 /// No blur: it is see-through (a semi-transparent paper) or solid, as the
 /// person picks in Settings ([VPanels]). Only the tab pill is [frosted]:
-/// the soft wallpaper behind it, with the tint over it.
+/// it blurs what is behind it, with the tint over it.
 class VGlass extends StatelessWidget {
   const VGlass({
     super.key,
@@ -38,14 +35,14 @@ class VGlass extends StatelessWidget {
   /// see-through it is, or any other colour, used as it is.
   final Color? tint;
 
-  /// Unused since panels stopped blurring; kept so callers still read.
+  /// How strong a [frosted] blur is; defaults to the layout's glass.
   final double? blur;
   final bool border;
 
   /// Overrides [radius] for shapes like a sheet with only top corners.
   final BorderRadius? borderRadius;
 
-  /// The soft wallpaper behind it (the tab pill).
+  /// A live blur behind it (the tab pill only).
   final bool frosted;
 
   /// The fill for [tint] in the current panel style.
@@ -78,15 +75,16 @@ class VGlass extends StatelessWidget {
     // Clipped to its shape either way, so what's inside (a sheet's top
     // border) follows the round corners.
     if (!frosted) return ClipRRect(borderRadius: shape, child: box);
+    // The tab pill: frosted glass, a live blur of what is behind it. It sits
+    // in the shell, never inside a fade, so it draws the same every frame.
     return ClipRRect(
       borderRadius: shape,
-      child: Stack(
-        children: [
-          // The soft wallpaper where it sits, not a live blur: it looks
-          // frosted and never pops in or out as pages and tabs move.
-          const Positioned.fill(child: VSoftBehind()),
-          box,
-        ],
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: blur ?? VPalette.of(context).blur,
+          sigmaY: blur ?? VPalette.of(context).blur,
+        ),
+        child: box,
       ),
     );
   }
@@ -745,116 +743,6 @@ class _VEdgeBlurState extends State<VEdgeBlur> {
       ),
     );
   }
-}
-
-/// The soft (blurred-looking) wallpaper, lined up with the screen, painted
-/// in whatever box this fills: frosted glass without a live blur. Empty
-/// where there is no [VVeilBackdrop] (tests).
-class VSoftBehind extends StatelessWidget {
-  const VSoftBehind({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final soft = VVeilBackdrop.of(context);
-    if (soft == null) return const SizedBox.expand();
-    return _ScreenAligned(screen: MediaQuery.sizeOf(context), child: soft);
-  }
-}
-
-/// Lays [child] out at the screen's size and paints it where the screen
-/// is, clipped to this box.
-class _ScreenAligned extends SingleChildRenderObjectWidget {
-  const _ScreenAligned({required this.screen, required super.child});
-
-  final Size screen;
-
-  @override
-  _RenderScreenAligned createRenderObject(BuildContext context) =>
-      _RenderScreenAligned(screen);
-
-  @override
-  void updateRenderObject(BuildContext context, _RenderScreenAligned r) =>
-      r.screen = screen;
-}
-
-class _RenderScreenAligned extends RenderProxyBox {
-  _RenderScreenAligned(this._screen);
-
-  /// Every one on screen. A panel can move without repainting (a route
-  /// slides a cached picture of it), so after each frame each checks it is
-  /// still where it was painted, and repaints if not.
-  static final _live = <_RenderScreenAligned>{};
-  static bool _watching = false;
-
-  static void _check(Duration _) {
-    for (final r in _live) {
-      if (!r.attached || !r.hasSize || r._paintedAt == null) continue;
-      if (r.localToGlobal(Offset.zero) != r._paintedAt) r.markNeedsPaint();
-    }
-  }
-
-  Offset? _paintedAt;
-
-  @override
-  void attach(PipelineOwner owner) {
-    super.attach(owner);
-    _live.add(this);
-    if (!_watching) {
-      _watching = true;
-      SchedulerBinding.instance.addPersistentFrameCallback(_check);
-    }
-  }
-
-  @override
-  void detach() {
-    _live.remove(this);
-    super.detach();
-  }
-
-  Size _screen;
-  set screen(Size s) {
-    if (s == _screen) return;
-    _screen = s;
-    markNeedsLayout();
-  }
-
-  @override
-  bool get sizedByParent => true;
-
-  @override
-  Size computeDryLayout(BoxConstraints constraints) => constraints.biggest;
-
-  @override
-  double computeMinIntrinsicWidth(double height) => 0;
-  @override
-  double computeMaxIntrinsicWidth(double height) => 0;
-  @override
-  double computeMinIntrinsicHeight(double width) => 0;
-  @override
-  double computeMaxIntrinsicHeight(double width) => 0;
-
-  @override
-  void performLayout() {
-    child?.layout(BoxConstraints.tight(_screen));
-  }
-
-  @override
-  void paint(PaintingContext context, Offset offset) {
-    final c = child;
-    if (c == null) return;
-    final at = localToGlobal(Offset.zero);
-    _paintedAt = at;
-    context.pushClipRect(
-      needsCompositing,
-      offset,
-      Offset.zero & size,
-      (context, o) => context.paintChild(c, o - at),
-    );
-  }
-
-  @override
-  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
-      false;
 }
 
 /// [VEdgeBlur] behind the status bar. Page titles start 16 below the bar,
