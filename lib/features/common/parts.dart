@@ -248,7 +248,7 @@ class EmptyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return VCard(
+    final card = VCard(
       outline: VOutline.dashed,
       padding: const EdgeInsets.all(22),
       child: Column(
@@ -262,6 +262,13 @@ class EmptyCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: VGlass.dim(context),
+        borderRadius: BorderRadius.circular(VRadius.card),
+      ),
+      child: card,
     );
   }
 }

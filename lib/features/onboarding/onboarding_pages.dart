@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr/qr.dart';
 
@@ -808,6 +809,45 @@ class ScanPage extends ConsumerStatefulWidget {
 class _ScanPageState extends ConsumerState<ScanPage> {
   var _done = false;
 
+  /// QR codes only, from a modest 1280×720 stream: lighter for the phone,
+  /// and it keeps clear of a camera bug some Android builds hit with the
+  /// larger default stream (the camera opens but no frame arrives).
+  late final _scanner = MobileScannerController(
+    formats: const [BarcodeFormat.qrCode],
+    cameraResolution: const Size(1280, 720),
+  );
+
+  @override
+  void dispose() {
+    unawaited(_scanner.dispose());
+    super.dispose();
+  }
+
+  /// Reads the code from a photo or screenshot of it, when the camera
+  /// won't.
+  Future<void> _fromPhoto() async {
+    final XFile? picked;
+    try {
+      picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    } on Object {
+      return;
+    }
+    final path = picked?.path;
+    if (path == null || !mounted) return;
+    BarcodeCapture? capture;
+    try {
+      capture = await _scanner.analyzeImage(
+        path,
+        formats: const [BarcodeFormat.qrCode],
+      );
+    } on Object {
+      capture = null;
+    }
+    if (!mounted) return;
+    if (capture != null) _read(capture);
+    if (!_done) showToast(context, 'No Moose code in that picture');
+  }
+
   void _read(BarcodeCapture capture) {
     if (_done) return;
     for (final b in capture.barcodes) {
@@ -841,6 +881,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
             children: [
               if (camera)
                 MobileScanner(
+                  controller: _scanner,
                   onDetect: _read,
                   errorBuilder: (context, error) => Center(
                     child: Padding(
@@ -890,6 +931,14 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                       'It joins as soon as it reads it.',
                       style: VText.secondary,
                     ),
+                    if (camera) ...[
+                      const SizedBox(height: 18),
+                      VPill(
+                        'From a photo',
+                        leading: const VIconView(VIcon.image, size: 16),
+                        onTap: _fromPhoto,
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -76,12 +76,23 @@ class PhoneStorage implements StorageRepository {
 
   @override
   int get cacheBytes {
-    if (!cacheDir.existsSync()) return 0;
-    var n = 0;
-    for (final f in cacheDir.listSync(recursive: true).whereType<File>()) {
-      n += f.lengthSync();
+    var n = PaintingBinding.instance.imageCache.currentSizeBytes;
+    try {
+      if (!cacheDir.existsSync()) return n;
+      for (final f
+          in cacheDir
+              .listSync(recursive: true, followLinks: false)
+              .whereType<File>()) {
+        try {
+          n += f.lengthSync();
+        } on FileSystemException {
+          // Gone or unreadable: not counted.
+        }
+      }
+    } on FileSystemException {
+      // A folder that can't be read: count what could be.
     }
-    return n + PaintingBinding.instance.imageCache.currentSizeBytes;
+    return n;
   }
 
   @override

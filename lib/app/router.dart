@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/widgets/v_motion_blur.dart';
+
 import '../features/chat/chat_page.dart';
 import '../features/doodles/doodles_page.dart';
 import '../features/onboarding/onboarding_pages.dart';
@@ -115,5 +117,15 @@ GoRouter buildRouter({
 );
 
 /// Onboarding's pages: they slide in the iOS way, and swipe back.
+/// A setup or pairing step: the old step blurs out to the left and is gone
+/// by half way, then the new one blurs in from the right (see
+/// [stepTransition]); they never show their text over each other.
 Page<void> fadePage(GoRouterState state, Widget child) =>
-    CupertinoPage<void>(key: state.pageKey, child: child);
+    CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 420),
+      reverseTransitionDuration: const Duration(milliseconds: 380),
+      transitionsBuilder: (context, animation, secondary, child) =>
+          stepTransition(animation, secondary, child),
+    );

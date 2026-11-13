@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
 import '../../core/theme/v_colors.dart';
+import '../../core/widgets/v_motion_blur.dart';
 
 /// Puts the keyboard away for good: the field loses focus too, so closing
 /// whatever opens next doesn't hand focus back to it and pop the keyboard
@@ -37,7 +38,8 @@ Future<T?> showOverlayPage<T>(BuildContext context, WidgetBuilder builder) {
             ).animate(a),
             child: ScaleTransition(
               scale: Tween(begin: 0.985, end: 1.0).animate(a),
-              child: child,
+              // A blur that rides the rise, gone once it's in place.
+              child: VMotionBlur(animation: animation, sigma: 4, child: child),
             ),
           ),
         );
@@ -67,6 +69,25 @@ class MoosePageRoute<T> extends PageRoute<T>
 
   @override
   Widget buildContent(BuildContext context) => builder(context);
+
+  /// iOS's slide, with a blur that rides it: the page coming in softens as
+  /// it moves and lands sharp, and the one it covers blurs as it goes back.
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) => super.buildTransitions(
+    context,
+    animation,
+    secondaryAnimation,
+    VMotionBlur(
+      animation: secondaryAnimation,
+      sigma: 3,
+      child: VMotionBlur(animation: animation, child: child),
+    ),
+  );
 
   @override
   String? get title => null;

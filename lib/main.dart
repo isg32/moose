@@ -78,7 +78,9 @@ Future<void> main() async {
           dir: await getApplicationSupportDirectory(),
         );
   final songs = backend == null ? null : YouTubeSongs();
-  final cache = backend == null ? null : await getTemporaryDirectory();
+  // Moose's own cache folder: on Linux the "temporary directory" is the
+  // whole of /tmp, which Storage must never measure or clear.
+  final cache = backend == null ? null : await getApplicationCacheDirectory();
   if (backend != null) {
     backend
       ..media = PhoneMedia(backend.mediaDir)

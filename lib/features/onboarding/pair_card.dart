@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -13,6 +14,7 @@ import '../../core/widgets/v_ink.dart';
 import '../../data/chat_theme.dart';
 import '../../data/models.dart';
 import '../common/avatar.dart';
+import '../common/toast.dart';
 import '../common/wallpaper.dart';
 import 'onboarding_pages.dart';
 
@@ -98,6 +100,14 @@ Future<void> sharePairCard(
   required Person me,
   required String code,
 }) async {
+  // Desktop has no share sheet for files: the code goes on the clipboard.
+  if (!Platform.isAndroid && !Platform.isIOS) {
+    await Clipboard.setData(
+      ClipboardData(text: 'Pair with me on Moose: $code'),
+    );
+    if (context.mounted) showToast(context, 'Code copied');
+    return;
+  }
   final key = GlobalKey();
   final overlay = Overlay.of(context, rootOverlay: true);
   final entry = OverlayEntry(

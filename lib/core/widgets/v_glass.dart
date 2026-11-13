@@ -9,6 +9,7 @@ import '../theme/v_palette.dart';
 import '../theme/v_text.dart';
 import '../theme/v_tokens.dart';
 import 'v_ink.dart';
+import 'v_motion_blur.dart';
 import 'v_surface.dart';
 
 /// A panel over the wallpaper: sheets, cards, the composer, chips.
@@ -57,6 +58,14 @@ class VGlass extends StatelessWidget {
     // Cards and the rest let the wallpaper through unless solid is picked.
     if (sheet || VPanels.solid(context)) return paper;
     return paper.withValues(alpha: 0.55);
+  }
+
+  /// A light dim for outlined cards over the wallpaper (empty states,
+  /// "New doodle"), so their text reads on a busy photo; solid when the
+  /// person picked solid panels.
+  static Color dim(BuildContext context) {
+    final paper = VInk.surfaceOf(context);
+    return VPanels.solid(context) ? paper : paper.withValues(alpha: 0.35);
   }
 
   @override
@@ -507,7 +516,12 @@ Future<T?> showVSheet<T>(
   return showCupertinoModalPopup<T>(
     context: context,
     barrierColor: VPalette.of(context).popupScrim,
-    builder: (context) => VSheet(title: title, child: builder(context)),
+    // A blur that rides the sheet up, gone once it's in place.
+    builder: (context) => VMotionBlur(
+      animation: ModalRoute.of(context)?.animation ?? kAlwaysCompleteAnimation,
+      sigma: 4,
+      child: VSheet(title: title, child: builder(context)),
+    ),
   );
 }
 

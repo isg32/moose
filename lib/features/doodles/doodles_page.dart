@@ -93,6 +93,7 @@ class DoodlesPage extends ConsumerWidget {
         ),
       ),
       children: [
+        // With no boards yet, just this (it has the button).
         if (doodles.isEmpty)
           EmptyCard(
             title: 'Nothing here yet',
@@ -100,46 +101,53 @@ class DoodlesPage extends ConsumerWidget {
             action: 'New doodle',
             onAction: () => _new(context, ref),
           ),
-        GridView.count(
-          padding: EdgeInsets.zero, // not the status bar's inset
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 0.8,
-          children: [
-            Semantics(
-              button: true,
-              label: 'New doodle',
-              excludeSemantics: true,
-              child: VTappable(
-                onTap: () => _new(context, ref),
-                child: VOutlined(
-                  radius: 20,
-                  outline: VOutline.dashed,
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const VIconView(VIcon.plus, size: 24),
-                        const SizedBox(height: 8),
-                        Text('New doodle', style: VText.inter(14, weight: 500)),
-                      ],
+        if (doodles.isNotEmpty)
+          GridView.count(
+            padding: EdgeInsets.zero, // not the status bar's inset
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.8,
+            children: [
+              // With no boards yet, the empty card above has the button.
+              if (doodles.isNotEmpty)
+                Semantics(
+                  button: true,
+                  label: 'New doodle',
+                  excludeSemantics: true,
+                  child: VTappable(
+                    onTap: () => _new(context, ref),
+                    child: VOutlined(
+                      radius: 20,
+                      outline: VOutline.dashed,
+                      fill: VGlass.dim(context),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const VIconView(VIcon.plus, size: 24),
+                            const SizedBox(height: 8),
+                            Text(
+                              'New doodle',
+                              style: VText.inter(14, weight: 500),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-            for (final d in doodles)
-              _Card(
-                d,
-                partner: partner,
-                onTap: () => openBoard(context, d.id),
-                onHold: () => _hold(context, ref, d),
-              ),
-          ],
-        ),
+              for (final d in doodles)
+                _Card(
+                  d,
+                  partner: partner,
+                  onTap: () => openBoard(context, d.id),
+                  onHold: () => _hold(context, ref, d),
+                ),
+            ],
+          ),
       ],
     );
   }
