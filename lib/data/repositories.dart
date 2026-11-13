@@ -1,4 +1,5 @@
 import '../core/theme/v_colors.dart';
+import 'chat_theme.dart';
 import 'models.dart';
 
 /// Every source of data the screens read. Phase 3 backs each with a mock
@@ -68,6 +69,20 @@ class ReactionChanged extends ChatEvent {
   final String? emoji;
 }
 
+/// A photo in message [messageId] is now on this phone at [path].
+class MediaReady extends ChatEvent {
+  const MediaReady(this.messageId, this.mediaId, this.path);
+  final String messageId;
+  final String mediaId;
+  final String path;
+}
+
+/// The partner applied a new shared theme (C22).
+class ThemeChanged extends ChatEvent {
+  const ThemeChanged(this.theme);
+  final ChatTheme theme;
+}
+
 /// The server came or went (C44's banner).
 class OnlineChanged extends ChatEvent {
   const OnlineChanged(this.online);
@@ -98,6 +113,9 @@ abstract interface class ChatRepository {
 
   /// You started or stopped typing.
   void typing(bool on);
+
+  /// You applied [theme] for both of you.
+  void shareTheme(ChatTheme theme);
 
   /// The conversation changed; keep it on this phone.
   void store(List<Message> messages);

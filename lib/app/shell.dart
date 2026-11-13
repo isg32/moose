@@ -77,7 +77,8 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final shell = widget.shell;
-    final bottom = MediaQuery.paddingOf(context).bottom;
+    // viewPadding: steady while the keyboard comes and goes.
+    final bottom = MediaQuery.viewPaddingOf(context).bottom;
     const bar = AppShell.pillBottom + AppShell.pillHeight;
     return PopScope(
       canPop: false,
@@ -130,11 +131,13 @@ class _AppShellState extends State<AppShell> {
             right: 0,
             bottom: bottom + AppShell.pillBottom,
             child: VTabBar(
-              stretch: true,
               items: AppShell.tabs,
               index: shell.currentIndex,
-              onTap: (i) =>
-                  shell.goBranch(i, initialLocation: i == shell.currentIndex),
+              onTap: (i) {
+                // A field on the tab being left keeps no keyboard.
+                FocusManager.instance.primaryFocus?.unfocus();
+                shell.goBranch(i, initialLocation: i == shell.currentIndex);
+              },
             ),
           ),
           // A call ringing opens the incoming call screen (K2).

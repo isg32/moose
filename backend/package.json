@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc -p .",
     "migrate": "node --env-file=.env.local scripts/migrate.ts",
-    "deploy": "npm run build && npx -y neon@latest deploy --env .env.local",
+    "deploy": "npm run build && sh -c '[ -f firebase-sa.json ] && export FIREBASE_SA_B64=$(base64 -w0 firebase-sa.json); npx -y neon@latest deploy --env .env.local'",
     "test": "node --env-file=.env.local test/e2e.ts",
     "cleanup": "node --env-file=.env.local scripts/cleanup.ts"
   },

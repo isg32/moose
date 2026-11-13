@@ -42,6 +42,25 @@ final storageRepositoryProvider = Provider<StorageRepository>(
   (ref) => MockStorageRepository(),
 );
 
+/// The phone's own photos and camera. Null on the mock, where the gallery
+/// (C18) and camera (C20) pages show stand-in art.
+abstract interface class MediaSource {
+  /// Photos picked from the phone's gallery (empty when cancelled).
+  Future<List<Media>> gallery();
+
+  /// A photo from the camera, or null.
+  Future<Media?> camera();
+}
+
+final mediaSourceProvider = Provider<MediaSource?>((ref) => null);
+
+/// Asks for the notification permission; true when granted. Always yes
+/// on the mock.
+final askNotificationsProvider = Provider<Future<bool> Function()>(
+  (ref) =>
+      () async => true,
+);
+
 /// True when Moose runs on Neon, false on the mock partner.
 final onNeonProvider = Provider<bool>((ref) => false);
 
@@ -190,11 +209,33 @@ class MessagesNotifier extends Notifier<List<Message>> {
           for (final m in state)
             m.id == id ? m.copyWith(reactions: _theirs(m.reactions, emoji)) : m,
         ];
+      case MediaReady(:final messageId, :final mediaId, :final path):
+        state = [
+          for (final m in state)
+            if (m.id == messageId) _withFile(m, mediaId, path) else m,
+        ];
+      case ThemeChanged(:final theme):
+        ref.read(chatThemeProvider.notifier).set(theme);
       case OnlineChanged(:final online):
         ref.read(onlineProvider.notifier).set(online);
       case Unpaired():
         ref.read(sessionProvider.notifier).unpair();
     }
+  }
+
+  static Message _withFile(Message m, String mediaId, String path) {
+    Media done(Media x) => x.id == mediaId
+        ? x.copyWith(path: path, transfer: Transfer.done, progress: 1)
+        : x;
+    return m.copyWith(
+      body: switch (m.body) {
+        PhotoBody(:final photos, :final caption) => PhotoBody([
+          for (final p in photos) done(p),
+        ], caption: caption),
+        VideoBody(:final video) => VideoBody(done(video)),
+        final b => b,
+      },
+    );
   }
 
   /// The partner's reaction is now [emoji]: theirs is whatever isn't mine.

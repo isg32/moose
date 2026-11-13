@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../data/chat_theme.dart';
 import '../data/models.dart';
 import '../data/repositories.dart';
 import 'mock_data.dart';
@@ -51,6 +52,9 @@ class MockChatRepository implements ChatRepository {
 
   @override
   Stream<ChatEvent> get events => _events.stream;
+
+  /// Something from Aatika right now (tests).
+  void push(ChatEvent e) => _events.add(e);
 
   void _after(Duration d, void Function() f) => _timers.add(
     Timer(d, () {
@@ -119,6 +123,9 @@ class MockChatRepository implements ChatRepository {
 
   @override
   void typing(bool on) {}
+
+  @override
+  void shareTheme(ChatTheme theme) {}
 
   @override
   void store(List<Message> messages) {}

@@ -162,29 +162,44 @@ class ChatPageState extends ConsumerState<ChatPage> {
     final settings = ref.watch(settingsProvider);
     final hooks = ChatHooks.of(context);
 
-    // New messages while scrolled up count on the jump button.
+    // A new message while scrolled up: a little way up, glide down to it;
+    // further, count it on the jump arrow (as Instagram does).
     ref.listen(messagesProvider, (before, after) {
-      if (_showJump &&
-          before != null &&
-          after.length > before.length &&
-          !after.last.fromMe) {
+      if (before == null ||
+          after.length <= before.length ||
+          after.last.fromMe ||
+          !_scroll.hasClients ||
+          _scroll.offset <= 0) {
+        return;
+      }
+      if (_showJump) {
         setState(() => _newWhileAway++);
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _scroll.hasClients) {
+            _scroll.animateTo(
+              0,
+              duration: const Duration(milliseconds: 320),
+              curve: Curves.easeOutCubic,
+            );
+          }
+        });
       }
     });
 
     final partner = session.decoy
         ? Person(id: 'decoy', name: session.decoyName)
         : pairing.partner;
-    final media = MediaQuery.of(context);
-    final top = media.padding.top;
-    final bottom = media.padding.bottom;
+    // Only padding here: the keyboard is read by _Lift alone, so its
+    // animation moves the composer without rebuilding the conversation.
+    // viewPadding, not padding: padding.bottom drops to 0 while the
+    // keyboard is up, which slid the whole conversation down.
+    final pad = MediaQuery.viewPaddingOf(context);
+    final top = pad.top;
     const pillTop = AppShell.pillBottom + AppShell.pillHeight;
-    // With the keyboard up the composer rides on top of it (the pill stays
-    // behind the keyboard); otherwise it sits above the pill.
-    final keyboard = media.viewInsets.bottom;
-    final composerBottom = keyboard > 0
-        ? keyboard + 10
-        : bottom + pillTop + 12;
+    // Where the composer rests, above the pill. The list is laid out for
+    // this and never for the keyboard, so opening it doesn't move the chat.
+    final composerBottom = pad.bottom + pillTop + 12;
     final unread = messages
         .where(
           (m) =>
@@ -211,6 +226,8 @@ class ChatPageState extends ConsumerState<ChatPage> {
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
+            // A tap on the conversation puts the keyboard away.
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
             onLongPress: session.decoy
                 ? null
                 : () {
@@ -250,10 +267,10 @@ class ChatPageState extends ConsumerState<ChatPage> {
           left: 0,
           right: 0,
           bottom: 0,
-          child: VEdgeBlur(
-            edge: VEdge.bottom,
-            solid: composerBottom + 44,
-            fade: 40,
+          child: _Lift(
+            rest: composerBottom,
+            builder: (lift) =>
+                VEdgeBlur(edge: VEdge.bottom, solid: lift + 44, fade: 40),
           ),
         ),
         Positioned(
@@ -283,63 +300,95 @@ class ChatPageState extends ConsumerState<ChatPage> {
         if (_showJump)
           Positioned(
             right: 16,
-            bottom: composerBottom + 60,
-            child: _JumpButton(count: _newWhileAway, onTap: _toBottom),
+            bottom: 0,
+            child: _Lift(
+              rest: composerBottom,
+              builder: (lift) => Padding(
+                padding: EdgeInsets.only(bottom: lift + 60),
+                child: _JumpButton(count: _newWhileAway, onTap: _toBottom),
+              ),
+            ),
           ),
         Positioned(
           left: 12,
           right: 12,
-          bottom: composerBottom,
-          child: Composer(
-            enabled: !session.decoy,
-            partner: partner.name,
-            replyTo: _replyTo,
-            media: _picked,
-            enterSends: settings.enterSends,
-            actions: ComposerActions(
-              onSendText: (t) => _send(TextBody(t)),
-              onTyping: (on) => ref.read(chatRepositoryProvider).typing(on),
-              onSendVoice: (len) =>
-                  _send(VoiceBody(length: len, wave: MockData.voiceWave)),
-              onSendRound: (len) => _send(
-                RoundVideoBody(
-                  Media(
-                    id: 'rv${DateTime.now().millisecondsSinceEpoch}',
-                    art: 0,
-                    duration: len,
+          bottom: 0,
+          child: _Lift(
+            rest: composerBottom,
+            builder: (lift) => Padding(
+              padding: EdgeInsets.only(bottom: lift),
+              child: Composer(
+                enabled: !session.decoy,
+                partner: partner.name,
+                replyTo: _replyTo,
+                media: _picked,
+                enterSends: settings.enterSends,
+                actions: ComposerActions(
+                  onSendText: (t) => _send(TextBody(t)),
+                  onTyping: (on) => ref.read(chatRepositoryProvider).typing(on),
+                  onSendVoice: (len) =>
+                      _send(VoiceBody(length: len, wave: MockData.voiceWave)),
+                  onSendRound: (len) => _send(
+                    RoundVideoBody(
+                      Media(
+                        id: 'rv${DateTime.now().millisecondsSinceEpoch}',
+                        art: 0,
+                        duration: len,
+                      ),
+                    ),
                   ),
+                  onAttach: () async {
+                    final picked = await hooks.attach(context, ref);
+                    if (picked != null && mounted) {
+                      setState(() => _picked = [..._picked, ...picked]);
+                    }
+                  },
+                  onStickers: () async {
+                    final body = await hooks.stickers(context);
+                    if (body != null) _send(body);
+                  },
+                  onCancelReply: () => setState(() => _replyTo = null),
+                  onRemoveMedia: (i) =>
+                      setState(() => _picked = [..._picked]..removeAt(i)),
+                  onAddMedia: () async {
+                    final more = await hooks.gallery(context);
+                    if (more != null && mounted) {
+                      setState(() => _picked = [..._picked, ...more]);
+                    }
+                  },
+                  onSendMedia: (caption) {
+                    _send(
+                      PhotoBody(
+                        _picked,
+                        caption: caption.isEmpty ? null : caption,
+                      ),
+                    );
+                    setState(() => _picked = const []);
+                  },
                 ),
               ),
-              onAttach: () async {
-                final picked = await hooks.attach(context, ref);
-                if (picked != null && mounted) {
-                  setState(() => _picked = [..._picked, ...picked]);
-                }
-              },
-              onStickers: () async {
-                final body = await hooks.stickers(context);
-                if (body != null) _send(body);
-              },
-              onCancelReply: () => setState(() => _replyTo = null),
-              onRemoveMedia: (i) =>
-                  setState(() => _picked = [..._picked]..removeAt(i)),
-              onAddMedia: () async {
-                final more = await hooks.gallery(context);
-                if (more != null && mounted) {
-                  setState(() => _picked = [..._picked, ...more]);
-                }
-              },
-              onSendMedia: (caption) {
-                _send(
-                  PhotoBody(_picked, caption: caption.isEmpty ? null : caption),
-                );
-                setState(() => _picked = const []);
-              },
             ),
           ),
         ),
       ],
     );
+  }
+}
+
+/// Lifts what rides on the keyboard (composer, bottom blur, jump arrow):
+/// [rest] above the bottom, or just over the keyboard once it's taller.
+/// Never lower than [rest], so the composer doesn't dip as the keyboard
+/// starts to rise. It alone listens to the keyboard's animation.
+class _Lift extends StatelessWidget {
+  const _Lift({required this.rest, required this.builder});
+
+  final double rest;
+  final Widget Function(double lift) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    return builder(keyboard + 10 > rest ? keyboard + 10 : rest);
   }
 }
 
@@ -497,6 +546,8 @@ class _List extends StatelessWidget {
     return ListView.builder(
       controller: controller,
       reverse: true,
+      // Scrolling the conversation puts the keyboard away.
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: padding,
       itemCount: reversed.length,
       itemBuilder: (context, i) => reversed[i],

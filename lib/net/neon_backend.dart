@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 
+import '../data/chat_theme.dart';
 import '../data/models.dart';
 import '../data/providers.dart';
 import '../data/repositories.dart';
@@ -20,13 +21,29 @@ import 'wire.dart';
 /// Moose on Neon: the hidden account, this phone's keys, the API and the
 /// conversation on disk. Opening needs no network, so Moose starts offline.
 class NeonBackend {
-  NeonBackend._(this.auth, this.api, this.identity, this.store);
+  NeonBackend._(this.auth, this.api, this.identity, this.store, this.dir);
 
   final NeonAuth auth;
   final MooseApi api;
   final Identity identity;
   final LocalStore store;
+  final Directory dir;
   Channel? _channel;
+
+  /// Photos and wallpapers that came from the partner, decrypted.
+  Directory get mediaDir => Directory('${dir.path}/media');
+
+  /// This phone's push token (Firebase), when push is set up.
+  Future<String?> Function()? pushToken;
+
+  /// Set by the open chat: a push arrived, so look for mail now.
+  void Function()? wake;
+
+  /// The phone's gallery and camera; null keeps the mock pages.
+  MediaSource? media;
+
+  /// Asks for the notification permission.
+  Future<bool> Function() askNotifications = () async => true;
 
   /// Whether Moose is on screen, so a new message counts as seen.
   bool Function() isOpen = () =>
@@ -44,6 +61,7 @@ class NeonBackend {
       MooseApi(base: config.api, auth: auth),
       await Identity.load(vault),
       await LocalStore.open(dir),
+      dir,
     );
   }
 
@@ -89,12 +107,32 @@ class NeonBackend {
         ref.onDispose(repo.dispose);
         return repo;
       }),
+      chatThemeProvider.overrideWith(() => _StoredTheme(store)),
+      mediaSourceProvider.overrideWithValue(media),
+      askNotificationsProvider.overrideWithValue(() => askNotifications()),
       sessionProvider.overrideWith(
         () => _StartSession(
           Session(paired: store.paired, locked: false, name: store.myName),
         ),
       ),
     ];
+  }
+}
+
+/// The shared theme, kept with the conversation.
+class _StoredTheme extends ChatThemeNotifier {
+  _StoredTheme(this._store);
+  final LocalStore _store;
+
+  @override
+  ChatTheme build() => _store.theme;
+
+  @override
+  void set(ChatTheme theme) {
+    super.set(theme);
+    _store
+      ..theme = theme
+      ..changed();
   }
 }
 
@@ -171,6 +209,7 @@ class NeonPairRepository implements PairRepository {
 /// promise every change).
 class NeonChatRepository implements ChatRepository {
   NeonChatRepository(this.b) {
+    b.wake = () => unawaited(_catchUp());
     unawaited(_run());
   }
 
@@ -182,6 +221,7 @@ class NeonChatRepository implements ChatRepository {
   StreamSubscription<Mail>? _live;
   Timer? _poll;
   DateTime _typingSent = DateTime.fromMillisecondsSinceEpoch(0);
+  String? _pushToken;
 
   static final _rnd = Random.secure();
 
@@ -221,6 +261,7 @@ class NeonChatRepository implements ChatRepository {
       }
       try {
         await _checkPairing();
+        await _registerPush();
         await _catchUp();
         final done = Completer<void>();
         final stream = await b.api.live();
@@ -240,6 +281,14 @@ class NeonChatRepository implements ChatRepository {
       await Future<void>.delayed(wait);
       wait = Duration(seconds: min(wait.inSeconds * 2, 30));
     }
+  }
+
+  /// Tells the server where to send wake-ups, when the token is new.
+  Future<void> _registerPush() async {
+    final token = await b.pushToken?.call();
+    if (token == null || token == _pushToken) return;
+    await b.api.setMe(fcm: token);
+    _pushToken = token;
   }
 
   Future<void> _checkPairing() async {
@@ -276,10 +325,12 @@ class NeonChatRepository implements ChatRepository {
         continue; // Not sealed by the partner: drop it.
       }
       switch (env) {
-        case MessageEnvelope(:final message):
-          if (b.store.messages.any((x) => x.id == message.id)) break;
+        case MessageEnvelope(message: final sent):
+          if (b.store.messages.any((x) => x.id == sent.id)) break;
+          final message = _arrived(sent);
           delivered.add(message.id);
           _emit(Incoming(message));
+          _fetchMedia(message);
           if (message.body case MomentBody(:final moment)
               when DateTime.now().difference(message.at).inMinutes < 2) {
             _emit(MomentArrived(moment));
@@ -294,6 +345,8 @@ class NeonChatRepository implements ChatRepository {
           }
         case ReactEnvelope(:final id, :final emoji):
           _emit(ReactionChanged(id, emoji));
+        case ThemeEnvelope(:final theme, :final blob, :final blobKey):
+          unawaited(_themeArrived(theme, blob, blobKey));
         case null:
           break;
       }
@@ -325,6 +378,96 @@ class NeonChatRepository implements ChatRepository {
     }
   }
 
+  /// A message as this phone keeps it: system notes in the partner's
+  /// words, and photos waiting to come down from storage.
+  Message _arrived(Message m) {
+    final name = b.store.partner?.name ?? 'Your person';
+    Media waiting(Media x) => x.blob == null
+        ? x
+        : x.copyWith(transfer: Transfer.cloudDownloading, progress: 0);
+    return m.copyWith(
+      body: switch (m.body) {
+        SystemBody(:final kind, :final text) when text.startsWith('You ') =>
+          SystemBody(kind, '$name ${text.substring(4)}'),
+        PhotoBody(:final photos, :final caption) => PhotoBody([
+          for (final p in photos) waiting(p),
+        ], caption: caption),
+        VideoBody(:final video) => VideoBody(waiting(video)),
+        final b => b,
+      },
+    );
+  }
+
+  /// Brings each sealed photo down, opens it, keeps it, then deletes the
+  /// server's copy.
+  void _fetchMedia(Message m) {
+    final media = switch (m.body) {
+      PhotoBody(:final photos) => photos,
+      VideoBody(:final video) => [video],
+      _ => const <Media>[],
+    };
+    for (final x in media) {
+      if (x.blob == null || x.blobKey == null) continue;
+      unawaited(() async {
+        try {
+          final path = await _download(x.blob!, x.blobKey!, x.id);
+          _emit(MediaReady(m.id, x.id, path));
+        } on Object {
+          // Left in storage: the next start tries again.
+        }
+      }());
+    }
+  }
+
+  Future<String> _download(String blob, String key, String name) async {
+    final plain = await Channel.openBlob(await b.api.download(blob), key);
+    await b.mediaDir.create(recursive: true);
+    final file = File('${b.mediaDir.path}/$name');
+    await file.writeAsBytes(plain, flush: true);
+    try {
+      await b.api.deleteBlob(blob);
+    } on NetError {
+      // The month-old sweep gets it.
+    }
+    return file.path;
+  }
+
+  /// Seals and uploads [m]'s files that aren't in storage yet.
+  Future<Media> _upload(Media m) async {
+    final path = m.path;
+    if (m.blob != null || path == null) return m;
+    final sealed = await Channel.sealBlob(await File(path).readAsBytes());
+    final key = await b.api.upload(sealed.bytes);
+    return m.copyWith(blob: key, blobKey: sealed.key);
+  }
+
+  Future<Message> _withUploads(Message m) async => switch (m.body) {
+    PhotoBody(:final photos, :final caption) => m.copyWith(
+      body: PhotoBody([
+        for (final p in photos) await _upload(p),
+      ], caption: caption),
+    ),
+    VideoBody(:final video) => m.copyWith(
+      body: VideoBody(await _upload(video)),
+    ),
+    _ => m,
+  };
+
+  Future<void> _themeArrived(ChatTheme t, String? blob, String? key) async {
+    var theme = t;
+    if (blob != null && key != null) {
+      try {
+        final path = await _download(blob, key, 'wall-${uuid()}');
+        theme = t.copyWith(wallpaper: WallpaperRef.photo(path));
+      } on Object {
+        return; // Couldn't get the photo: keep the current theme.
+      }
+    } else if (t.wallpaper.photo != null) {
+      return;
+    }
+    _emit(ThemeChanged(theme));
+  }
+
   @override
   void send(Message message) {
     final kind = switch (message.body) {
@@ -332,14 +475,36 @@ class NeonChatRepository implements ChatRepository {
       CallBody() => MailKind.call,
       _ => MailKind.msg,
     };
-    unawaited(
-      _post(kind, MessageEnvelope(message)).then(
-        (ok) => _emit(
-          DeliveryUpdate(message.id, ok ? Delivery.sent : Delivery.failed),
-        ),
-      ),
-    );
+    unawaited(() async {
+      var ok = false;
+      try {
+        ok = await _post(kind, MessageEnvelope(await _withUploads(message)));
+      } on Object {
+        ok = false;
+      }
+      _emit(DeliveryUpdate(message.id, ok ? Delivery.sent : Delivery.failed));
+    }());
   }
+
+  @override
+  void shareTheme(ChatTheme theme) => unawaited(() async {
+    final photo = theme.wallpaper.photo;
+    if (photo == null) {
+      await _post(MailKind.theme, ThemeEnvelope(theme));
+      return;
+    }
+    if (photo.startsWith('mock:')) return; // Stand-in art isn't shareable.
+    try {
+      final sealed = await Channel.sealBlob(await File(photo).readAsBytes());
+      final key = await b.api.upload(sealed.bytes);
+      await _post(
+        MailKind.theme,
+        ThemeEnvelope(theme, blob: key, blobKey: sealed.key),
+      );
+    } on Object {
+      // Offline: the theme stays here until it's applied again.
+    }
+  }());
 
   @override
   void react(String id, String? emoji) =>
@@ -364,6 +529,7 @@ class NeonChatRepository implements ChatRepository {
   @override
   void dispose() {
     _closed = true;
+    b.wake = null;
     _poll?.cancel();
     unawaited(_live?.cancel());
     unawaited(_events.close());

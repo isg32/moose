@@ -63,3 +63,6 @@ design/reference/
 
 # Local visual previews of screens (rendered goldens), not committed
 test_peek/
+
+# The Python partner emulator's virtualenv
+tool/partner/.venv/

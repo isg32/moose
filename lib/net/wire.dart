@@ -1,6 +1,7 @@
 import 'dart:ui' show Offset;
 
 import '../core/theme/v_colors.dart';
+import '../data/chat_theme.dart';
 import '../data/models.dart';
 
 /// What travels inside a sealed envelope. The server sees only the coarse
@@ -18,6 +19,11 @@ sealed class Envelope {
     ], Delivery.values.byName(j['state'] as String)),
     'typing' => TypingEnvelope(j['on'] as bool),
     'react' => ReactEnvelope(j['id'] as String, j['emoji'] as String?),
+    'theme' => ThemeEnvelope(
+      ChatTheme.fromJson((j['theme'] as Map).cast<String, Object?>()),
+      blob: j['blob'] as String?,
+      blobKey: j['k'] as String?,
+    ),
     _ => null,
   };
 }
@@ -65,13 +71,36 @@ class ReactEnvelope extends Envelope {
   Map<String, Object?> toJson() => {'type': 'react', 'id': id, 'emoji': emoji};
 }
 
+/// The shared theme, last write wins. A photo wallpaper travels sealed in
+/// storage, as [blob] with its own [blobKey].
+class ThemeEnvelope extends Envelope {
+  const ThemeEnvelope(this.theme, {this.blob, this.blobKey});
+  final ChatTheme theme;
+  final String? blob;
+  final String? blobKey;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'theme',
+    // A photo's path means nothing on the other phone.
+    'theme': theme.toJson()
+      ..['wallpaper'] = theme.wallpaper.photo == null
+          ? theme.wallpaper.toJson()
+          : const {'builtin': null, 'photo': 'blob'},
+    'blob': ?blob,
+    'k': ?blobKey,
+  };
+}
+
 /// Message ↔ JSON. `fromMe` is not sent: it is always the sender's, and
 /// the receiver flips it.
 abstract final class Wire {
-  static Map<String, Object?> fromMessage(Message m) => {
+  /// [local] keeps what only matters on this phone (file paths), for the
+  /// store; the wire never carries them.
+  static Map<String, Object?> fromMessage(Message m, {bool local = false}) => {
     'id': m.id,
     'at': m.at.toUtc().toIso8601String(),
-    'body': body(m.body),
+    'body': body(m.body, local: local),
     if (m.reply case final r?)
       'reply': {
         'fromMe': r.fromMe,
@@ -102,7 +131,7 @@ abstract final class Wire {
     );
   }
 
-  static Map<String, Object?> body(Body b) => switch (b) {
+  static Map<String, Object?> body(Body b, {bool local = false}) => switch (b) {
     TextBody(:final text) => {'t': 'text', 'text': text},
     MomentBody(:final moment) => {'t': 'moment', 'moment': moment.name},
     MusicBody(:final song, :final start) => {
@@ -138,10 +167,13 @@ abstract final class Wire {
     },
     PhotoBody(:final photos, :final caption) => {
       't': 'photo',
-      'photos': [for (final p in photos) _media(p)],
+      'photos': [for (final p in photos) _media(p, local: local)],
       'caption': ?caption,
     },
-    VideoBody(:final video) => {'t': 'video', 'video': _media(video)},
+    VideoBody(:final video) => {
+      't': 'video',
+      'video': _media(video, local: local),
+    },
     RoundVideoBody(:final video) => {'t': 'round', 'video': _media(video)},
     VoiceBody(:final length, :final wave) => {
       't': 'voice',
@@ -225,12 +257,15 @@ abstract final class Wire {
     art: (j['art'] as num).toInt(),
   );
 
-  static Map<String, Object?> _media(Media m) => {
+  static Map<String, Object?> _media(Media m, {bool local = false}) => {
     'id': m.id,
     'art': m.art,
     'aspect': m.aspect,
     'bytes': m.bytes,
     if (m.duration case final d?) 'ms': d.inMilliseconds,
+    'blob': ?m.blob,
+    'k': ?m.blobKey,
+    if (local) 'path': ?m.path,
   };
 
   static Media _toMedia(Map<String, Object?> j) => Media(
@@ -241,6 +276,9 @@ abstract final class Wire {
     duration: j['ms'] == null
         ? null
         : Duration(milliseconds: (j['ms'] as num).toInt()),
+    blob: j['blob'] as String?,
+    blobKey: j['k'] as String?,
+    path: j['path'] as String?,
   );
 
   // Points in a 0–1 box keep 4 decimals: plenty for a phone screen.

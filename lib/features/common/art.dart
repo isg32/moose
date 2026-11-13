@@ -1,9 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 
 import '../../core/theme/v_colors.dart';
 
-/// Stand-in art for a photo, video, GIF or cover: one of [VMockArt]'s
-/// gradients until real media arrives.
+/// A photo, video, GIF or cover: the real file at [path] once it's on the
+/// phone, else one of [VMockArt]'s gradients standing in for it.
 class ArtBox extends StatelessWidget {
   const ArtBox({
     super.key,
@@ -14,9 +16,11 @@ class ArtBox extends StatelessWidget {
     this.height,
     this.begin = Alignment.topLeft,
     this.end = Alignment.bottomRight,
+    this.path,
   });
 
   final int art;
+  final String? path;
   final BorderRadius radius;
   final Widget? child;
   final double? width;
@@ -27,12 +31,20 @@ class ArtBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (a, b) = VMockArt.of(art);
+    final file = path;
     return Container(
       width: width,
       height: height,
+      clipBehavior: file == null ? Clip.none : Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: radius,
         gradient: LinearGradient(colors: [a, b], begin: begin, end: end),
+        image: file == null
+            ? null
+            : DecorationImage(
+                image: ResizeImage(FileImage(File(file)), width: 1080),
+                fit: BoxFit.cover,
+              ),
       ),
       child: child,
     );

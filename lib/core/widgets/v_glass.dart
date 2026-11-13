@@ -456,6 +456,9 @@ Future<T?> showVSheet<T>(
   required String title,
   required WidgetBuilder builder,
 }) {
+  // Away with the keyboard, and the focus, so closing the sheet doesn't
+  // bring the keyboard back.
+  FocusManager.instance.primaryFocus?.unfocus();
   return showCupertinoModalPopup<T>(
     context: context,
     barrierColor: VColors.transparent,

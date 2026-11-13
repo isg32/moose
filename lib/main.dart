@@ -13,6 +13,8 @@ import 'core/theme/v_colors.dart';
 import 'features/crash_overlay.dart';
 import 'net/config.dart';
 import 'net/neon_backend.dart';
+import 'net/phone_media.dart';
+import 'net/push.dart';
 import 'net/vault.dart';
 import 'platform/crash_log.dart';
 
@@ -52,6 +54,18 @@ Future<void> main() async {
           vault: const SecureVault(),
           dir: await getApplicationSupportDirectory(),
         );
+  if (backend != null) {
+    backend
+      ..media = PhoneMedia(backend.mediaDir)
+      ..askNotifications = Push.ask
+      ..pushToken = Push.token;
+    try {
+      await Push.init(onWake: () => backend.wake?.call());
+    } on Object catch (e) {
+      // Without Firebase, Moose still polls; it just can't be woken.
+      CrashLog.instance.add('push off: $e');
+    }
+  }
   runApp(
     ProviderScope(
       overrides: backend?.overrides() ?? const [],

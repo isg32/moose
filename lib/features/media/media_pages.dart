@@ -11,6 +11,7 @@ import '../../core/widgets/v_glass.dart';
 import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_page.dart';
 import '../../data/models.dart';
+import '../../data/providers.dart' show MediaSource;
 import '../../mock/mock_data.dart';
 import '../common/art.dart';
 import '../common/overlay.dart';
@@ -25,11 +26,11 @@ typedef PickedMedia = ({List<Media> media, String caption});
 Future<PickedMedia?> pickFromGallery(
   BuildContext context, {
   String partner = '',
+  MediaSource? source,
 }) async {
-  final picked = await pushPage<List<Media>>(
-    context,
-    (_) => const GalleryPage(),
-  );
+  final picked = source != null
+      ? await source.gallery()
+      : await pushPage<List<Media>>(context, (_) => const GalleryPage());
   if (picked == null || picked.isEmpty || !context.mounted) return null;
   return pushPage<PickedMedia>(
     context,
@@ -41,8 +42,11 @@ Future<PickedMedia?> pickFromGallery(
 Future<PickedMedia?> takePhoto(
   BuildContext context, {
   String partner = '',
+  MediaSource? source,
 }) async {
-  final shot = await pushPage<Media>(context, (_) => const CameraPage());
+  final shot = source != null
+      ? (await source.camera())
+      : await pushPage<Media>(context, (_) => const CameraPage());
   if (shot == null || !context.mounted) return null;
   return pushPage<PickedMedia>(
     context,
@@ -286,6 +290,7 @@ class _MediaPreviewState extends State<MediaPreview> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ArtBox(
                       art: _media[i].art,
+                      path: _media[i].path,
                       radius: BorderRadius.circular(20),
                     ),
                   ),
@@ -317,6 +322,7 @@ class _MediaPreviewState extends State<MediaPreview> {
                         padding: const EdgeInsets.all(2),
                         child: ArtBox(
                           art: _media[i].art,
+                          path: _media[i].path,
                           width: 44,
                           height: 44,
                           radius: BorderRadius.circular(10),

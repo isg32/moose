@@ -21,6 +21,7 @@ import { Hono, type Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import pg from "pg";
+import { push, pushEnabled } from "./push.ts";
 
 const env = (key: string): string => {
   const v = process.env[key];
@@ -69,6 +70,7 @@ const s3 = new S3Client({
 type Mail = { id: string; sender: string; kind: string; body: string; created_at: Date };
 type Member = { user_id: string; name: string; pubkey: string; couple_id: string | null; joined_at: Date | null };
 
+const PUSH_KINDS = new Set(["msg", "moment", "call"]);
 const KINDS = new Set(["msg", "receipt", "typing", "moment", "theme", "doodle", "rtc", "call"]);
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O, 1/I
 const MAX_BODY = 256 * 1024; // sealed text and small payloads; media goes to the bucket
@@ -82,7 +84,13 @@ app.onError((err, c) => {
 });
 
 app.get("/", (c) =>
-  c.json({ ok: true, service: "moose", realtime: realtime !== null, storage: !!process.env.AWS_ENDPOINT_URL_S3 }),
+  c.json({
+    ok: true,
+    service: "moose",
+    realtime: realtime !== null,
+    storage: !!process.env.AWS_ENDPOINT_URL_S3,
+    push: pushEnabled,
+  }),
 );
 
 // Everything below needs a signed-in member: Bearer header, or ?token= on
@@ -139,16 +147,19 @@ app.get("/v1/me", async (c) => {
 });
 
 app.put("/v1/me", async (c) => {
-  const { name, pubkey } = await body<{ name?: unknown; pubkey?: unknown }>(c);
+  const { name, pubkey, fcm } = await body<{ name?: unknown; pubkey?: unknown; fcm?: unknown }>(c);
+  if (fcm !== undefined && (typeof fcm !== "string" || fcm.length > 4096))
+    throw new HTTPException(400, { message: "fcm" });
   if (name !== undefined && (typeof name !== "string" || name.length > 40))
     throw new HTTPException(400, { message: "name" });
   if (pubkey !== undefined && (typeof pubkey !== "string" || pubkey.length > 100))
     throw new HTTPException(400, { message: "pubkey" });
   await me(c);
   const { rows } = await q<Member>(
-    `update members set name = coalesce($2, name), pubkey = coalesce($3, pubkey)
+    `update members set name = coalesce($2, name), pubkey = coalesce($3, pubkey),
+       fcm_token = case when $4::text is null then fcm_token else nullif($4, '') end
      where user_id = $1 returning user_id, name, pubkey, couple_id, joined_at`,
-    [c.get("user"), name ?? null, pubkey ?? null],
+    [c.get("user"), name ?? null, pubkey ?? null, fcm ?? null],
   );
   return c.json(view(rows[0]!, await partnerOf(rows[0]!)));
 });
@@ -226,21 +237,38 @@ app.post("/v1/mail", async (c) => {
   if (typeof sealed !== "string" || sealed.length > MAX_BODY) throw new HTTPException(400, { message: "body" });
   // One statement: the membership rows supply couple and recipient, so only
   // a paired member can write, and only to their partner.
-  const { rows } = await q<{ txid: string }>(
-    `insert into mailbox (id, couple_id, sender, recipient, kind, body)
-     select $1::uuid, me.couple_id, me.user_id, them.user_id, $3, $4
-     from members me join members them on them.couple_id = me.couple_id and them.user_id <> me.user_id
-     where me.user_id = $2
-     on conflict (id) do nothing
-     returning pg_current_xact_id()::text as txid`,
+  const { rows } = await q<{ txid: string; recipient: string; token: string | null; sender: string }>(
+    `with ins as (
+       insert into mailbox (id, couple_id, sender, recipient, kind, body)
+       select $1::uuid, me.couple_id, me.user_id, them.user_id, $3, $4
+       from members me join members them on them.couple_id = me.couple_id and them.user_id <> me.user_id
+       where me.user_id = $2
+       on conflict (id) do nothing
+       returning recipient, pg_current_xact_id()::text as txid
+     )
+     select ins.txid, ins.recipient, them.fcm_token as token, me.name as sender
+     from ins join members them on them.user_id = ins.recipient join members me on me.user_id = $2`,
     [id, c.get("user"), kind, sealed],
   );
-  if (!rows[0]) {
+  const sent = rows[0];
+  if (!sent) {
     const m = await me(c);
     if (!(await partnerOf(m))) throw new HTTPException(409, { message: "not paired" });
     return c.json({ kind: "duplicate" });
   }
-  return c.json({ kind: "committed", txid: rows[0].txid });
+  // Wake the other phone for what a person would want to know about.
+  let pushed: string = "skipped";
+  if (PUSH_KINDS.has(kind)) {
+    pushed = await push(sent.token, {
+      kind,
+      id,
+      from: sent.sender,
+      ...(sealed.length <= 3000 ? { body: sealed } : {}),
+    });
+    if (pushed === "unregistered")
+      await q("update members set fcm_token = null where user_id = $1", [sent.recipient]);
+  }
+  return c.json({ kind: "committed", txid: sent.txid, pushed });
 });
 
 // The background check (every 6 min) and the open app's fallback.

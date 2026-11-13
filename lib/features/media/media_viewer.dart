@@ -152,6 +152,7 @@ class _MediaViewerState extends State<MediaViewer> {
             aspectRatio: it.media.aspect,
             child: ArtBox(
               art: it.media.art,
+              path: it.media.path,
               child: it.video
                   ? Center(
                       child: Semantics(

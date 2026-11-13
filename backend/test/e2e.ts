@@ -16,6 +16,7 @@ const API =
 const ORIGIN = "http://localhost";
 
 let passed = 0;
+let pushOn = false;
 async function step(name: string, fn: () => Promise<void>) {
   const t = Date.now();
   await fn();
@@ -84,7 +85,12 @@ console.log(`Moose e2e against ${new URL(API).host}`);
 try {
   await step("API is up with Realtime and storage", async () => {
     const res = await fetch(API);
-    assert.deepEqual(await res.json(), { ok: true, service: "moose", realtime: true, storage: true });
+    const health = (await res.json()) as Record<string, unknown>;
+    assert.equal(health.ok, true);
+    assert.equal(health.realtime, true);
+    assert.equal(health.storage, true);
+    pushOn = health.push === true;
+    console.log(`    push ${pushOn ? "on" : "off (no backend/firebase-sa.json)"}`);
   });
 
   await step("Auth: sign up three phones and mint JWTs", async () => {
@@ -162,6 +168,7 @@ try {
     });
     const sent = await aatika.api("POST", "/v1/mail", { id, kind: "msg", body: sealed });
     assert.equal(sent.kind, "committed");
+    assert.equal(sent.pushed, pushOn ? "no-token" : "disabled");
     assert.match(sent.txid, /^\d+$/);
     const m = await got;
     assert.equal(m.sender, aatika.id);
@@ -169,6 +176,18 @@ try {
     ws.close();
     // Sent twice (a retry) is stored once.
     assert.equal((await aatika.api("POST", "/v1/mail", { id, kind: "msg", body: sealed })).kind, "duplicate");
+  });
+
+  await step("Push: a token is kept, and a dead one is dropped", async () => {
+    await sapan.api("PUT", "/v1/me", { fcm: "not-a-real-token" });
+    const [t1, t2] = [randomUUID(), randomUUID()];
+    const r = await aatika.api("POST", "/v1/mail", { id: t1, kind: "typing", body: "x" });
+    assert.equal(r.pushed, "skipped", "typing never pushes");
+    const m = await aatika.api("POST", "/v1/mail", { id: t2, kind: "moment", body: "x" });
+    // FCM rejects a made-up token as invalid; the API reports it.
+    assert.ok(pushOn ? ["unregistered", "failed"].includes(m.pushed) : m.pushed === "disabled", m.pushed);
+    await sapan.api("PUT", "/v1/me", { fcm: "" });
+    await sapan.api("POST", "/v1/mail/ack", { ids: [t1, t2] });
   });
 
   await step("Mail: the background check lists it, the ack deletes it", async () => {
@@ -230,4 +249,4 @@ async function cleanup(phones: Phone[]) {
 }
 
 // Keep-alive sockets (fetch, Realtime) would hold the process open.
-process.exit(passed === 12 ? 0 : 1);
+process.exit(passed === 13 ? 0 : 1);

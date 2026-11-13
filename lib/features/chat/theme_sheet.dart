@@ -33,6 +33,7 @@ Future<void> showThemeSheet(BuildContext context, WidgetRef ref) async {
   }
   final after = ref.read(chatThemeProvider);
   if (after == before) return;
+  ref.read(chatRepositoryProvider).shareTheme(after);
   final name = after.wallpaper.builtin;
   ref
       .read(messagesProvider.notifier)
@@ -56,16 +57,28 @@ class ThemeSheet extends ConsumerStatefulWidget {
 }
 
 class _ThemeSheetState extends ConsumerState<ThemeSheet> {
-  late final List<String> _photos = [...MockData.themePhotos];
+  // On Neon the slots start with this phone's current photo, if any; the
+  // mock shows the canvas's stand-ins.
+  late final List<String> _photos = ref.read(onNeonProvider)
+      ? [?ref.read(chatThemeProvider).wallpaper.photo]
+      : [...MockData.themePhotos];
 
   void _set(ChatTheme t) => ref.read(chatThemeProvider.notifier).set(t);
 
   Future<void> _addPhoto() async {
-    // The gallery picks a photo in Phase 4; the crop screen works now.
-    final art = (_photos.length * 3 + 1) % 10;
+    // The phone's gallery on Neon; stand-in art on the mock.
+    final source = ref.read(mediaSourceProvider);
+    final String photo;
+    if (source != null) {
+      final picked = await source.gallery();
+      if (picked.isEmpty || picked.first.path == null || !mounted) return;
+      photo = picked.first.path!;
+    } else {
+      photo = 'mock:${(_photos.length * 3 + 1) % 10}';
+    }
     final used = await pushPage<(WallpaperRef, InkChoice)>(
       context,
-      (_) => WallpaperCrop(photo: 'mock:$art'),
+      (_) => WallpaperCrop(photo: photo),
     );
     if (used == null || !mounted) return;
     final (wallpaper, ink) = used;

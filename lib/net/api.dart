@@ -82,9 +82,15 @@ class MooseApi {
 
   Future<Me> me() async => Me.fromJson(await _call('GET', '/v1/me'));
 
-  Future<Me> setMe({String? name, String? pubkey}) async => Me.fromJson(
-    await _call('PUT', '/v1/me', {'name': ?name, 'pubkey': ?pubkey}),
-  );
+  /// [fcm] is this phone's push token ('' forgets it).
+  Future<Me> setMe({String? name, String? pubkey, String? fcm}) async =>
+      Me.fromJson(
+        await _call('PUT', '/v1/me', {
+          'name': ?name,
+          'pubkey': ?pubkey,
+          'fcm': ?fcm,
+        }),
+      );
 
   /// A fresh six-character code, good for 10 minutes.
   Future<({String code, Duration expiresIn})> invite() async {

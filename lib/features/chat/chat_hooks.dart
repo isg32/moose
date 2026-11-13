@@ -36,10 +36,18 @@ class ChatHooks {
       case AttachTile(:final kind):
         switch (kind) {
           case AttachKind.gallery:
-            final picked = await pickFromGallery(context, partner: partner);
+            final picked = await pickFromGallery(
+              context,
+              partner: partner,
+              source: ref.read(mediaSourceProvider),
+            );
             if (picked != null) _sendPicked(messages, picked);
           case AttachKind.camera:
-            final shot = await takePhoto(context, partner: partner);
+            final shot = await takePhoto(
+              context,
+              partner: partner,
+              source: ref.read(mediaSourceProvider),
+            );
             if (shot != null) _sendPicked(messages, shot);
           case AttachKind.roundVideo:
             if (context.mounted) {

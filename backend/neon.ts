@@ -18,6 +18,9 @@ export default defineConfig({
         REALTIME_URL: { value: process.env.NEON_REALTIME_URL, required: true },
         REALTIME_SECRET: { value: process.env.NEON_REALTIME_SECRET, required: true },
         MOOSE_BUCKET: "assets",
+        // Firebase service account (base64 of backend/firebase-sa.json), set
+        // by `npm run deploy` when the file is there. Without it, no push.
+        FIREBASE_SA_B64: { value: process.env.FIREBASE_SA_B64, required: false },
       },
     },
   },

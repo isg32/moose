@@ -210,17 +210,18 @@ class _NamePageState extends ConsumerState<NamePage> {
 }
 
 /// C4: why Moose runs in the background, and the two permissions.
-class BackgroundPage extends StatefulWidget {
+class BackgroundPage extends ConsumerStatefulWidget {
   const BackgroundPage({super.key, this.join = false});
 
   final bool join;
 
   @override
-  State<BackgroundPage> createState() => _BackgroundPageState();
+  ConsumerState<BackgroundPage> createState() => _BackgroundPageState();
 }
 
-class _BackgroundPageState extends State<BackgroundPage> {
-  var _notifications = true;
+class _BackgroundPageState extends ConsumerState<BackgroundPage> {
+  // The mock shows notifications already allowed, as the canvas does.
+  late var _notifications = !ref.read(onNeonProvider);
   var _battery = false;
 
   @override
@@ -304,10 +305,10 @@ class _BackgroundPageState extends State<BackgroundPage> {
             VListRow(
               title: 'Notifications',
               subtitle: 'For pokes and messages',
-              trailing: granted(
-                _notifications,
-                () => setState(() => _notifications = true),
-              ),
+              trailing: granted(_notifications, () async {
+                final ok = await ref.read(askNotificationsProvider)();
+                if (mounted) setState(() => _notifications = ok);
+              }),
             ),
             VListRow(
               title: 'Run in the background',

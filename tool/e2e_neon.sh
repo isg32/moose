@@ -1,28 +1,43 @@
 #!/usr/bin/env bash
-# One phone, end to end on Neon: the partner bot (Aatika) runs here, the
-# app runs on the connected phone, and they meet through the backend.
+# One phone, end to end on Neon and Firebase: Aatika is emulated in Python
+# on this computer (tool/partner/partner.py), Moose runs on the connected
+# phone, and they meet only through the deployed backend.
 #
-#   tool/e2e_neon.sh            (needs env.json, backend/.env.local, a phone)
+#   tool/e2e_neon.sh      (needs env.json, backend/.env.local, a phone on adb)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-code_file=$(mktemp)
-rm -f "$code_file"
-export MOOSE_API_URL=$(python3 -c 'import json;print(json.load(open("env.json"))["MOOSE_API_URL"])')
-export MOOSE_AUTH_URL=$(python3 -c 'import json;print(json.load(open("env.json"))["MOOSE_AUTH_URL"])')
+py=tool/partner/.venv/bin/python
+if [[ ! -x $py ]]; then
+  python3 -m venv tool/partner/.venv
+  $py -m pip install -q pynacl cryptography requests websocket-client pillow
+fi
+mkdir -p build
+code_file=$(mktemp -u)
 
-cleanup() { (cd backend && npm run --silent cleanup) || true; rm -f "$code_file"; }
+cleanup() {
+  (cd backend && npm run --silent cleanup) || true
+  rm -f "$code_file"
+  kill "${granter:-0}" 2>/dev/null || true
+}
 trap cleanup EXIT
 
-echo "· starting the partner bot"
-BOT_CODE_FILE="$code_file" flutter test test/neon/partner_bot_test.dart \
-  --reporter expanded > build/e2e_bot.log 2>&1 &
-bot=$!
+echo "· starting Aatika (Python)"
+$py tool/partner/partner.py --code-file "$code_file" > build/e2e_partner.log 2>&1 &
+partner=$!
 
 for _ in $(seq 120); do [[ -s "$code_file" ]] && break; sleep 1; done
-[[ -s "$code_file" ]] || { echo "the bot never made a code"; cat build/e2e_bot.log; exit 1; }
+[[ -s "$code_file" ]] || { echo "Aatika never made a code"; cat build/e2e_partner.log; exit 1; }
 code=$(cat "$code_file")
-echo "· bot's code: $code — running the app on the phone"
+echo "· her code: $code. Running Moose on the phone"
+
+# Android 13+ asks before showing notifications; a test can't tap the
+# system dialog, so grant it as soon as the build is installed.
+( for _ in $(seq 600); do
+    adb shell pm grant com.isg32.moose android.permission.POST_NOTIFICATIONS >/dev/null 2>&1 && break
+    sleep 1
+  done ) &
+granter=$!
 
 phone=0
 flutter drive \
@@ -31,10 +46,9 @@ flutter drive \
   --dart-define-from-file=env.json \
   --dart-define=PARTNER_CODE="$code" || phone=$?
 
-echo "· waiting for the bot"
-botstatus=0
-wait "$bot" || botstatus=$?
-grep '\[bot' build/e2e_bot.log || true
-tail -3 build/e2e_bot.log
-echo "· phone: $([[ $phone == 0 ]] && echo passed || echo FAILED) · bot: $([[ $botstatus == 0 ]] && echo passed || echo FAILED)"
-[[ $phone == 0 && $botstatus == 0 ]]
+echo "· waiting for Aatika"
+status=0
+wait "$partner" || status=$?
+grep '\[aatika' build/e2e_partner.log || true
+echo "· phone: $([[ $phone == 0 ]] && echo passed || echo FAILED) · Aatika: $([[ $status == 0 ]] && echo passed || echo FAILED)"
+[[ $phone == 0 && $status == 0 ]]

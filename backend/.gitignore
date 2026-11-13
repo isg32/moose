@@ -1,3 +1,4 @@
 .neon
 node_modules/
 .env.local
+firebase-sa.json

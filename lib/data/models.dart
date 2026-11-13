@@ -93,10 +93,23 @@ class Media {
     this.transfer = Transfer.done,
     this.progress = 0,
     this.duration,
+    this.path,
+    this.blob,
+    this.blobKey,
   });
 
   final String id;
+
+  /// Stand-in art, until (or instead of) a real file.
   final int art;
+
+  /// The photo on this phone, once it's here.
+  final String? path;
+
+  /// Where the sealed copy waits in Neon storage, and its own key (both
+  /// travel inside the sealed message).
+  final String? blob;
+  final String? blobKey;
 
   /// Width / height.
   final double aspect;
@@ -106,6 +119,26 @@ class Media {
 
   /// For videos.
   final Duration? duration;
+
+  Media copyWith({
+    Transfer? transfer,
+    double? progress,
+    String? path,
+    String? blob,
+    String? blobKey,
+    double? aspect,
+  }) => Media(
+    id: id,
+    art: art,
+    aspect: aspect ?? this.aspect,
+    bytes: bytes,
+    transfer: transfer ?? this.transfer,
+    progress: progress ?? this.progress,
+    duration: duration,
+    path: path ?? this.path,
+    blob: blob ?? this.blob,
+    blobKey: blobKey ?? this.blobKey,
+  );
 }
 
 /// A song clip: the YouTube video and the 15 s window (B8).

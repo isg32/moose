@@ -77,7 +77,9 @@ class Composer extends StatefulWidget {
 
 enum _Rec { none, holding, locked }
 
-class ComposerState extends State<Composer> {
+class ComposerState extends State<Composer> with WidgetsBindingObserver {
+  /// The keyboard's height last time the window changed.
+  double _keyboard = 0;
   final _text = TextEditingController();
   final _focus = FocusNode();
 
@@ -98,9 +100,22 @@ class ComposerState extends State<Composer> {
   final _roundLength = ValueNotifier(Duration.zero);
   bool _roundOpen = false;
 
+  /// The keyboard was put away (Back, or its own hide key): let go of the
+  /// focus too, or the next route that closes hands it back and the
+  /// keyboard pops up on its own.
+  @override
+  void didChangeMetrics() {
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+    if (views.isEmpty) return;
+    final now = views.first.viewInsets.bottom;
+    if (_keyboard > 0 && now == 0 && _focus.hasFocus) _focus.unfocus();
+    _keyboard = now;
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     var was = false;
     _text.addListener(() {
       setState(() {});
@@ -111,6 +126,7 @@ class ComposerState extends State<Composer> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _clock?.cancel();
     _text.dispose();
     _focus.dispose();
@@ -582,6 +598,7 @@ class _MediaStripState extends State<_MediaStrip> {
                     children: [
                       ArtBox(
                         art: widget.media[i].art,
+                        path: widget.media[i].path,
                         width: 64,
                         height: 64,
                         radius: BorderRadius.circular(14),

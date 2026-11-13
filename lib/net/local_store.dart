@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import '../data/chat_theme.dart';
 import '../data/models.dart';
 import 'api.dart';
 import 'wire.dart';
@@ -19,6 +20,7 @@ class LocalStore {
   DateTime? since;
   List<String> securityCode = const [];
   List<Message> messages = const [];
+  ChatTheme theme = const ChatTheme();
 
   Timer? _save;
   Future<void> _writing = Future.value();
@@ -46,6 +48,8 @@ class LocalStore {
     myName = (j['me'] as String?) ?? '';
     since = j['since'] == null ? null : DateTime.parse(j['since'] as String);
     securityCode = [for (final g in (j['code'] as List?) ?? const []) '$g'];
+    final t = (j['theme'] as Map?)?.cast<String, Object?>();
+    if (t != null) theme = ChatTheme.fromJson(t);
     messages = [
       for (final m in (j['messages'] as List?) ?? const [])
         _message((m as Map).cast<String, Object?>()),
@@ -59,6 +63,7 @@ class LocalStore {
       'partner': {'id': p.id, 'name': p.name, 'pubkey': p.pubkey},
     'since': since?.toIso8601String(),
     'code': securityCode,
+    'theme': theme.toJson(),
     'messages': [for (final m in messages) _stored(m)],
   };
 
@@ -89,7 +94,7 @@ class LocalStore {
   }
 
   static Map<String, Object?> _stored(Message m) => {
-    ...Wire.fromMessage(m),
+    ...Wire.fromMessage(m, local: true),
     'me': m.fromMe,
     'd': m.delivery.name,
     if (m.reactions.isNotEmpty)

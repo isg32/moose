@@ -608,6 +608,7 @@ class _MediaTile extends StatelessWidget {
     };
     return ArtBox(
       art: media.art,
+      path: media.path,
       radius: radius,
       child: OnMedia(
         child: Stack(
