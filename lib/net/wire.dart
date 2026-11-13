@@ -20,6 +20,13 @@ sealed class Envelope {
     'typing' => TypingEnvelope(j['on'] as bool),
     'react' => ReactEnvelope(j['id'] as String, j['emoji'] as String?),
     'doodle' => DoodleEnvelope(Wire.doodleOp(j)),
+    'call' => CallEnvelope(
+      op: j['op'] as String,
+      id: j['id'] as String,
+      video: j['video'] as bool? ?? false,
+      sdp: j['sdp'] as String?,
+      sdpType: j['sdpType'] as String?,
+    ),
     'theme' => ThemeEnvelope(
       ChatTheme.fromJson((j['theme'] as Map).cast<String, Object?>()),
       blob: j['blob'] as String?,
@@ -70,6 +77,35 @@ class ReactEnvelope extends Envelope {
 
   @override
   Map<String, Object?> toJson() => {'type': 'react', 'id': id, 'emoji': emoji};
+}
+
+/// Setting up a call: "offer" (rings the other phone), "answer",
+/// "decline" and "end". Each SDP carries its ICE candidates, so a call
+/// needs two messages to connect.
+class CallEnvelope extends Envelope {
+  const CallEnvelope({
+    required this.op,
+    required this.id,
+    this.video = false,
+    this.sdp,
+    this.sdpType,
+  });
+
+  final String op;
+  final String id;
+  final bool video;
+  final String? sdp;
+  final String? sdpType;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'call',
+    'op': op,
+    'id': id,
+    'video': video,
+    'sdp': ?sdp,
+    'sdpType': ?sdpType,
+  };
 }
 
 /// A change to a shared doodle board (C29–C35).

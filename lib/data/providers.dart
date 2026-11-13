@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart' show Widget;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/v_colors.dart';
@@ -76,6 +78,44 @@ abstract interface class Voice {
 }
 
 final voiceProvider = Provider<Voice?>((ref) => null);
+
+/// How a call is going.
+enum CallPhase { ringing, connecting, connected, ended }
+
+/// Why a call ended.
+enum CallEnd { hungUp, theyHungUp, declined, noAnswer, failed }
+
+class CallUpdate {
+  const CallUpdate(this.phase, [this.why]);
+  final CallPhase phase;
+  final CallEnd? why;
+}
+
+/// A real call, phone to phone (K1–K4). Null on the mock, where the
+/// partner picks up on a timer.
+abstract interface class CallLink {
+  Stream<CallUpdate> get updates;
+
+  /// Calls the partner.
+  Future<void> dial({required bool video});
+
+  /// Picks up the call that's ringing.
+  Future<void> answer();
+
+  /// Ends the call, declines it, or stops ringing.
+  Future<void> hangUp();
+
+  void mute(bool on);
+  void cameraOff(bool off);
+  Future<void> flip();
+  void speaker(bool on);
+
+  /// The partner's video and ours, once there are any.
+  Widget? remoteView();
+  Widget? localView();
+}
+
+final callLinkProvider = Provider<CallLink?>((ref) => null);
 
 /// Asks for the notification permission; true when granted. Always yes
 /// on the mock.

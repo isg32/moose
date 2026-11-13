@@ -23,6 +23,11 @@ join, then plays a script against whatever the phone sends:
   "brb"             presses Home on the phone (adb), sends "you there?",
                     checks Firebase put a notification up, then reopens
                     Moose
+  a call            answers after 2 s with a tone (and a test card on video),
+                    checks the call connected and the phone's audio (and
+                    video) came through, then waits for the phone to end it
+  "call me"         rings the phone (a voice call), checks it connected and
+                    heard the phone, and hangs up after 5 s
   "lost your phone?" she gets a new phone: a new account and key make a
                     code, the old phone sends it, the phone approves it
                     (Settings › Partner › Their new phone), and the new
@@ -59,6 +64,9 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from nacl import bindings as sodium
 from nacl.public import PrivateKey
 from PIL import Image, ImageDraw
+
+sys.path.insert(0, str(Path(__file__).parent))
+from calls import CallSide  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 ORIGIN = "http://localhost"  # Managed Auth trusts localhost by default.
@@ -132,8 +140,16 @@ class Neon:
         return self.jwt
 
     def call(self, method: str, path: str, body: dict | None = None):
-        r = requests.request(method, self.api + path, json=body, timeout=30,
-                             headers={"authorization": f"Bearer {self.token()}"})
+        # A network blip (DNS, a dropped connection) gets three more tries.
+        for attempt in range(4):
+            try:
+                r = requests.request(method, self.api + path, json=body, timeout=30,
+                                     headers={"authorization": f"Bearer {self.token()}"})
+                break
+            except requests.exceptions.ConnectionError:
+                if attempt == 3:
+                    raise
+                time.sleep(2 * (attempt + 1))
         if r.status_code >= 300:
             raise RuntimeError(f"{method} {path}: {r.status_code} {r.text}")
         return r.json()
@@ -164,6 +180,8 @@ class Aatika:
         self.report = report
         self.n = 0
         self.done = False
+        self.calls = CallSide()
+        self.call_id: str | None = None
 
     def check(self, name: str, ok: bool, detail: object = None) -> None:
         self.checks[name] = {"ok": bool(ok), "detail": detail}
@@ -297,6 +315,49 @@ class Aatika:
                  "ms": 3000, "blob": blob, "k": b64(file_key)}
         return self.message({"t": "video", "video": media})
 
+    def on_call(self, env: dict) -> None:
+        op = env["op"]
+        if op == "offer":
+            log(f"the phone is calling ({'video' if env.get('video') else 'voice'})")
+            time.sleep(2)  # ringing
+            sdp, kind = self.calls.answer(env["sdp"], env.get("sdpType") or "offer", bool(env.get("video")))
+            self.call_id = env["id"]
+            self.post("call", {"type": "call", "op": "answer", "id": env["id"],
+                               "video": bool(env.get("video")), "sdp": sdp, "sdpType": kind})
+            ok = self.calls.wait_connected(25)
+            self.check("phone's call connected", ok, self.calls.state)
+            if ok:
+                time.sleep(3)
+                g = self.calls.got
+                self.check("phone's audio came through", g["audio"] > 20, f"{g['audio']} frames")
+                if env.get("video"):
+                    self.check("phone's video came through", g["video"] > 5, f"{g['video']} frames")
+        elif op == "answer" and env["id"] == self.call_id:
+            self.calls.answered(env["sdp"], env.get("sdpType") or "answer")
+        elif op in ("end", "decline") and env["id"] == self.call_id:
+            log(f"the phone {'ended' if op == 'end' else 'declined'} the call")
+            self.calls.close()
+            self.call_id = None
+
+    def ring_phone(self) -> None:
+        call_id = str(uuid.uuid4())
+        sdp, kind = self.calls.offer(video=False)
+        self.call_id = call_id
+        self.post("call", {"type": "call", "op": "offer", "id": call_id, "video": False,
+                           "sdp": sdp, "sdpType": kind})
+        log("ringing the phone")
+        ok = self.calls.wait_connected(45)
+        self.check("phone picked up her call", ok, self.calls.state)
+        if not ok:
+            return
+        time.sleep(5)
+        g = self.calls.got
+        self.check("phone's audio came through on her call", g["audio"] > 20, f"{g['audio']} frames")
+        self.post("call", {"type": "call", "op": "end", "id": call_id})
+        self.calls.close()
+        self.call_id = None
+        log("hung up")
+
     def adb(self, *args: str) -> str:
         return subprocess.run(["adb", *args], capture_output=True, text=True, timeout=30).stdout
 
@@ -418,6 +479,9 @@ class Aatika:
                     elif op == "here":
                         got.add("here" if env.get("here") else "left")
                     continue
+                if t == "call":
+                    self.on_call(env)
+                    continue
                 if t == "theme":
                     w = env["theme"]["wallpaper"]
                     self.check("phone's theme arrived", w.get("builtin") == "moss", w)
@@ -444,6 +508,8 @@ class Aatika:
                         self.text("on it 🥰", reply=quote)
                     elif text == "lost your phone?":
                         self.new_phone()
+                    elif text == "call me":
+                        threading.Thread(target=self.ring_phone, daemon=True).start()
                     elif text == "back!":
                         self.check("phone took mail while away", True)
                 elif kind == "moment":

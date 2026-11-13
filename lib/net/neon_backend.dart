@@ -64,6 +64,28 @@ class NeonBackend {
   /// Asks for the notification permission.
   Future<bool> Function() askNotifications = () async => true;
 
+  /// Real calls (WebRTC); null keeps them pretend.
+  CallLink? calls;
+
+  /// Call set-up from the partner, for the [calls] link.
+  final callSignals = StreamController<CallEnvelope>.broadcast();
+
+  /// Seals [env] for the partner and leaves it on the server.
+  Future<bool> post(MailKind kind, Envelope env) async {
+    final ch = await channel();
+    if (ch == null) return false;
+    try {
+      await api.send(
+        NeonChatRepository.uuid(),
+        kind,
+        await ch.sealJson(env.toJson()),
+      );
+      return true;
+    } on NetError {
+      return false;
+    }
+  }
+
   /// Whether Moose is on screen, so a new message counts as seen.
   bool Function() isOpen = () =>
       WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
@@ -136,6 +158,7 @@ class NeonBackend {
       doodleRepositoryProvider.overrideWithValue(_StoredDoodles(store)),
       mediaSourceProvider.overrideWithValue(media),
       voiceProvider.overrideWithValue(voice),
+      callLinkProvider.overrideWithValue(calls),
       askNotificationsProvider.overrideWithValue(() => askNotifications()),
       settingsProvider.overrideWith(() => _StoredSettings(store)),
       sessionProvider.overrideWith(
@@ -454,6 +477,15 @@ class NeonChatRepository implements ChatRepository {
           _emit(ReactionChanged(id, emoji));
         case DoodleEnvelope(:final op):
           _emit(DoodleChanged(op));
+        case CallEnvelope():
+          // An offer older than a minute rang out long ago.
+          if (env.op == 'offer' &&
+              DateTime.now().difference(m.at).inSeconds < 60) {
+            b.callSignals.add(env);
+            _emit(CallArrived(video: env.video));
+          } else if (env.op != 'offer') {
+            b.callSignals.add(env);
+          }
         case ThemeEnvelope(:final theme, :final blob, :final blobKey):
           unawaited(_themeArrived(theme, blob, blobKey));
         case null:
@@ -476,16 +508,7 @@ class NeonChatRepository implements ChatRepository {
     }
   }
 
-  Future<bool> _post(MailKind kind, Envelope env) async {
-    final ch = await b.channel();
-    if (ch == null) return false;
-    try {
-      await b.api.send(uuid(), kind, await ch.sealJson(env.toJson()));
-      return true;
-    } on NetError {
-      return false;
-    }
-  }
+  Future<bool> _post(MailKind kind, Envelope env) => b.post(kind, env);
 
   /// A message as this phone keeps it: system notes in the partner's
   /// words, and photos waiting to come down from storage.

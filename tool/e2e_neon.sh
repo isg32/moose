@@ -38,7 +38,8 @@ echo "· her code: $code. Running Moose on the phone"
 # system dialog, so grant it as soon as the build is installed.
 ( for _ in $(seq 600); do
     adb shell pm grant com.isg32.moose android.permission.POST_NOTIFICATIONS >/dev/null 2>&1 &&
-      adb shell pm grant com.isg32.moose android.permission.RECORD_AUDIO >/dev/null 2>&1 && break
+      adb shell pm grant com.isg32.moose android.permission.RECORD_AUDIO >/dev/null 2>&1 &&
+      adb shell pm grant com.isg32.moose android.permission.CAMERA >/dev/null 2>&1 && break
     sleep 1
   done ) &
 granter=$!

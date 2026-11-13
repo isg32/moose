@@ -19,6 +19,7 @@ import 'package:moose/features/onboarding/onboarding_pages.dart';
 import 'package:moose/net/config.dart';
 import 'package:moose/net/local_store.dart';
 import 'package:moose/net/neon_backend.dart';
+import 'package:moose/net/neon_calls.dart';
 import 'package:moose/net/phone_media.dart';
 import 'package:moose/net/phone_voice.dart';
 import 'package:moose/net/push.dart';
@@ -89,6 +90,7 @@ void main() {
     backend
       ..media = photos
       ..voice = PhoneVoice(backend.mediaDir)
+      ..calls = NeonCalls(backend)
       ..pushToken = Push.token
       ..askNotifications = Push.ask;
     await Push.init(onWake: () => backend.wake?.call());
@@ -365,6 +367,56 @@ void main() {
     await t.tap(find.bySemanticsLabel(RegExp('^Send')).last);
     await frames(t, 1000);
     expect(c.read(messagesProvider).last.body, isA<VideoBody>());
+
+    // 6⅞ · Calls, phone to phone over WebRTC (K1–K5). We video-call her:
+    // she picks up, her picture arrives, we hang up.
+    await t.tap(find.bySemanticsLabel('Video call'));
+    await until(
+      t,
+      'her video on our screen',
+      () => (backend.calls! as NeonCalls).receivingVideo,
+      within: const Duration(seconds: 45),
+    );
+    await frames(t, 2500);
+    await shot('06d-video-call');
+    await t.tap(find.bySemanticsLabel('End call'));
+    await until(
+      t,
+      'the call row',
+      () => c.read(messagesProvider).last.body is CallBody,
+    );
+    final row = c.read(messagesProvider).last.body as CallBody;
+    expect(row.outcome, CallOutcome.answered);
+    expect(row.video, isTrue);
+    expect(row.length.inSeconds, greaterThanOrEqualTo(2));
+
+    // She calls us back: it rings here, we answer, she hangs up.
+    await type(t, 'call me');
+    await frames(t, 200);
+    await t.tap(find.bySemanticsLabel('Send'));
+    await until(
+      t,
+      'her call ringing',
+      () => find.text('Accept').evaluate().isNotEmpty,
+      within: const Duration(seconds: 30),
+    );
+    await frames(t);
+    await shot('06e-ringing');
+    await t.tap(find.text('Accept'));
+    await until(
+      t,
+      'her call connected',
+      () =>
+          find.text('Direct, phone to phone · encrypted').evaluate().isNotEmpty,
+      within: const Duration(seconds: 30),
+    );
+    await until(
+      t,
+      'her hanging up',
+      () => find.text('Direct, phone to phone · encrypted').evaluate().isEmpty,
+      within: const Duration(seconds: 30),
+    );
+    await frames(t);
 
     // 7 · Doodles: her board, then ours, drawn on by both (C29–C31).
     await t.tap(

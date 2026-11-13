@@ -13,6 +13,7 @@ import 'core/theme/v_colors.dart';
 import 'features/crash_overlay.dart';
 import 'net/config.dart';
 import 'net/neon_backend.dart';
+import 'net/neon_calls.dart';
 import 'net/phone_media.dart';
 import 'net/phone_voice.dart';
 import 'net/push.dart';
@@ -59,6 +60,7 @@ Future<void> main() async {
     backend
       ..media = PhoneMedia(backend.mediaDir)
       ..voice = PhoneVoice(backend.mediaDir)
+      ..calls = NeonCalls(backend)
       ..askNotifications = Push.ask
       ..pushToken = Push.token;
     try {

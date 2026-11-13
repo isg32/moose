@@ -47,7 +47,10 @@ Future<void> _run(
     context,
     (_) => CallPage(video: video, incoming: incoming),
   );
-  if (row != null) ref.read(messagesProvider.notifier).send(row);
+  // On Neon the caller's phone writes the call's row for both of you.
+  if (row != null && !(incoming && ref.read(onNeonProvider))) {
+    ref.read(messagesProvider.notifier).send(row);
+  }
 }
 
 class CallPage extends ConsumerStatefulWidget {
@@ -87,9 +90,45 @@ class _CallPageState extends ConsumerState<CallPage>
     duration: const Duration(milliseconds: 2400),
   )..repeat();
 
+  /// The real call, on Neon; null runs the mock's timer.
+  late final CallLink? _link = ref.read(callLinkProvider);
+  StreamSubscription<CallUpdate>? _updates;
+  bool _done = false;
+
+  void _onUpdate(CallUpdate u) {
+    if (!mounted) return;
+    switch (u.phase) {
+      case CallPhase.connected:
+        if (_stage != CallStage.connected) _connect();
+      case CallPhase.ended:
+        _finish(u.why);
+      case CallPhase.ringing || CallPhase.connecting:
+        setState(() {});
+    }
+  }
+
+  /// Closes the page with the call's row (K5).
+  void _finish(CallEnd? why) {
+    if (_done) return;
+    _done = true;
+    final outcome = _stage == CallStage.connected
+        ? CallOutcome.answered
+        : widget.incoming
+        ? CallOutcome.missed
+        : CallOutcome.noAnswer;
+    Navigator.of(context)
+        .pop(CallBody(video: _video, outcome: outcome, length: _length));
+  }
+
   @override
   void initState() {
     super.initState();
+    final link = _link;
+    if (link != null) {
+      _updates = link.updates.listen(_onUpdate);
+      if (!widget.incoming) unawaited(link.dial(video: widget.video));
+      return;
+    }
     if (!widget.incoming) {
       final away = ref.read(pairingProvider).presence == Presence.away;
       _answer = Timer(widget.answersAfter, () {
@@ -107,6 +146,9 @@ class _CallPageState extends ConsumerState<CallPage>
 
   @override
   void dispose() {
+    unawaited(_updates?.cancel());
+    // Leaving the page any other way still ends the call.
+    if (!_done) unawaited(_link?.hangUp());
     _clock?.cancel();
     _answer?.cancel();
     _pulse.dispose();
@@ -123,6 +165,12 @@ class _CallPageState extends ConsumerState<CallPage>
 
   void _end() {
     HapticFeedback.mediumImpact();
+    final link = _link;
+    if (link != null) {
+      // The link reports "ended", which closes the page with its row.
+      unawaited(link.hangUp());
+      return;
+    }
     Navigator.of(context).pop(
       CallBody(
         video: _video,
@@ -146,9 +194,20 @@ class _CallPageState extends ConsumerState<CallPage>
           muted: _muted,
           cameraOff: _cameraOff,
           front: _front,
-          onFlip: () => setState(() => _front = !_front),
-          onMute: () => setState(() => _muted = !_muted),
-          onCamera: () => setState(() => _cameraOff = !_cameraOff),
+          remote: _link?.remoteView(),
+          local: _cameraOff ? null : _link?.localView(),
+          onFlip: () {
+            setState(() => _front = !_front);
+            unawaited(_link?.flip());
+          },
+          onMute: () {
+            setState(() => _muted = !_muted);
+            _link?.mute(_muted);
+          },
+          onCamera: () {
+            setState(() => _cameraOff = !_cameraOff);
+            _link?.cameraOff(_cameraOff);
+          },
           onEnd: _end,
         ),
       );
@@ -177,7 +236,10 @@ class _CallPageState extends ConsumerState<CallPage>
                         VIcon.micOff,
                         _muted ? 'Muted' : 'Mute',
                         on: _muted,
-                        onTap: () => setState(() => _muted = !_muted),
+                        onTap: () {
+                          setState(() => _muted = !_muted);
+                          _link?.mute(_muted);
+                        },
                       ),
                       const SizedBox(width: 34),
                       _Control(
@@ -192,7 +254,10 @@ class _CallPageState extends ConsumerState<CallPage>
                         VIcon.speaker,
                         'Speaker',
                         on: _speaker,
-                        onTap: () => setState(() => _speaker = !_speaker),
+                        onTap: () {
+                          setState(() => _speaker = !_speaker);
+                          _link?.speaker(_speaker);
+                        },
                       ),
                     ],
                   ),
@@ -211,7 +276,9 @@ class _CallPageState extends ConsumerState<CallPage>
                         'Accept',
                         size: 72,
                         on: true,
-                        onTap: _connect,
+                        onTap: _link == null
+                            ? _connect
+                            : () => unawaited(_link.answer()),
                       ),
                     ],
                   ),
@@ -320,13 +387,19 @@ class _CallPageState extends ConsumerState<CallPage>
               VIcon.micOff,
               _muted ? 'Muted' : 'Mute',
               on: _muted,
-              onTap: () => setState(() => _muted = !_muted),
+              onTap: () {
+                setState(() => _muted = !_muted);
+                _link?.mute(_muted);
+              },
             ),
             _Control(
               VIcon.speaker,
               'Speaker',
               on: _speaker,
-              onTap: () => setState(() => _speaker = !_speaker),
+              onTap: () {
+                setState(() => _speaker = !_speaker);
+                _link?.speaker(_speaker);
+              },
             ),
             _Control(
               VIcon.video,
@@ -461,8 +534,13 @@ class _VideoCall extends StatelessWidget {
     required this.onMute,
     required this.onCamera,
     required this.onEnd,
+    this.remote,
+    this.local,
   });
 
+  /// The live pictures on a real call; stand-in art otherwise.
+  final Widget? remote;
+  final Widget? local;
   final Person partner;
   final Duration length;
   final bool muted;
@@ -539,11 +617,12 @@ class _VideoCall extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            const ArtBox(
-              art: 0,
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
+            remote ??
+                const ArtBox(
+                  art: 0,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
             Positioned(
               left: 0,
               right: 0,
@@ -589,7 +668,7 @@ class _VideoCall extends StatelessWidget {
                             child: VIconView(VIcon.video, size: 22),
                           ),
                         )
-                      : ArtBox(art: front ? 4 : 5),
+                      : local ?? ArtBox(art: front ? 4 : 5),
                 ),
               ),
             ),
