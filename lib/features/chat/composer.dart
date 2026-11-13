@@ -401,38 +401,63 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
         const SizedBox(width: 8),
         Expanded(child: _field(context)),
         const SizedBox(width: 8),
-        if (_typing)
-          Semantics(
-            button: true,
-            label: 'Send',
-            child: VCircleButton(
-              icon: VIcon.send,
-              size: 44,
-              filled: true,
-              onTap: _send,
-            ),
-          )
-        else
-          Semantics(
-            button: true,
-            label: _round
-                ? 'Hold to record a round video, tap for voice'
-                : 'Hold to record, tap for round video',
-            child: GestureDetector(
-              onLongPressStart: _start,
-              onLongPressMoveUpdate: _move,
-              onLongPressEnd: _end,
-              child: VCircleButton(
-                icon: _round ? VIcon.roundVideo : VIcon.mic,
-                size: 44,
-                filled: true,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _round = !_round);
-                },
-              ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 260),
+          switchInCurve: Curves.easeOutBack,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, a) => ScaleTransition(
+            scale: a,
+            child: RotationTransition(
+              turns: Tween(begin: -0.12, end: 0.0).animate(a),
+              child: FadeTransition(opacity: a, child: child),
             ),
           ),
+          child: KeyedSubtree(
+            key: ValueKey(
+              _typing
+                  ? 'send'
+                  : _round
+                  ? 'round'
+                  : 'mic',
+            ),
+            child: Builder(
+              builder: (context) {
+                if (_typing) {
+                  return Semantics(
+                    button: true,
+                    label: 'Send',
+                    child: VCircleButton(
+                      icon: VIcon.send,
+                      size: 44,
+                      filled: true,
+                      onTap: _send,
+                    ),
+                  );
+                }
+                return Semantics(
+                  button: true,
+                  label: _round
+                      ? 'Hold to record a round video, tap for voice'
+                      : 'Hold to record, tap for round video',
+                  child: GestureDetector(
+                    onLongPressStart: _start,
+                    onLongPressMoveUpdate: _move,
+                    onLongPressEnd: _end,
+                    child: VCircleButton(
+                      icon: _round ? VIcon.roundVideo : VIcon.mic,
+                      size: 44,
+                      filled: true,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _round = !_round);
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
       ],
     );
   }

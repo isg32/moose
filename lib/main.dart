@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
+import 'package:video_player_media_kit/video_player_media_kit.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'app/app.dart';
@@ -33,7 +34,10 @@ Future<void> main() async {
   // The Linux desktop build (a second Moose on a laptop) plays audio
   // through libmpv.
   final android = Platform.isAndroid;
-  if (Platform.isLinux) JustAudioMediaKit.ensureInitialized(linux: true);
+  if (Platform.isLinux) {
+    JustAudioMediaKit.ensureInitialized(linux: true);
+    VideoPlayerMediaKit.ensureInitialized(linux: true);
+  }
   // First, so errors from here on are logged and shown, not lost.
   CrashLog.instance
     ..appVersion = mooseVersion

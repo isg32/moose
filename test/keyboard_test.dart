@@ -140,8 +140,12 @@ void main() {
     final open = t.getRect(find.byType(Composer)).bottom;
     expect(open, lessThanOrEqualTo(screen - 336));
     expect(open, greaterThan(screen - 336 - 30), reason: 'right on top of it');
-    // The conversation didn't move.
-    expect(t.getRect(last.first), lastBefore);
+    // The newest message rose with it: still in view, just above the
+    // composer, and up by what the composer rose.
+    final lastNow = t.getRect(last.first);
+    final composerTop = t.getRect(find.byType(Composer)).top;
+    expect(lastNow.bottom, lessThanOrEqualTo(composerTop));
+    expect(lastBefore.top - lastNow.top, closeTo(closed - open, 1.5));
 
     t.view.resetViewInsets();
     await t.pump(const Duration(milliseconds: 100));

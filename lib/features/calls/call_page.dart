@@ -19,6 +19,7 @@ import '../common/avatar.dart';
 import '../common/overlay.dart';
 import '../common/parts.dart';
 import '../common/rotation.dart';
+import '../moments/moment_flight.dart';
 
 enum CallStage { calling, incoming, connected }
 
@@ -120,9 +121,16 @@ class _CallPageState extends ConsumerState<CallPage>
         .pop(CallBody(video: _video, outcome: outcome, length: _length));
   }
 
+  /// A moment flying over the call now.
+  VMoment? _flight;
+  late final InCall _inCall = ref.read(inCallProvider.notifier);
+
+  void _fly(VMoment m) => setState(() => _flight = m);
+
   @override
   void initState() {
     super.initState();
+    Future.microtask(() => _inCall.set(true));
     final link = _link;
     if (link != null) {
       _updates = link.updates.listen(_onUpdate);
@@ -146,6 +154,8 @@ class _CallPageState extends ConsumerState<CallPage>
 
   @override
   void dispose() {
+    final inCall = _inCall;
+    Future.microtask(() => inCall.set(false));
     unawaited(_updates?.cancel());
     // Leaving the page any other way still ends the call.
     if (!_done) unawaited(_link?.hangUp());
@@ -184,6 +194,32 @@ class _CallPageState extends ConsumerState<CallPage>
 
   @override
   Widget build(BuildContext context) {
+    // A hug (or any moment) from them during the call flies over it.
+    ref.listen(incomingMomentProvider, (_, m) {
+      if (m == null) return;
+      ref.read(incomingMomentProvider.notifier).dismiss();
+      _fly(m);
+    });
+    final flight = _flight;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        _body(context),
+        if (flight != null)
+          Positioned.fill(
+            child: MomentFlight(
+              key: ValueKey(flight),
+              moment: flight,
+              onDone: () {
+                if (mounted) setState(() => _flight = null);
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _body(BuildContext context) {
     final partner = ref.watch(pairingProvider).partner;
     if (_stage == CallStage.connected && _video) {
       // Video turns with the phone (landscape where it helps).
@@ -417,7 +453,11 @@ class _CallPageState extends ConsumerState<CallPage>
               'Send a hug',
               tint: hug.color,
               emoji: hug.emoji,
-              onTap: () => ref.read(momentCooldownProvider.notifier).send(hug),
+              onTap: () {
+                if (ref.read(momentCooldownProvider.notifier).send(hug)) {
+                  _fly(hug);
+                }
+              },
             ),
             _Control(VIcon.phone, 'End', on: true, end: true, onTap: _end),
             _Control(VIcon.chat, 'Chat', onTap: _end),

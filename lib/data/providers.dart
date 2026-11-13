@@ -52,6 +52,10 @@ abstract interface class MediaSource {
 
   /// A photo from the camera, or null.
   Future<Media?> camera();
+
+  /// The photo resized to send (not HD); videos and anything that can't
+  /// be resized come back as they are.
+  Future<Media> standard(Media m);
 }
 
 final mediaSourceProvider = Provider<MediaSource?>((ref) => null);
@@ -479,6 +483,16 @@ final repairRequestProvider = NotifierProvider<RepairRequest, bool>(
 );
 
 class RepairRequest extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool v) => state = v;
+}
+
+/// A call is on screen: moments fly over it instead of bursting (K3).
+final inCallProvider = NotifierProvider<InCall, bool>(InCall.new);
+
+class InCall extends Notifier<bool> {
   @override
   bool build() => false;
 

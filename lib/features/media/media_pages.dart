@@ -19,7 +19,9 @@ import '../common/parts.dart';
 import 'attach_sheet.dart';
 
 /// Photos picked and their caption, ready to send.
-typedef PickedMedia = ({List<Media> media, String caption});
+/// What the preview hands back: the media, its caption, and whether to
+/// send the photos as they are (HD) rather than resized.
+typedef PickedMedia = ({List<Media> media, String caption, bool hd});
 
 /// The gallery (C18): pick several, numbered in order, then Send n opens
 /// the preview (C19). Returns what to send.
@@ -228,6 +230,9 @@ class MediaPreview extends StatefulWidget {
 
 class _MediaPreviewState extends State<MediaPreview> {
   late final _media = List.of(widget.media);
+
+  /// Send photos as they are, not resized.
+  bool _hd = false;
   final _page = PageController();
   final _caption = TextEditingController();
   var _at = 0;
@@ -347,6 +352,20 @@ class _MediaPreviewState extends State<MediaPreview> {
                     const SizedBox(width: 8),
                     Semantics(
                       button: true,
+                      toggled: _hd,
+                      label: 'HD',
+                      child: VPill(
+                        'HD',
+                        fill: _hd ? VFill.filled : VFill.outline,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _hd = !_hd);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Semantics(
+                      button: true,
                       label: widget.partner.isEmpty
                           ? 'Send'
                           : 'Send to ${widget.partner}',
@@ -357,6 +376,7 @@ class _MediaPreviewState extends State<MediaPreview> {
                         onTap: () => Navigator.of(context).pop((
                           media: List.of(_media),
                           caption: _caption.text.trim(),
+                          hd: _hd,
                         )),
                       ),
                     ),

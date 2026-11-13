@@ -87,7 +87,9 @@ class _AppShellState extends State<AppShell> {
       },
       child: Stack(
         children: [
-          Positioned.fill(child: shell),
+          Positioned.fill(
+            child: _TabSwap(index: shell.currentIndex, child: shell),
+          ),
           // Content scrolling under the pill softens into a blur that is
           // strongest at the bottom edge.
           Positioned(
@@ -146,7 +148,10 @@ class _AppShellState extends State<AppShell> {
           Consumer(
             builder: (context, ref, _) {
               final moment = ref.watch(incomingMomentProvider);
-              if (moment == null) return const SizedBox.shrink();
+              // On a call the moment flies over the call instead (K3).
+              if (moment == null || ref.watch(inCallProvider)) {
+                return const SizedBox.shrink();
+              }
               final partner = ref.read(pairingProvider).partner.name;
               void close() =>
                   ref.read(incomingMomentProvider.notifier).dismiss();
@@ -201,4 +206,50 @@ class _CallListener extends ConsumerWidget {
     });
     return const SizedBox.shrink();
   }
+}
+
+/// Switching tabs: the new tab fades up and settles in, not a hard cut.
+class _TabSwap extends StatefulWidget {
+  const _TabSwap({required this.index, required this.child});
+
+  final int index;
+  final Widget child;
+
+  @override
+  State<_TabSwap> createState() => _TabSwapState();
+}
+
+class _TabSwapState extends State<_TabSwap>
+    with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 280),
+    value: 1,
+  );
+
+  @override
+  void didUpdateWidget(_TabSwap old) {
+    super.didUpdateWidget(old);
+    if (old.index != widget.index) _c.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _c,
+    child: widget.child,
+    builder: (context, child) {
+      if (_c.value == 1) return child!;
+      final t = Curves.easeOutCubic.transform(_c.value);
+      return Opacity(
+        opacity: 0.35 + 0.65 * t,
+        child: Transform.scale(scale: 0.98 + 0.02 * t, child: child),
+      );
+    },
+  );
 }

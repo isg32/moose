@@ -13,6 +13,7 @@ class YouTubeSongs implements MusicRepository, SongPlayer {
   final _player = AudioPlayer();
   final _streams = <String, Uri>{};
   StreamSubscription<PlayerState>? _state;
+  StreamSubscription<Duration>? _position;
   void Function()? _onDone;
 
   @override
@@ -44,16 +45,23 @@ class YouTubeSongs implements MusicRepository, SongPlayer {
       final url = _streams[song.videoId] ??= (await resolveAudio(song.videoId))
           .url;
       await _state?.cancel();
+      await _position?.cancel();
       _state = _player.playerStateStream.listen((s) {
         if (s.processingState == ProcessingState.completed) _done();
       });
+      // Load the whole stream and seek, rather than a clipping source:
+      // some YouTube streams ignore the clip's start and play from 0:00.
       await _player.setAudioSource(
-        ClippingAudioSource(
-          child: AudioSource.uri(url),
-          start: start,
-          end: start + const Duration(seconds: 15),
-        ),
+        AudioSource.uri(url),
+        initialPosition: start,
       );
+      if ((_player.position - start).abs() > const Duration(seconds: 1)) {
+        await _player.seek(start);
+      }
+      final end = start + const Duration(seconds: 15);
+      _position = _player.positionStream.listen((p) {
+        if (p >= end) unawaited(stop());
+      });
       unawaited(_player.play());
     } on Object {
       _streams.remove(song.videoId); // maybe expired: find it afresh next time
@@ -72,6 +80,8 @@ class YouTubeSongs implements MusicRepository, SongPlayer {
 
   @override
   Future<void> stop() async {
+    await _position?.cancel();
+    _position = null;
     await _player.stop();
     _done();
   }

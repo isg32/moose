@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/theme/v_tokens.dart';
 import '../features/chat/chat_page.dart';
 import '../features/doodles/doodles_page.dart';
 import '../features/onboarding/onboarding_pages.dart';
@@ -115,16 +114,6 @@ GoRouter buildRouter({
   ],
 );
 
-/// Full-screen pages fade in; nothing slides or bounces.
-Page<void> fadePage(GoRouterState state, Widget child) {
-  return CustomTransitionPage<void>(
-    key: state.pageKey,
-    child: child,
-    transitionDuration: VMotion.standard,
-    reverseTransitionDuration: VMotion.standard,
-    transitionsBuilder: (context, animation, _, child) => FadeTransition(
-      opacity: CurvedAnimation(parent: animation, curve: VMotion.curve),
-      child: child,
-    ),
-  );
-}
+/// Onboarding's pages: they slide in the iOS way, and swipe back.
+Page<void> fadePage(GoRouterState state, Widget child) =>
+    CupertinoPage<void>(key: state.pageKey, child: child);

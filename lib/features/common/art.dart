@@ -18,7 +18,11 @@ class ArtBox extends StatelessWidget {
     this.end = Alignment.bottomRight,
     this.path,
     this.url,
+    this.full = false,
   });
+
+  /// Decode [path] at full size (the zoomable viewer), not 1080 px wide.
+  final bool full;
 
   final int art;
   final String? path;
@@ -46,7 +50,9 @@ class ArtBox extends StatelessWidget {
         gradient: LinearGradient(colors: [a, b], begin: begin, end: end),
         image: file != null
             ? DecorationImage(
-                image: ResizeImage(FileImage(File(file)), width: 1080),
+                image: full
+                    ? FileImage(File(file))
+                    : ResizeImage(FileImage(File(file)), width: 1080),
                 fit: BoxFit.cover,
               )
             : web != null

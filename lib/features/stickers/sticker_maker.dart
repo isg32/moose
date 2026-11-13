@@ -1,8 +1,11 @@
+import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_colors.dart';
@@ -20,7 +23,10 @@ import '../common/art.dart';
 import '../common/choice_sheet.dart';
 import '../common/overlay.dart';
 import '../common/sticker_view.dart';
+import '../common/dot_loader.dart';
 import '../common/strokes.dart';
+import '../common/toast.dart';
+import 'cutout.dart';
 
 /// Make a sticker from a photo or a doodle (S2, S3); it lands in your
 /// stickers and is returned when it should be sent too.
@@ -106,7 +112,13 @@ class _DoodleStickerSheet extends ConsumerStatefulWidget {
 
 class _DoodleStickerSheetState extends ConsumerState<_DoodleStickerSheet> {
   var _outline = true;
-  var _pack = 'doodles';
+
+  /// The mock's "Moose doodles" pack when there is one; else the first
+  /// (on Neon: "Ours").
+  late var _pack = () {
+    final packs = ref.read(stickersProvider);
+    return packs.any((p) => p.id == 'doodles') ? 'doodles' : packs.first.id;
+  }();
 
   Sticker? _save({required bool send}) {
     final s = Sticker.doodle(
@@ -172,7 +184,12 @@ class _DoodleStickerSheetState extends ConsumerState<_DoodleStickerSheet> {
                   children: [
                     VListRow(
                       title: 'Add to pack',
-                      value: packs.firstWhere((p) => p.id == _pack).name,
+                      value: packs
+                          .firstWhere(
+                            (p) => p.id == _pack,
+                            orElse: () => packs.first,
+                          )
+                          .name,
                       onTap: () async {
                         final p = await showChoiceSheet<String>(
                           context,
@@ -247,18 +264,93 @@ enum _Cut { auto, erase, restore, text }
 class _PhotoStickerPageState extends ConsumerState<PhotoStickerPage> {
   var _tool = _Cut.auto;
   var _outline = true;
-  var _caption = 'us!!';
+  late var _caption = widget.path == null ? 'us!!' : '';
 
-  Sticker _make() => Sticker.photo(
-    id: 'st${DateTime.now().microsecondsSinceEpoch}',
-    art: widget.art,
-    path: widget.path,
-  );
+  /// The real cut (a photo from the phone); null draws the mock's stand-in.
+  Cutout? _cut;
+  bool _saving = false;
 
-  void _save({required bool send}) {
-    final s = _make();
+  @override
+  void initState() {
+    super.initState();
+    final path = widget.path;
+    if (path == null) return;
+    unawaited(() async {
+      final cut = await Cutout.open(path);
+      if (!mounted) return;
+      setState(() => _cut = cut);
+      await _autoCut();
+    }());
+  }
+
+  @override
+  void dispose() {
+    _cut?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _autoCut() async {
+    final cut = _cut;
+    if (cut == null) return;
+    setState(() => _tool = _Cut.auto);
+    final ok = await cut.autoCut();
+    if (!ok && mounted) {
+      showToast(context, "Couldn't find who's in it: erase by hand");
+    }
+  }
+
+  Future<void> _editCaption() async {
+    final c = TextEditingController(text: _caption);
+    final text = await showVSheet<String>(
+      context,
+      title: 'Caption',
+      builder: (context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          VTextField(
+            controller: c,
+            autofocus: true,
+            onSubmitted: (v) => Navigator.of(context).pop(v),
+          ),
+          const SizedBox(height: 14),
+          VButton.primary(
+            'Done',
+            onPressed: () => Navigator.of(context).pop(c.text),
+          ),
+        ],
+      ),
+    );
+    c.dispose();
+    if (text == null || !mounted) return;
+    setState(() => _caption = text.trim());
+    _cut?.setCaption(_caption);
+  }
+
+  Future<void> _save({required bool send}) async {
+    if (_saving) return;
+    final cut = _cut;
+    final Sticker s;
+    if (cut != null) {
+      setState(() => _saving = true);
+      final dir = Directory(
+        '${(await getApplicationSupportDirectory()).path}/stickers',
+      );
+      final png = await cut.export(dir);
+      // "cut-": drawn as its shape, not a rounded photo (StickerView).
+      s = Sticker.photo(
+        id: 'cut-${DateTime.now().microsecondsSinceEpoch}',
+        art: widget.art,
+        path: png,
+      );
+    } else {
+      s = Sticker.photo(
+        id: 'st${DateTime.now().microsecondsSinceEpoch}',
+        art: widget.art,
+      );
+    }
+    if (!mounted) return;
     ref.read(stickersProvider.notifier).add('ours', s);
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     Navigator.of(context).pop(send ? s : null);
   }
 
@@ -288,77 +380,106 @@ class _PhotoStickerPageState extends ConsumerState<PhotoStickerPage> {
                         style: VText.inter(15, weight: 600),
                       ),
                     ),
-                    VCircleButton(icon: VIcon.undo, size: 44, onTap: () {}),
+                    VCircleButton(
+                      icon: VIcon.undo,
+                      size: 44,
+                      onTap: () => _cut?.undo(),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
                 Expanded(
                   child: _Checker(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 230,
-                          height: 270,
-                          decoration: BoxDecoration(
-                            borderRadius: stickerRadius(0, 230, 270),
-                            border: _outline
-                                ? Border.all(color: VColors.white, width: 6)
-                                : null,
-                            boxShadow: [
-                              BoxShadow(
-                                color: VColors.black.withValues(alpha: 0.4),
-                                blurRadius: 30,
-                                offset: const Offset(0, 10),
+                    child: _cut != null
+                        ? Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              CutoutCanvas(
+                                cut: _cut!,
+                                brush: switch (_tool) {
+                                  _Cut.erase => true,
+                                  _Cut.restore => false,
+                                  _ => null,
+                                },
                               ),
+                              if (_cut!.cutting)
+                                const Center(child: DotLoader()),
+                            ],
+                          )
+                        : widget.path != null
+                        ? const Center(child: DotLoader())
+                        : Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: 230,
+                                height: 270,
+                                decoration: BoxDecoration(
+                                  borderRadius: stickerRadius(0, 230, 270),
+                                  border: _outline
+                                      ? Border.all(
+                                          color: VColors.white,
+                                          width: 6,
+                                        )
+                                      : null,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: VColors.black.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                      blurRadius: 30,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: ArtBox(
+                                  art: widget.art,
+                                  path: widget.path,
+                                  radius: stickerRadius(0, 230, 270),
+                                ),
+                              ),
+                              if (_tool == _Cut.auto)
+                                IgnorePointer(
+                                  child: Container(
+                                    width: 250,
+                                    height: 290,
+                                    decoration: BoxDecoration(
+                                      borderRadius: stickerRadius(0, 250, 290),
+                                      border: Border.all(
+                                        color: VColors.black,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              if (_caption.isNotEmpty)
+                                Positioned(
+                                  bottom: 28,
+                                  child: Transform.rotate(
+                                    angle: -4 * math.pi / 180,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: VColors.white,
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        _caption,
+                                        style: VText.doto(
+                                          22,
+                                          weight: 700,
+                                        ).copyWith(color: VColors.black),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
-                          child: ArtBox(
-                            art: widget.art,
-                            path: widget.path,
-                            radius: stickerRadius(0, 230, 270),
-                          ),
-                        ),
-                        if (_tool == _Cut.auto)
-                          IgnorePointer(
-                            child: Container(
-                              width: 250,
-                              height: 290,
-                              decoration: BoxDecoration(
-                                borderRadius: stickerRadius(0, 250, 290),
-                                border: Border.all(
-                                  color: VColors.black,
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (_caption.isNotEmpty)
-                          Positioned(
-                            bottom: 28,
-                            child: Transform.rotate(
-                              angle: -4 * math.pi / 180,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: VColors.white,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  _caption,
-                                  style: VText.doto(
-                                    22,
-                                    weight: 700,
-                                  ).copyWith(color: VColors.black),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -375,18 +496,35 @@ class _PhotoStickerPageState extends ConsumerState<PhotoStickerPage> {
                         icon: icon,
                         label: label,
                         on: _tool == t,
-                        onTap: () => setState(() {
-                          _tool = t;
-                          if (t == _Cut.text) {
-                            _caption = _caption.isEmpty ? 'us!!' : '';
+                        onTap: () {
+                          if (_cut == null) {
+                            // The mock: pretend tools.
+                            setState(() {
+                              _tool = t;
+                              if (t == _Cut.text) {
+                                _caption = _caption.isEmpty ? 'us!!' : '';
+                              }
+                            });
+                            return;
                           }
-                        }),
+                          switch (t) {
+                            case _Cut.auto:
+                              unawaited(_autoCut());
+                            case _Cut.text:
+                              unawaited(_editCaption());
+                            case _Cut.erase || _Cut.restore:
+                              setState(() => _tool = t);
+                          }
+                        },
                       ),
                     _Tool(
                       icon: VIcon.outline,
                       label: 'Outline',
                       on: _outline,
-                      onTap: () => setState(() => _outline = !_outline),
+                      onTap: () {
+                        setState(() => _outline = !_outline);
+                        _cut?.setOutline(_outline);
+                      },
                     ),
                   ],
                 ),
@@ -552,6 +690,10 @@ class _ReceivedSticker extends ConsumerWidget {
         .where((p) => p.stickers.any((s) => s.id == sticker.id))
         .firstOrNull;
     final n = ref.read(stickersProvider.notifier);
+    // Theirs go in "Saved" when there is one (Neon), else "Ours".
+    final into = ref.read(stickersProvider).any((p) => p.id == 'saved')
+        ? 'saved'
+        : 'ours';
     void done(String text) {
       HapticFeedback.selectionClick();
       Navigator.of(context).pop();
@@ -594,7 +736,7 @@ class _ReceivedSticker extends ConsumerWidget {
                       ? 'Remove from favourites'
                       : 'Add to favourites',
                   onPressed: () {
-                    if (pack == null) n.add('ours', sticker);
+                    if (pack == null) n.add(into, sticker);
                     n.toggleFavourite(sticker.id);
                     done('Favourite');
                   },
@@ -603,7 +745,7 @@ class _ReceivedSticker extends ConsumerWidget {
                 VButton.secondary(
                   'Save to my stickers',
                   onPressed: () {
-                    if (pack == null) n.add('ours', sticker);
+                    if (pack == null) n.add(into, sticker);
                     done('Saved');
                   },
                 ),

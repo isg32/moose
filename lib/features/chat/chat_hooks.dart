@@ -44,14 +44,22 @@ class ChatHooks {
               partner: partner,
               source: ref.read(mediaSourceProvider),
             );
-            if (picked != null) _sendPicked(messages, picked);
+            if (picked != null) {
+              await _sendPicked(
+                messages,
+                picked,
+                ref.read(mediaSourceProvider),
+              );
+            }
           case AttachKind.camera:
             final shot = await takePhoto(
               context,
               partner: partner,
               source: ref.read(mediaSourceProvider),
             );
-            if (shot != null) _sendPicked(messages, shot);
+            if (shot != null) {
+              await _sendPicked(messages, shot, ref.read(mediaSourceProvider));
+            }
           case AttachKind.roundVideo:
             if (context.mounted) {
               showToast(
@@ -76,10 +84,18 @@ class ChatHooks {
     return null;
   }
 
-  void _sendPicked(MessagesNotifier messages, PickedMedia p) {
+  Future<void> _sendPicked(
+    MessagesNotifier messages,
+    PickedMedia p,
+    MediaSource? source,
+  ) async {
     final caption = p.caption.isEmpty ? null : p.caption;
     final videos = p.media.where((m) => m.duration != null).toList();
-    final photos = p.media.where((m) => m.duration == null).toList();
+    var photos = p.media.where((m) => m.duration == null).toList();
+    // Not HD: resized to 2048 px before they go.
+    if (!p.hd && source != null) {
+      photos = [for (final m in photos) await source.standard(m)];
+    }
     if (photos.isNotEmpty) messages.send(PhotoBody(photos, caption: caption));
     for (final v in videos) {
       messages.send(VideoBody(v));
@@ -115,7 +131,13 @@ class ChatHooks {
   }
 
   /// The media viewer (C21) on [m]'s [index]th item.
-  void openMedia(BuildContext context, WidgetRef ref, Message m, int index) {
+  void openMedia(
+    BuildContext context,
+    WidgetRef ref,
+    Message m,
+    int index, {
+    void Function(Message m)? onReply,
+  }) {
     final partner = ref.read(pairingProvider).partner.name;
     final all = ref.read(messagesProvider);
     final items = viewerItems(all, partner: partner);
@@ -128,6 +150,11 @@ class ChatHooks {
       (_) => MediaViewer(
         items: items,
         start: (before + index).clamp(0, items.length - 1),
+        onReply: onReply == null
+            ? null
+            : (item) {
+                if (item.message case final m?) onReply(m);
+              },
       ),
     );
   }

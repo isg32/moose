@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
@@ -20,23 +21,15 @@ class PhoneMedia implements MediaSource {
 
   @override
   Future<List<Media>> gallery() async {
-    final picked = await _picker.pickMultipleMedia(
-      maxWidth: 2560,
-      maxHeight: 2560,
-      imageQuality: 85,
-      limit: 10,
-    );
+    // As they are: the preview's HD switch decides whether they're resized
+    // (see standard).
+    final picked = await _picker.pickMultipleMedia(limit: 10);
     return [for (final x in picked) await _keep(x)];
   }
 
   @override
   Future<Media?> camera() async {
-    final x = await _picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 2560,
-      maxHeight: 2560,
-      imageQuality: 85,
-    );
+    final x = await _picker.pickImage(source: ImageSource.camera);
     return x == null ? null : _keep(x);
   }
 
@@ -49,6 +42,35 @@ class PhoneMedia implements MediaSource {
         name.endsWith('.webm') ||
         name.endsWith('.3gp') ||
         name.endsWith('.mkv');
+  }
+
+  @override
+  Future<Media> standard(Media m) async {
+    final path = m.path;
+    if (path == null || m.duration != null) return m;
+    try {
+      final out = '${dir.path}/${NeonChatRepository.uuid()}.jpg';
+      final small = await FlutterImageCompress.compressAndGetFile(
+        path,
+        out,
+        minWidth: 2048,
+        minHeight: 2048,
+        quality: 82,
+      );
+      if (small == null) return m;
+      final bytes = await small.readAsBytes();
+      // Only if it actually came out smaller.
+      if (bytes.length >= m.bytes) return m;
+      return Media(
+        id: m.id,
+        art: m.art,
+        aspect: await aspectOf(bytes),
+        bytes: bytes.length,
+        path: small.path,
+      );
+    } on Object {
+      return m; // No compressor here (the desktop build): send it as it is.
+    }
   }
 
   Future<Media> _keep(XFile x) async {

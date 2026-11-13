@@ -85,6 +85,19 @@ class ChatPageState extends ConsumerState<ChatPage> {
 
   MessagesNotifier get _messages => ref.read(messagesProvider.notifier);
 
+  /// Every message shown so far: what isn't in here is new, and pops in.
+  Set<String>? _known;
+
+  Set<String> _fresh(List<Message> messages) {
+    final known = _known ??= {for (final m in messages) m.id};
+    final fresh = {
+      for (final m in messages)
+        if (!known.contains(m.id)) m.id,
+    };
+    known.addAll(fresh);
+    return fresh;
+  }
+
   void _send(Body body) {
     _messages.send(body, reply: _replyTo?.quote());
     setState(() => _replyTo = null);
@@ -241,8 +254,8 @@ class ChatPageState extends ConsumerState<ChatPage> {
     final pad = MediaQuery.viewPaddingOf(context);
     final top = pad.top;
     const pillTop = AppShell.pillBottom + AppShell.pillHeight;
-    // Where the composer rests, above the pill. The list is laid out for
-    // this and never for the keyboard, so opening it doesn't move the chat.
+    // Where the composer rests, above the pill; the keyboard lifts it, and
+    // the list's bottom with it (see _Lift).
     final composerBottom = pad.bottom + pillTop + 12;
     final unread = messages
         .where(
@@ -258,7 +271,13 @@ class ChatPageState extends ConsumerState<ChatPage> {
       onReact: (m, e) => _messages.react(m.id, e),
       onPlayVoice: (m) => _play(m, (m.body as VoiceBody).length),
       onPlaySong: (m) => _play(m, const Duration(seconds: 15)),
-      onOpenMedia: (m, i) => hooks.openMedia(context, ref, m, i),
+      onOpenMedia: (m, i) => hooks.openMedia(
+        context,
+        ref,
+        m,
+        i,
+        onReply: session.decoy ? null : (m) => setState(() => _replyTo = m),
+      ),
       onCallBack: (m) =>
           hooks.call(context, ref, video: (m.body as CallBody).video),
     );
@@ -280,22 +299,29 @@ class ChatPageState extends ConsumerState<ChatPage> {
                   },
             child: messages.isEmpty
                 ? _Empty(partner: partner.name)
-                : _List(
-                    controller: _scroll,
-                    messages: messages,
-                    lastRead: _lastRead,
-                    unread: unread,
-                    partner: partner.name,
-                    actions: actions,
-                    playing: _playing,
-                    padding: EdgeInsets.fromLTRB(
-                      14,
-                      top + 64 + (online ? 0 : 56),
-                      14,
-                      composerBottom +
-                          56 +
-                          (_replyTo != null ? 52 : 0) +
-                          (_picked.isNotEmpty ? 90 : 0),
+                // The newest message rides up with the composer, so it
+                // stays in view above the keyboard (a reversed list keeps
+                // its bottom where the padding puts it).
+                : _Lift(
+                    rest: composerBottom,
+                    builder: (lift) => _List(
+                      controller: _scroll,
+                      messages: messages,
+                      lastRead: _lastRead,
+                      unread: unread,
+                      partner: partner.name,
+                      actions: actions,
+                      playing: _playing,
+                      fresh: _fresh(messages),
+                      padding: EdgeInsets.fromLTRB(
+                        14,
+                        top + 64 + (online ? 0 : 56),
+                        14,
+                        lift +
+                            56 +
+                            (_replyTo != null ? 52 : 0) +
+                            (_picked.isNotEmpty ? 90 : 0),
+                      ),
                     ),
                   ),
           ),
@@ -341,18 +367,29 @@ class ChatPageState extends ConsumerState<ChatPage> {
             top: top + 64,
             child: const _OfflineBanner(),
           ),
-        if (_showJump)
-          Positioned(
-            right: 16,
-            bottom: 0,
-            child: _Lift(
-              rest: composerBottom,
-              builder: (lift) => Padding(
-                padding: EdgeInsets.only(bottom: lift + 60),
-                child: _JumpButton(count: _newWhileAway, onTap: _toBottom),
+        Positioned(
+          right: 16,
+          bottom: 0,
+          child: _Lift(
+            rest: composerBottom,
+            builder: (lift) => Padding(
+              padding: EdgeInsets.only(bottom: lift + 60),
+              child: IgnorePointer(
+                ignoring: !_showJump,
+                child: AnimatedScale(
+                  scale: _showJump ? 1 : 0.4,
+                  duration: const Duration(milliseconds: 300),
+                  curve: _showJump ? Curves.easeOutBack : Curves.easeIn,
+                  child: AnimatedOpacity(
+                    opacity: _showJump ? 1 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: _JumpButton(count: _newWhileAway, onTap: _toBottom),
+                  ),
+                ),
               ),
             ),
           ),
+        ),
         Positioned(
           left: 12,
           right: 12,
@@ -539,8 +576,11 @@ class _List extends StatelessWidget {
     required this.actions,
     required this.playing,
     required this.padding,
+    this.fresh = const {},
   });
 
+  /// Messages new since the chat opened: they pop in.
+  final Set<String> fresh;
   final ScrollController controller;
   final List<Message> messages;
   final DateTime lastRead;
@@ -585,12 +625,21 @@ class _List extends StatelessWidget {
             top: m.reactions.isEmpty ? 4 : 4,
             bottom: m.reactions.isEmpty ? 4 : 0,
           ),
-          child: MessageView(
-            key: ValueKey(m.id),
-            message: m,
-            partner: partner,
-            actions: actions,
-            playingId: playing,
+          child: _Appear(
+            key: ValueKey('appear-${m.id}'),
+            animate: fresh.contains(m.id),
+            alignment: m.centred
+                ? Alignment.bottomCenter
+                : m.fromMe
+                ? Alignment.bottomRight
+                : Alignment.bottomLeft,
+            child: MessageView(
+              key: ValueKey(m.id),
+              message: m,
+              partner: partner,
+              actions: actions,
+              playingId: playing,
+            ),
           ),
         ),
       );
@@ -721,5 +770,65 @@ class _JumpButton extends StatelessWidget {
         ),
       ),
     ),
+  );
+}
+
+/// A message arriving: from its own corner it grows, rises and fades in on
+/// a soft spring. Messages already there when the chat opened just sit.
+class _Appear extends StatefulWidget {
+  const _Appear({
+    super.key,
+    required this.animate,
+    required this.alignment,
+    required this.child,
+  });
+
+  final bool animate;
+  final Alignment alignment;
+  final Widget child;
+
+  @override
+  State<_Appear> createState() => _AppearState();
+}
+
+class _AppearState extends State<_Appear> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 520),
+    value: widget.animate ? 0 : 1,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.animate) _c.forward();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _c,
+    child: widget.child,
+    builder: (context, child) {
+      if (_c.value == 1) return child!;
+      final grow = Curves.easeOutBack.transform(_c.value);
+      final fade = Curves.easeOut.transform((_c.value * 1.8).clamp(0, 1));
+      return Opacity(
+        opacity: fade,
+        child: Transform.translate(
+          offset: Offset(0, 18 * (1 - Curves.easeOutCubic.transform(_c.value))),
+          child: Transform.scale(
+            scale: 0.85 + 0.15 * grow,
+            alignment: widget.alignment,
+            child: child,
+          ),
+        ),
+      );
+    },
   );
 }

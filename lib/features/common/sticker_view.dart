@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
@@ -49,6 +50,25 @@ class StickerView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A cut-out (from the sticker maker): its own shape and outline, as
+    // drawn into the PNG.
+    final cutPath = sticker.path;
+    if (sticker.id.startsWith('cut-') &&
+        cutPath != null &&
+        File(cutPath).existsSync()) {
+      return Transform.rotate(
+        angle: tilt * math.pi / 180,
+        child: SizedBox.square(
+          dimension: size,
+          child: Image.file(
+            File(cutPath),
+            fit: BoxFit.contain,
+            cacheWidth: (size * 3).round(),
+            filterQuality: FilterQuality.medium,
+          ),
+        ),
+      );
+    }
     final Widget art = sticker.isDoodle
         ? SizedBox.square(
             dimension: size,

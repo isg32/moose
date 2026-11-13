@@ -888,4 +888,7 @@ class _DrawnPhotos implements MediaSource {
 
   @override
   Future<Media?> camera() async => (await gallery()).first;
+
+  @override
+  Future<Media> standard(Media m) async => m;
 }

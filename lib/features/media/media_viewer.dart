@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:gal/gal.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/widgets.dart';
 
@@ -16,14 +19,23 @@ import '../common/art.dart';
 import '../common/video_frame.dart';
 import '../common/parts.dart';
 import '../common/rotation.dart';
+import '../common/toast.dart';
 
 /// One item the viewer can show, with who sent it and when.
 class ViewerItem {
-  const ViewerItem({required this.media, required this.from, required this.at});
+  const ViewerItem({
+    required this.media,
+    required this.from,
+    required this.at,
+    this.message,
+  });
 
   final Media media;
   final String from;
   final DateTime at;
+
+  /// The message it came in, for Reply.
+  final Message? message;
 
   bool get video => media.duration != null;
 }
@@ -40,8 +52,12 @@ List<ViewerItem> viewerItems(
       RoundVideoBody(:final video) => [video],
       _ => const <Media>[],
     }.map(
-      (media) =>
-          ViewerItem(media: media, from: m.fromMe ? 'You' : partner, at: m.at),
+      (media) => ViewerItem(
+        media: media,
+        from: m.fromMe ? 'You' : partner,
+        at: m.at,
+        message: m,
+      ),
     ),
 ];
 
@@ -75,7 +91,14 @@ class _MediaViewerState extends State<MediaViewer> {
   VideoPlayerController? _video;
 
   @override
+  void initState() {
+    super.initState();
+    _zoom.addListener(_onZoom);
+  }
+
+  @override
   void dispose() {
+    _zoom.dispose();
     _clock?.cancel();
     _video?.dispose();
     _page.dispose();
@@ -96,7 +119,14 @@ class _MediaViewerState extends State<MediaViewer> {
       var v = _video;
       if (v == null) {
         v = _video = VideoPlayerController.file(File(path));
-        await v.initialize();
+        try {
+          await v.initialize();
+        } on Object {
+          _video = null;
+          unawaited(v.dispose());
+          if (mounted) showToast(context, "This video can't play here");
+          return;
+        }
         v.addListener(() {
           if (!mounted || _video != v) return;
           final d = v!.value.duration.inMilliseconds;
@@ -170,11 +200,39 @@ class _MediaViewerState extends State<MediaViewer> {
     ],
   );
 
+  /// The photo on screen is zoomed: swiping to the next waits, so a drag
+  /// moves the photo instead.
+  bool _zoomed = false;
+  final _zoom = TransformationController();
+  TapDownDetails? _doubleTapAt;
+
+  void _onZoom() {
+    final zoomed = _zoom.value.getMaxScaleOnAxis() > 1.01;
+    if (zoomed != _zoomed) setState(() => _zoomed = zoomed);
+  }
+
+  /// Double-tap: 2.5× where you tapped, or back to fit.
+  void _doubleTap() {
+    if (_zoomed) {
+      _zoom.value = Matrix4.identity();
+      return;
+    }
+    final at = _doubleTapAt?.localPosition ?? Offset.zero;
+    const k = 2.5;
+    _zoom.value = Matrix4.identity()
+      ..translateByDouble(-at.dx * (k - 1), -at.dy * (k - 1), 0, 1)
+      ..scaleByDouble(k, k, 1, 1);
+  }
+
   Widget _pages() => PageView.builder(
     controller: _page,
+    physics: _zoomed
+        ? const NeverScrollableScrollPhysics()
+        : const PageScrollPhysics(),
     itemCount: widget.items.length,
     onPageChanged: (i) {
       _clock?.cancel();
+      _zoom.value = Matrix4.identity();
       _dropVideo();
       setState(() {
         _at = i;
@@ -184,53 +242,66 @@ class _MediaViewerState extends State<MediaViewer> {
     },
     itemBuilder: (context, i) {
       final it = widget.items[i];
-      return InteractiveViewer(
-        maxScale: 4,
-        child: Center(
-          child: AspectRatio(
-            aspectRatio: it.media.aspect,
-            child: ArtBox(
-              art: it.media.art,
-              path: it.video ? null : it.media.path,
-              child: it.video
-                  ? Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        if (i == _at && _video?.value.isInitialized == true)
-                          VideoPlayer(_video!)
-                        else if (it.media.path case final path?)
-                          VideoFrame(path),
-                        Center(
-                          child: Semantics(
-                            button: true,
-                            label: _playing ? 'Pause' : 'Play',
-                            child: VTappable(
-                              onTap: _toggle,
-                              child: Opacity(
-                                opacity: _playing && i == _at ? 0 : 1,
-                                child: Container(
-                                  width: 68,
-                                  height: 68,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: VColors.black.withValues(alpha: 0.4),
-                                    border: Border.all(color: VColors.white),
-                                  ),
-                                  child: const Center(
-                                    child: VIconView(
-                                      VIcon.play,
-                                      size: 28,
-                                      color: VColors.white,
+      return GestureDetector(
+        onDoubleTapDown: (d) => _doubleTapAt = d,
+        onDoubleTap: i == _at && !it.video ? _doubleTap : null,
+        child: InteractiveViewer(
+          // Only the photo on screen zooms (one controller).
+          transformationController: i == _at ? _zoom : null,
+          minScale: 1,
+          maxScale: 5,
+          panEnabled: _zoomed,
+          onInteractionUpdate: (_) => _onZoom(),
+          onInteractionEnd: (_) => _onZoom(),
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: it.media.aspect,
+              child: ArtBox(
+                art: it.media.art,
+                path: it.video ? null : it.media.path,
+                full: true,
+                child: it.video
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (i == _at && _video?.value.isInitialized == true)
+                            VideoPlayer(_video!)
+                          else if (it.media.path case final path?)
+                            VideoFrame(path),
+                          Center(
+                            child: Semantics(
+                              button: true,
+                              label: _playing ? 'Pause' : 'Play',
+                              child: VTappable(
+                                onTap: _toggle,
+                                child: Opacity(
+                                  opacity: _playing && i == _at ? 0 : 1,
+                                  child: Container(
+                                    width: 68,
+                                    height: 68,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: VColors.black.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                      border: Border.all(color: VColors.white),
+                                    ),
+                                    child: const Center(
+                                      child: VIconView(
+                                        VIcon.play,
+                                        size: 28,
+                                        color: VColors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    )
-                  : null,
+                        ],
+                      )
+                    : null,
+              ),
             ),
           ),
         ),
@@ -251,6 +322,74 @@ class _MediaViewerState extends State<MediaViewer> {
     );
   }
 
+  /// Into the phone's gallery (Pictures/Moose, Movies/Moose); on the
+  /// desktop, into Downloads.
+  Future<void> _save(ViewerItem item) async {
+    final path = item.media.path;
+    if (path == null) {
+      showToast(context, "It isn't on this phone yet");
+      return;
+    }
+    unawaited(HapticFeedback.selectionClick());
+    try {
+      if (Platform.isAndroid) {
+        if (!await Gal.hasPermission(toAlbum: true)) {
+          await Gal.requestPermission(toAlbum: true);
+        }
+        final ext = item.video ? 'mp4' : _imageExt(path);
+        final named = await File(path).copy(
+          '${(await getTemporaryDirectory()).path}/moose-${item.media.id}.$ext',
+        );
+        item.video
+            ? await Gal.putVideo(named.path, album: 'Moose')
+            : await Gal.putImage(named.path, album: 'Moose');
+      } else {
+        final dir =
+            await getDownloadsDirectory() ??
+            await getApplicationDocumentsDirectory();
+        await File(path).copy(
+          '${dir.path}/moose-${item.media.id}.${item.video ? 'mp4' : _imageExt(path)}',
+        );
+      }
+      if (mounted) showToast(context, 'Saved');
+    } on Object {
+      if (mounted) showToast(context, "Couldn't save it");
+    }
+  }
+
+  Future<void> _share(ViewerItem item) async {
+    final path = item.media.path;
+    if (path == null) {
+      showToast(context, "It isn't on this phone yet");
+      return;
+    }
+    unawaited(HapticFeedback.selectionClick());
+    final ext = item.video ? 'mp4' : _imageExt(path);
+    final named = await File(path).copy(
+      '${(await getTemporaryDirectory()).path}/moose-${item.media.id}.$ext',
+    );
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [
+          XFile(named.path, mimeType: item.video ? 'video/mp4' : 'image/$ext'),
+        ],
+      ),
+    );
+  }
+
+  /// The image's real type from its first bytes (files are kept without
+  /// an extension).
+  static String _imageExt(String path) {
+    final head = File(path).openSync()..setPositionSync(0);
+    final b = head.readSync(12);
+    head.closeSync();
+    if (b.length >= 3 && b[0] == 0xFF && b[1] == 0xD8) return 'jpeg';
+    if (b.length >= 4 && b[0] == 0x89 && b[1] == 0x50) return 'png';
+    if (b.length >= 12 && b[8] == 0x57 && b[9] == 0x45) return 'webp';
+    if (b.length >= 3 && b[0] == 0x47 && b[1] == 0x49) return 'gif';
+    return 'jpeg';
+  }
+
   Widget _actions(ViewerItem item) => Row(
     mainAxisAlignment: MainAxisAlignment.spaceAround,
     children: [
@@ -258,8 +397,8 @@ class _MediaViewerState extends State<MediaViewer> {
         Navigator.of(context).pop();
         widget.onReply?.call(item);
       }),
-      _Action(VIcon.download, 'Save', () => HapticFeedback.selectionClick()),
-      _Action(VIcon.share, 'Share', () => HapticFeedback.selectionClick()),
+      _Action(VIcon.download, 'Save', () => unawaited(_save(item))),
+      _Action(VIcon.share, 'Share', () => unawaited(_share(item))),
     ],
   );
 

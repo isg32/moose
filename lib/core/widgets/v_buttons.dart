@@ -71,10 +71,16 @@ class _VTappableState extends State<VTappable> {
               HapticFeedback.mediumImpact();
               widget.onLongPress!();
             },
-      child: AnimatedOpacity(
-        opacity: _down ? 0.6 : 1,
-        duration: const Duration(milliseconds: 120),
-        child: widget.child,
+      // Pressed: it dips and dims; let go: it springs back (iOS's feel).
+      child: AnimatedScale(
+        scale: _down ? 0.96 : 1,
+        duration: Duration(milliseconds: _down ? 90 : 320),
+        curve: _down ? Curves.easeOut : Curves.easeOutBack,
+        child: AnimatedOpacity(
+          opacity: _down ? 0.7 : 1,
+          duration: Duration(milliseconds: _down ? 90 : 220),
+          child: widget.child,
+        ),
       ),
     );
   }
