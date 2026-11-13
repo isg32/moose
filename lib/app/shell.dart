@@ -11,7 +11,10 @@ import '../core/theme/v_tokens.dart';
 import '../core/widgets/v_glass.dart';
 import '../core/widgets/v_ink.dart';
 import '../data/providers.dart';
+import '../data/models.dart';
 import '../features/calls/call_page.dart';
+import '../features/common/overlay.dart';
+import '../features/onboarding/onboarding_pages.dart';
 import '../features/moments/moment_burst.dart';
 
 /// The three tabs with the floating glass pill over them, and Cariño's
@@ -169,6 +172,25 @@ class _CallListener extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(repairRequestProvider, (_, asked) async {
+      if (!asked) return;
+      ref.read(repairRequestProvider.notifier).set(false);
+      final ok = await pushPage<bool>(
+        context,
+        (_) => const RepairRequestPage(),
+      );
+      final partner = ref.read(pairingProvider).partner.name;
+      ref
+          .read(messagesProvider.notifier)
+          .send(
+            SystemBody(
+              SystemKind.paired,
+              ok == true
+                  ? "Paired with $partner's new phone"
+                  : "You didn't approve a new phone",
+            ),
+          );
+    });
     ref.listen(incomingCallProvider, (_, video) {
       if (video == null) return;
       ref.read(incomingCallProvider.notifier).clear();

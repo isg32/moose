@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../core/theme/v_tokens.dart';
 import '../features/chat/chat_page.dart';
 import '../features/doodles/doodles_page.dart';
+import '../features/onboarding/onboarding_pages.dart';
 import '../features/settings/settings_page.dart';
 import 'shell.dart';
 
@@ -16,11 +17,69 @@ abstract final class Routes {
 
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
-/// The app's routes: three tabs under the pill (as Idris).
-GoRouter buildRouter({String initial = Routes.chat}) => GoRouter(
+/// The app's routes: three tabs under the pill (as Idris), and onboarding
+/// until this phone is paired ([paired], re-checked when [refresh] fires).
+GoRouter buildRouter({
+  String initial = Routes.chat,
+  Listenable? refresh,
+  bool Function()? paired,
+}) => GoRouter(
   navigatorKey: _rootKey,
   initialLocation: initial,
+  refreshListenable: refresh,
+  redirect: (context, state) {
+    if (paired == null) return null;
+    final loc = state.matchedLocation;
+    final onboarding = loc.startsWith(OnboardingRoutes.welcome);
+    if (!paired() && !onboarding && loc != OnboardingRoutes.paired) {
+      return OnboardingRoutes.welcome;
+    }
+    if (paired() && onboarding) return Routes.chat;
+    return null;
+  },
   routes: [
+    GoRoute(
+      path: OnboardingRoutes.welcome,
+      pageBuilder: (context, state) => fadePage(state, const WelcomePage()),
+      routes: [
+        GoRoute(
+          path: 'name',
+          pageBuilder: (context, state) => fadePage(
+            state,
+            NamePage(join: state.uri.queryParameters['join'] == '1'),
+          ),
+        ),
+        GoRoute(
+          path: 'background',
+          pageBuilder: (context, state) => fadePage(
+            state,
+            BackgroundPage(join: state.uri.queryParameters['join'] == '1'),
+          ),
+        ),
+        GoRoute(
+          path: 'pair',
+          pageBuilder: (context, state) =>
+              fadePage(state, const CreatePairPage()),
+        ),
+        GoRoute(
+          path: 'join',
+          pageBuilder: (context, state) => fadePage(state, const JoinPage()),
+        ),
+        GoRoute(
+          path: 'scan',
+          pageBuilder: (context, state) => fadePage(state, const ScanPage()),
+        ),
+        GoRoute(
+          path: 'waiting',
+          pageBuilder: (context, state) =>
+              fadePage(state, const RepairWaitingPage()),
+        ),
+      ],
+    ),
+    GoRoute(
+      path: OnboardingRoutes.paired,
+      pageBuilder: (context, state) => fadePage(state, const PairedPage()),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => AppShell(shell: shell),
       branches: [

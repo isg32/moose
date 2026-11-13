@@ -70,6 +70,11 @@ class MockChatRepository implements ChatRepository {
       });
       return;
     }
+    // "new phone" plays Aatika's re-pair request (C9).
+    if (body is TextBody && body.text.toLowerCase().contains('new phone')) {
+      _after(replyDelay, () => _events.add(const RepairRequested()));
+      return;
+    }
     // "call me" gets a call back, to show an incoming call (K2).
     if (body is TextBody && body.text.toLowerCase().contains('call me')) {
       _after(replyDelay, () => _events.add(const CallArrived(video: true)));

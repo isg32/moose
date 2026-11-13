@@ -58,8 +58,11 @@ abstract final class MockData {
     '78891', '05233', '64719', '22806',
   ];
 
-  /// The invite code on Create pair (C5).
+  /// The invite code on Create pair (C5); typing it on Enter code joins.
   static const inviteCode = 'K7Q2MX';
+
+  /// Typing this on Enter code plays the new-phone flow (C10).
+  static const repairCode = 'R3PA1R';
 
   static Pairing pairing() => Pairing(
     me: sapan,

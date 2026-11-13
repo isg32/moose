@@ -177,6 +177,8 @@ class MessagesNotifier extends Notifier<List<Message>> {
         ref.read(incomingMomentProvider.notifier).show(moment);
       case CallArrived(:final video):
         ref.read(incomingCallProvider.notifier).ring(video: video);
+      case RepairRequested():
+        ref.read(repairRequestProvider.notifier).set(true);
     }
   }
 
@@ -269,6 +271,18 @@ class IncomingMoment extends Notifier<VMoment?> {
   void show(VMoment m) => state = m;
 
   void dismiss() => state = null;
+}
+
+/// The partner's new phone is waiting for approval (C9).
+final repairRequestProvider = NotifierProvider<RepairRequest, bool>(
+  RepairRequest.new,
+);
+
+class RepairRequest extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool v) => state = v;
 }
 
 /// A call ringing now (K2): true for video, false for voice.

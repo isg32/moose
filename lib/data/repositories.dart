@@ -44,6 +44,11 @@ class CallArrived extends ChatEvent {
   final bool video;
 }
 
+/// The partner has a new phone and asks to be approved (C9).
+class RepairRequested extends ChatEvent {
+  const RepairRequested();
+}
+
 abstract interface class ChatRepository {
   List<Message> history();
 

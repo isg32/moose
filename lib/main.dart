@@ -38,7 +38,7 @@ Future<void> main() async {
     }
   });
 
-  runApp(const ProviderScope(child: MooseApp()));
+  runApp(const ProviderScope(child: MooseApp(splash: true)));
   // A crash on the Android side last time is shown once, now.
   unawaited(CrashLog.instance.checkLastRun());
 }

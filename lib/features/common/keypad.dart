@@ -86,6 +86,7 @@ class Keypad extends StatelessWidget {
     return Semantics(
       button: true,
       label: delete ? 'Delete' : k,
+      excludeSemantics: true,
       child: VTappable(
         onTap: () {
           HapticFeedback.lightImpact();
