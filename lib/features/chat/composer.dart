@@ -122,7 +122,11 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
 
   /// While recording a round video: its length, for the recorder overlay.
   final _roundLength = ValueNotifier(Duration.zero);
-  bool _roundOpen = false;
+
+  /// The recorder over everything while recording a round video. An
+  /// overlay entry, not a route: pushing a route mid-hold makes the
+  /// Navigator cancel the finger, and "release to send" never comes.
+  OverlayEntry? _roundEntry;
 
   /// The keyboard was put away (Back, or its own hide key): let go of the
   /// focus too, or the next route that closes hands it back and the
@@ -166,6 +170,7 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _roundEntry?.remove();
     WidgetsBinding.instance.removeObserver(this);
     _away?.cancel();
     _clock?.cancel();
@@ -239,7 +244,6 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
       });
     });
     if (_round) {
-      _roundOpen = true;
       final camera = widget.roundCamera;
       final preview = ValueNotifier<Widget?>(null);
       if (camera != null) {
@@ -247,17 +251,16 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
           camera.open().then((w) => preview.value = w, onError: (Object _) {}),
         );
       }
-      unawaited(
-        showOverlayPage<void>(
-          context,
-          (_) => RoundRecorder(
-            length: _roundLength,
-            preview: preview,
-            onCancel: _cancel,
-            onStop: _finish,
-          ),
-        ).whenComplete(() => _roundOpen = false),
+      dropKeyboard();
+      final entry = _roundEntry = OverlayEntry(
+        builder: (_) => RoundRecorder(
+          length: _roundLength,
+          preview: preview,
+          onCancel: _cancel,
+          onStop: _finish,
+        ),
       );
+      Overlay.of(context, rootOverlay: true).insert(entry);
     }
     setState(() => _rec = _Rec.holding);
   }
@@ -291,7 +294,8 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
   void _end(LongPressEndDetails _) => _pointerUp(const PointerUpEvent());
 
   void _closeRound() {
-    if (_roundOpen) Navigator.of(context, rootNavigator: true).pop();
+    _roundEntry?.remove();
+    _roundEntry = null;
   }
 
   void _cancel() {

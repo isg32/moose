@@ -194,7 +194,12 @@ class _StickersState extends ConsumerState<_Stickers> {
   final _search = TextEditingController();
 
   /// null = favourites, '' = recent, else a pack id.
-  String? _pack;
+  /// Favourites (null) when there are any, else Recent (''), so a new
+  /// library never opens on an empty page.
+  late String? _pack =
+      ref.read(stickersProvider).any((p) => p.stickers.any((s) => s.favourite))
+      ? null
+      : '';
 
   @override
   void dispose() {

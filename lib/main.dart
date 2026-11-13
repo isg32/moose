@@ -102,6 +102,9 @@ Future<void> main() async {
           songPlayerProvider.overrideWithValue(songs),
           // Memes from Reddit (and KLIPY with a key).
           memeRepositoryProvider.overrideWithValue(WebMemes()),
+          keepCheckingProvider.overrideWithValue(
+            () => BackgroundCheck.keepGoing(paired: backend.store.paired),
+          ),
           roundCameraProvider.overrideWithValue(PhoneRound(backend.mediaDir)),
           storageRepositoryProvider.overrideWithValue(
             PhoneStorage(backend.store, backend.mediaDir, cache!),

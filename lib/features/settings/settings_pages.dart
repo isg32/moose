@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,6 +28,7 @@ import '../common/toast.dart';
 import '../common/wallpaper.dart';
 import '../moments/moment_burst.dart';
 import '../onboarding/onboarding_pages.dart';
+import 'settings_page.dart';
 
 /// Moose's mark until the launcher icon lands: the wordmark on the night
 /// wallpaper, in a rounded tile.
@@ -496,7 +499,10 @@ class NotificationsPage extends ConsumerWidget {
                 ),
               ),
               title: 'Running',
-              subtitle: 'Every 6 min · last check 2 min ago',
+              subtitle: SettingsPage.checkLine(
+                neon: ref.watch(onNeonProvider),
+                last: ref.watch(backgroundCheckProvider).value,
+              ),
             ),
           ],
         ),
@@ -522,7 +528,17 @@ class NotificationsPage extends ConsumerWidget {
               VPill(
                 'Fix',
                 fill: VFill.filled,
-                onTap: () => HapticFeedback.selectionClick(),
+                onTap: () async {
+                  unawaited(HapticFeedback.selectionClick());
+                  final ok = await ref.read(keepCheckingProvider)();
+                  ref.invalidate(backgroundCheckProvider);
+                  if (context.mounted) {
+                    showToast(
+                      context,
+                      ok ? 'Moose can check in the background' : 'Not allowed',
+                    );
+                  }
+                },
               ),
             ],
           ),

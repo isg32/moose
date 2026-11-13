@@ -85,6 +85,50 @@ void main() {
     },
   );
 
+  test('an account gone from the server is made again', () async {
+    vault.values
+      ..['auth.email'] = 'p-old@moose.app'
+      ..['auth.password'] = 'old';
+    final seen = <String>[];
+    final a = NeonAuth(
+      base: 'https://x/neondb/auth',
+      vault: vault,
+      client: MockClient((req) async {
+        final path = req.url.path.split('/auth').last;
+        seen.add(path);
+        if (path == '/sign-in/email') {
+          return http.Response('{"code":"INVALID_EMAIL_OR_PASSWORD"}', 401);
+        }
+        if (path == '/sign-up/email') {
+          return http.Response(
+            '{}',
+            200,
+            headers: {
+              'set-cookie': '__Secure-neon-auth.session_token=new.sig; Path=/',
+            },
+          );
+        }
+        if (req.headers['cookie'] ==
+            '__Secure-neon-auth.session_token=new.sig') {
+          return http.Response(
+            jsonEncode({
+              'token': jwt(
+                'u2',
+                DateTime.now().add(const Duration(minutes: 15)),
+              ),
+            }),
+            200,
+          );
+        }
+        return http.Response('{}', 401);
+      }),
+    );
+    await a.token();
+    expect(seen, ['/sign-in/email', '/sign-up/email', '/token']);
+    expect(a.userId, 'u2');
+    expect(vault.values['auth.email'], isNot('p-old@moose.app'));
+  });
+
   test('no network is a NetError the app can show', () async {
     final a = NeonAuth(
       base: 'https://x',

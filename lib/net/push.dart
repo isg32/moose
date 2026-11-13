@@ -116,7 +116,13 @@ abstract final class Push {
           body: video ? 'Video call' : 'Voice call',
           moment: true,
         ),
-        // Previews stay off: the lock screen shows only that something came.
+        // The text only with "Show message text" on (Settings ›
+        // Notifications); otherwise just that something came.
+        TextBody(:final text) when store.settings.showPreview => (
+          title: name,
+          body: text,
+          moment: false,
+        ),
         _ => (title: name, body: 'New message', moment: false),
       };
     }

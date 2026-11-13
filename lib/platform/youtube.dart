@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-import 'net.dart';
 import 'quality.dart';
 
 /// YouTube for song clips (C27, C28): search, and a playable audio stream
@@ -13,8 +12,11 @@ import 'quality.dart';
 /// message; each phone finds the stream itself.
 const _newPipe = MethodChannel('moose/youtube');
 
-YoutubeExplode _yt() =>
-    YoutubeExplode(httpClient: YoutubeHttpClient(youtubeClient()));
+/// On the phone's usual route. (Idris pins one address family because it
+/// downloads the stream itself over the same route; Moose's clips play
+/// through just_audio on the usual route, so resolving goes that way too.
+/// Pinning IPv6 failed on Wi-Fi when only mobile data had IPv6.)
+YoutubeExplode _yt() => YoutubeExplode();
 
 /// A search result.
 class YtSong {

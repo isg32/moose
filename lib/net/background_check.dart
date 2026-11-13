@@ -43,6 +43,17 @@ abstract final class BackgroundCheck {
 
   static Future<bool> get running => FlutterForegroundTask.isRunningService;
 
+  /// Asks Android not to optimise Moose's battery (so the check runs on
+  /// time), then starts the check when paired. True when allowed.
+  static Future<bool> keepGoing({required bool paired}) async {
+    var ok = await FlutterForegroundTask.isIgnoringBatteryOptimizations;
+    if (!ok) {
+      ok = await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+    }
+    if (paired) await start();
+    return ok;
+  }
+
   static Future<void> start() async {
     if (await running) return;
     await FlutterForegroundTask.startService(

@@ -552,12 +552,18 @@ class Aatika:
                     self.message({"t": "music", "song": song, "start": 30000})
                 elif kind == "meme":
                     url = body.get("url") or ""
-                    try:
-                        got_meme = requests.get(url, timeout=20)
-                        ok = got_meme.status_code == 200 and got_meme.headers.get(
-                            "content-type", "").startswith("image/")
-                    except Exception:  # noqa: BLE001
-                        ok = False
+                    ok = False
+                    for _ in range(3):  # Reddit rate-limits now and then
+                        try:
+                            got_meme = requests.get(url, timeout=20,
+                                                    headers={"user-agent": "Mozilla/5.0 (Moose e2e)"})
+                            ok = got_meme.status_code == 200 and got_meme.headers.get(
+                                "content-type", "").startswith("image/")
+                        except Exception:  # noqa: BLE001
+                            ok = False
+                        if ok:
+                            break
+                        time.sleep(3)
                     self.check("phone's meme loads", ok, url[:60])
                     self.text("lol 😂")
                 elif kind == "round":

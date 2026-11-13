@@ -57,7 +57,6 @@ class WebMemes implements MemeRepository {
           if (q.isNotEmpty && sub != q && !title.toLowerCase().contains(q)) {
             continue;
           }
-          final previews = (m['preview'] as List?)?.cast<String>() ?? const [];
           out.add(
             Meme(
               id: (m['postLink'] as String?) ?? url,
@@ -68,7 +67,8 @@ class WebMemes implements MemeRepository {
               title: title,
               subreddit: m['subreddit'] as String?,
               url: url,
-              thumb: previews.length > 2 ? previews[2] : previews.lastOrNull,
+              // Reddit's preview links expire (404); the full picture lasts.
+              thumb: url,
             ),
           );
         }

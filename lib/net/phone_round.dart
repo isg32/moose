@@ -13,8 +13,14 @@ class PhoneRound implements RoundCamera {
   final Directory dir;
   CameraController? _c;
 
+  /// Opening takes a moment (a couple of seconds on some phones); a hold
+  /// that ends sooner waits for it, so the recording isn't lost.
+  Future<Widget?>? _opening;
+
   @override
-  Future<Widget?> open() async {
+  Future<Widget?> open() => _opening = _open();
+
+  Future<Widget?> _open() async {
     final cameras = await availableCameras();
     if (cameras.isEmpty) return null;
     final front = cameras.firstWhere(
@@ -29,6 +35,11 @@ class PhoneRound implements RoundCamera {
 
   @override
   Future<String?> stop() async {
+    try {
+      await _opening;
+    } on Object {
+      return null;
+    }
     final c = _c;
     if (c == null || !c.value.isRecordingVideo) return null;
     final file = await c.stopVideoRecording();
@@ -41,6 +52,11 @@ class PhoneRound implements RoundCamera {
 
   @override
   Future<void> close() async {
+    try {
+      await _opening;
+    } on Object {
+      // It never opened.
+    }
     final c = _c;
     _c = null;
     if (c == null) return;

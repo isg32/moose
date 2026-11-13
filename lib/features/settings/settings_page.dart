@@ -28,7 +28,7 @@ import 'settings_pages.dart';
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
-  static String _checkLine({required bool neon, DateTime? last}) {
+  static String checkLine({required bool neon, DateTime? last}) {
     if (!neon) return 'Every 6 min · last 2 min ago';
     if (last == null) return 'Every 6 min · not yet';
     final m = DateTime.now().difference(last).inMinutes;
@@ -171,7 +171,7 @@ class SettingsPage extends ConsumerWidget {
             ),
             VListRow(
               title: 'Background check',
-              subtitle: _checkLine(
+              subtitle: checkLine(
                 neon: ref.watch(onNeonProvider),
                 last: ref.watch(backgroundCheckProvider).value,
               ),

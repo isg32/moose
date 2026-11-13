@@ -26,6 +26,7 @@ import 'package:moose/net/phone_songs.dart';
 import 'package:moose/net/phone_storage.dart';
 import 'package:moose/net/web_memes.dart';
 import 'package:moose/features/common/art.dart';
+import 'package:moose/features/stickers/tray.dart' show SearchPill;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:moose/net/phone_media.dart';
 import 'package:moose/net/phone_voice.dart';
@@ -442,8 +443,15 @@ void main() {
     await frames(t);
     await t.tap(find.text('Music'));
     await frames(t);
-    await t.tap(find.byType(EditableText).last);
-    await t.enterText(find.byType(EditableText).last, 'sienna the marias');
+    final songField = find.descendant(
+      of: find.byWidgetPredicate(
+        (w) => w is SearchPill && w.placeholder == 'Search songs',
+      ),
+      matching: find.byType(EditableText),
+    );
+    await t.tap(songField);
+    await frames(t, 300);
+    await t.enterText(songField, 'sienna the marias');
     await until(
       t,
       'YouTube results',

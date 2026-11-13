@@ -128,7 +128,8 @@ class NamePage extends ConsumerStatefulWidget {
 
 class _NamePageState extends ConsumerState<NamePage> {
   late final _name = TextEditingController(
-    text: ref.read(sessionProvider).name.isEmpty
+    // The mock fills in Sapan, as the canvas does; a real phone starts empty.
+    text: ref.read(sessionProvider).name.isEmpty && !ref.read(onNeonProvider)
         ? MockData.sapan.name
         : ref.read(sessionProvider).name,
   );
@@ -317,9 +318,10 @@ class _BackgroundPageState extends ConsumerState<BackgroundPage> {
             VListRow(
               title: 'Run in the background',
               subtitle: "Battery: don't optimise Moose",
-              trailing: granted(_battery, () {
-                HapticFeedback.selectionClick();
-                setState(() => _battery = true);
+              trailing: granted(_battery, () async {
+                unawaited(HapticFeedback.selectionClick());
+                final ok = await ref.read(keepCheckingProvider)();
+                if (mounted) setState(() => _battery = ok);
               }),
             ),
           ],

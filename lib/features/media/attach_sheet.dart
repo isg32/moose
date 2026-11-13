@@ -46,11 +46,18 @@ enum AttachKind {
 }
 
 /// The attach sheet (C17): recent photos, then the seven tiles.
-Future<AttachChoice?> showAttachSheet(BuildContext context) =>
-    showOverlayPage<AttachChoice>(context, (_) => const AttachSheet());
+Future<AttachChoice?> showAttachSheet(
+  BuildContext context, {
+  bool recent = true,
+}) =>
+    showOverlayPage<AttachChoice>(context, (_) => AttachSheet(recent: recent));
 
 class AttachSheet extends StatefulWidget {
-  const AttachSheet({super.key});
+  const AttachSheet({super.key, this.recent = true});
+
+  /// The strip of recent photos (stand-ins on the mock). Real builds go
+  /// straight to the phone's gallery from "All photos".
+  final bool recent;
 
   @override
   State<AttachSheet> createState() => _AttachSheetState();
@@ -122,31 +129,33 @@ class _AttachSheetState extends State<AttachSheet> {
                         ],
                       ),
                       const SizedBox(height: 10),
-                      SizedBox(
-                        height: 84,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _recent.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 8),
-                          itemBuilder: (context, i) {
-                            final m = _recent[i];
-                            final n = _picked.indexOf(m);
-                            return Semantics(
-                              button: true,
-                              selected: n >= 0,
-                              label: 'Recent photo ${i + 1}',
-                              child: VTappable(
-                                onTap: () => setState(
-                                  () => n >= 0
-                                      ? _picked.remove(m)
-                                      : _picked.add(m),
+                      if (widget.recent)
+                        SizedBox(
+                          height: 84,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _recent.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 8),
+                            itemBuilder: (context, i) {
+                              final m = _recent[i];
+                              final n = _picked.indexOf(m);
+                              return Semantics(
+                                button: true,
+                                selected: n >= 0,
+                                label: 'Recent photo ${i + 1}',
+                                child: VTappable(
+                                  onTap: () => setState(
+                                    () => n >= 0
+                                        ? _picked.remove(m)
+                                        : _picked.add(m),
+                                  ),
+                                  child: _Thumb(m, size: 84, number: n + 1),
                                 ),
-                                child: _Thumb(m, size: 84, number: n + 1),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
-                      ),
                       const SizedBox(height: 22),
                       if (_picked.isNotEmpty)
                         Padding(

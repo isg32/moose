@@ -150,6 +150,13 @@ final askNotificationsProvider = Provider<Future<bool> Function()>(
       () async => true,
 );
 
+/// Asks Android to let the background check run (battery optimisation)
+/// and makes sure it's running; true when allowed. Always yes on the mock.
+final keepCheckingProvider = Provider<Future<bool> Function()>(
+  (ref) =>
+      () async => true,
+);
+
 /// When the background check last ran (Neon), or null.
 final backgroundCheckProvider = FutureProvider<DateTime?>((ref) async => null);
 

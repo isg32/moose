@@ -117,6 +117,14 @@ class NeonAuth {
       'password': password,
       if (fresh) 'name': 'moose',
     });
+    if (!fresh && res.statusCode == 401) {
+      // The account is gone from the server: start a new one rather than
+      // stay locked out (the partner re-pairs, as with a new phone).
+      for (final k in [_kEmail, _kPassword, _kCookie]) {
+        await vault.write(k, null);
+      }
+      return _signIn();
+    }
     _check(res);
     final cookie = _cookie(res);
     if (cookie == null) throw const NetError(500, 'no session cookie');

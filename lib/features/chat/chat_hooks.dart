@@ -26,7 +26,10 @@ class ChatHooks {
   /// The attach sheet (C17). Recent photos come back for the composer's
   /// strip; everything else is sent from here.
   Future<List<Media>?> attach(BuildContext context, WidgetRef ref) async {
-    final choice = await showAttachSheet(context);
+    final choice = await showAttachSheet(
+      context,
+      recent: ref.read(mediaSourceProvider) == null,
+    );
     if (choice == null || !context.mounted) return null;
     final partner = ref.read(pairingProvider).partner.name;
     final messages = ref.read(messagesProvider.notifier);
