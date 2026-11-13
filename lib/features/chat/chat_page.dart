@@ -179,7 +179,12 @@ class ChatPageState extends ConsumerState<ChatPage> {
     final top = media.padding.top;
     final bottom = media.padding.bottom;
     const pillTop = AppShell.pillBottom + AppShell.pillHeight;
-    final composerBottom = bottom + pillTop + 12;
+    // With the keyboard up the composer rides on top of it (the pill stays
+    // behind the keyboard); otherwise it sits above the pill.
+    final keyboard = media.viewInsets.bottom;
+    final composerBottom = keyboard > 0
+        ? keyboard + 10
+        : bottom + pillTop + 12;
     final unread = messages
         .where(
           (m) =>
