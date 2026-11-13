@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -73,7 +75,9 @@ class VGlass extends StatelessWidget {
       ),
       child: child,
     );
-    if (!frosted) return box;
+    // Clipped to its shape either way, so what's inside (a sheet's top
+    // border) follows the round corners.
+    if (!frosted) return ClipRRect(borderRadius: shape, child: box);
     return ClipRRect(
       borderRadius: shape,
       child: Stack(
@@ -621,75 +625,122 @@ class VTextField extends StatelessWidget {
 /// Which screen edge a [VEdgeBlur] sits on.
 enum VEdge { top, bottom }
 
-/// The soft edge along the top or bottom of the screen: strongest at the
-/// edge and easing to nothing [fade] away from it, so content scrolling
-/// underneath softens away while what sits on the edge stays readable.
+/// Progressive blur along a screen edge, as on iOS: strongest at the edge
+/// and easing smoothly to nothing [fade] away from it, with no seam, so
+/// content can scroll underneath while what sits on the edge stays readable.
 ///
-/// It is the soft wallpaper ([VSoftBehind]) under a paper-coloured
-/// gradient, faded out with a mask: no live blur, so it looks the same on
-/// every frame of every transition.
-class VEdgeBlur extends StatelessWidget {
+/// A fragment shader (`shaders/progressive_blur.frag`) varies the blur
+/// radius with distance from the edge. Where shader filters are not
+/// supported, a single light blur covers just [solid]. A soft paper-coloured
+/// gradient sits on top.
+class VEdgeBlur extends StatefulWidget {
   const VEdgeBlur({
     super.key,
     required this.edge,
     required this.solid,
     this.fade = VEdgeBlur.standardFade,
+    this.maxRadius = 18,
   });
 
   final VEdge edge;
 
   /// The part right at the edge (the status bar, or the tab bar and gesture
-  /// area) where it is solid.
+  /// area) where the blur is at or near its strongest.
   final double solid;
 
-  /// How far beyond [solid] it eases out.
+  /// How far beyond [solid] the blur eases out.
   final double fade;
 
-  /// The one fade every edge uses, top and bottom, on every screen.
+  /// Blur radius at the edge, in logical pixels.
+  final double maxRadius;
+
+  /// The one fade every edge uses, top and bottom, on every tab, so the
+  /// blur reads the same wherever you are.
   static const standardFade = 40.0;
+
+  static Future<FragmentProgram>? _program;
+
+  @override
+  State<VEdgeBlur> createState() => _VEdgeBlurState();
+}
+
+class _VEdgeBlurState extends State<VEdgeBlur> {
+  FragmentShader? _shader;
+
+  @override
+  void initState() {
+    super.initState();
+    if (ImageFilter.isShaderFilterSupported) {
+      VEdgeBlur._program ??= FragmentProgram.fromAsset(
+        'shaders/progressive_blur.frag',
+      );
+      VEdgeBlur._program!.then((p) {
+        if (mounted) setState(() => _shader = p.fragmentShader());
+      }, onError: (Object _) {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _shader?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (solid <= 0) return const SizedBox.shrink();
-    final top = edge == VEdge.top;
-    final height = solid + fade;
+    if (widget.solid <= 0) return const SizedBox.shrink();
+    final top = widget.edge == VEdge.top;
+    final height = widget.solid + widget.fade;
+    final ratio = MediaQuery.devicePixelRatioOf(context);
     final paper = VInk.surfaceOf(context);
-    final begin = top ? Alignment.topCenter : Alignment.bottomCenter;
-    final end = top ? Alignment.bottomCenter : Alignment.topCenter;
-    final stops = [0.0, solid / height, 1.0];
+
+    final shader = _shader;
+    final ImageFilter filter;
+    if (shader != null) {
+      // Uniforms 0–1 (the texture size) are set by the engine.
+      shader
+        ..setFloat(2, height * ratio)
+        ..setFloat(3, widget.maxRadius * ratio)
+        ..setFloat(4, top ? 0 : 1);
+      filter = ImageFilter.shader(shader);
+    } else {
+      filter = ImageFilter.blur(sigmaX: 4, sigmaY: 4);
+    }
+    // Without the shader the fallback blur covers only the solid part.
+    final inset = shader == null ? widget.fade : 0.0;
+
     return IgnorePointer(
-      child: RepaintBoundary(
-        child: SizedBox(
-          height: height,
-          child: ShaderMask(
-            blendMode: BlendMode.dstIn,
-            shaderCallback: (r) => LinearGradient(
-              begin: begin,
-              end: end,
-              colors: const [VColors.black, VColors.black, VColors.transparent],
-              stops: stops,
-            ).createShader(r),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                const VSoftBehind(),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: begin,
-                      end: end,
-                      colors: [
-                        paper.withValues(alpha: 0.45),
-                        paper.withValues(alpha: 0.2),
-                        paper.withValues(alpha: 0),
-                      ],
-                      stops: stops,
-                    ),
+      child: SizedBox(
+        height: height,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              top: top ? 0 : inset,
+              bottom: top ? inset : 0,
+              child: ClipRect(
+                child: BackdropFilter(
+                  filter: filter,
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: top ? Alignment.topCenter : Alignment.bottomCenter,
+                    end: top ? Alignment.bottomCenter : Alignment.topCenter,
+                    colors: [
+                      paper.withValues(alpha: 0.55),
+                      paper.withValues(alpha: 0.25),
+                      paper.withValues(alpha: 0),
+                    ],
+                    stops: [0, widget.solid / height, 1],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
