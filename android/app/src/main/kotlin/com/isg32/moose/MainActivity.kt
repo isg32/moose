@@ -18,6 +18,8 @@ class MainActivity : FlutterActivity() {
         CrashFiles.register(this, flutterEngine.dartExecutor.binaryMessenger)
         // Song clips (C27, C28): NewPipe finds the stream (see youtube.dart).
         YouTubeChannel.register(flutterEngine.dartExecutor.binaryMessenger)
+        // Over-the-air updates from GitHub Releases (lib/net/updater.dart).
+        Updater.register(this, flutterEngine.dartExecutor.binaryMessenger)
         // "Hide in recent apps" (C36): FLAG_SECURE blanks Moose in the
         // app switcher and blocks screenshots of it.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "moose/window")

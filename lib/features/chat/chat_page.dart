@@ -14,6 +14,8 @@ import '../../core/widgets/v_glass.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../../net/updater.dart';
+import '../settings/update.dart';
 import '../../mock/mock_data.dart';
 import '../common/avatar.dart';
 import '../common/parts.dart';
@@ -211,6 +213,13 @@ class ChatPageState extends ConsumerState<ChatPage> {
         ? const <Message>[]
         : ref.watch(messagesProvider);
     final online = ref.watch(onlineProvider);
+    // "Moose 0.32 is out", under the header until it's closed.
+    final update = ref.watch(updaterProvider);
+    final showUpdate =
+        !session.decoy &&
+        showsUpdate(update) &&
+        ref.watch(dismissedUpdateProvider) != update.release?.version;
+    final banners = (online ? 0.0 : 56.0) + (showUpdate ? 70.0 : 0.0);
     final settings = ref.watch(settingsProvider);
     final hooks = ChatHooks.of(context);
 
@@ -310,7 +319,7 @@ class ChatPageState extends ConsumerState<ChatPage> {
                       fresh: _fresh(messages),
                       padding: EdgeInsets.fromLTRB(
                         14,
-                        top + 64 + (online ? 0 : 56),
+                        top + 64 + banners,
                         14,
                         lift +
                             56 +
@@ -361,6 +370,13 @@ class ChatPageState extends ConsumerState<ChatPage> {
             right: 16,
             top: top + 64,
             child: const _OfflineBanner(),
+          ),
+        if (showUpdate)
+          Positioned(
+            left: 16,
+            right: 16,
+            top: top + 64 + (online ? 0 : 56),
+            child: const UpdateCard(closable: true),
           ),
         Positioned(
           right: 16,

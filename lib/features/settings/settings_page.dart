@@ -12,6 +12,7 @@ import '../../core/widgets/v_controls.dart';
 import '../../core/widgets/v_glass.dart';
 import '../../core/widgets/v_list.dart';
 import '../../core/widgets/v_page.dart';
+import '../../core/widgets/v_progress.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../common/avatar.dart';
@@ -22,6 +23,8 @@ import '../common/toast.dart';
 import '../lock/lock_pages.dart';
 import '../stickers/sticker_maker.dart';
 import 'settings_pages.dart';
+import 'update.dart';
+import '../../net/updater.dart';
 
 /// Settings (C36): you, your partner, chat, notifications, privacy,
 /// stickers, storage and About.
@@ -202,8 +205,8 @@ class SettingsPage extends ConsumerWidget {
             VListRow(
               title: 'Solid panels',
               subtitle: settings.solidPanels
-                  ? 'Sheets, cards and the composer are solid'
-                  : 'Sheets, cards and the composer let the wallpaper through',
+                  ? 'Cards and the composer are solid'
+                  : 'Cards and the composer let the wallpaper through',
               trailing: VSwitch(
                 value: settings.solidPanels,
                 onChanged: (v) => s.update((x) => x.copyWith(solidPanels: v)),
@@ -324,6 +327,7 @@ class SettingsPage extends ConsumerWidget {
             ),
           ],
         ),
+        if (showsUpdate(ref.watch(updaterProvider))) const UpdateCard(),
         VListSection(
           children: [
             VListRow(
@@ -332,6 +336,8 @@ class SettingsPage extends ConsumerWidget {
               subtitle: 'Version $mooseVersion · licences, developer',
               onTap: () => pushPage<void>(context, (_) => const AboutPage()),
             ),
+            if (ref.watch(updaterProvider) is! UpdateUnsupported)
+              const _CheckForUpdates(),
           ],
         ),
         const VFootnote(
@@ -339,6 +345,44 @@ class SettingsPage extends ConsumerWidget {
           center: true,
         ),
       ],
+    );
+  }
+}
+
+/// Settings › Check for updates: looks now, and says so when there's
+/// nothing new.
+class _CheckForUpdates extends ConsumerWidget {
+  const _CheckForUpdates();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(updaterProvider);
+    final checking = s is UpdateChecking;
+    return VListRow(
+      title: 'Check for updates',
+      subtitle: switch (s) {
+        UpdateChecking() => 'Checking GitHub…',
+        UpdateUpToDate() => "You're on the latest",
+        UpdateFailed(release: null, :final message) => message,
+        _ when s.release != null => 'Moose ${s.release!.version} is out',
+        _ => 'Updates come from GitHub, right here',
+      },
+      trailing: checking ? const VSpinner(size: 20) : null,
+      chevron: false,
+      onTap: checking
+          ? null
+          : () async {
+              unawaited(HapticFeedback.selectionClick());
+              final up = ref.read(updaterProvider.notifier);
+              await up.check(manual: true);
+              if (!context.mounted) return;
+              final now = ref.read(updaterProvider);
+              if (now.release != null) {
+                await showUpdateSheet(context);
+              } else if (now is UpdateUpToDate) {
+                showToast(context, "You're on the latest Moose");
+              }
+            },
     );
   }
 }

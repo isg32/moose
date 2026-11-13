@@ -26,6 +26,7 @@ import 'net/phone_storage.dart';
 import 'net/web_memes.dart';
 import 'net/phone_voice.dart';
 import 'net/push.dart';
+import 'net/updater.dart';
 import 'net/vault.dart';
 import 'platform/crash_log.dart';
 
@@ -120,6 +121,8 @@ Future<void> main() async {
           keepCheckingProvider.overrideWithValue(
             () => BackgroundCheck.keepGoing(paired: backend.store.paired),
           ),
+          // Over-the-air updates from GitHub Releases (Android only).
+          if (android) updateDepsProvider.overrideWithValue(phoneUpdateDeps()),
           // Round videos need the phone's camera plugin (Android only).
           if (android)
             roundCameraProvider.overrideWithValue(PhoneRound(backend.mediaDir)),

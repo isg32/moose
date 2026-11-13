@@ -17,6 +17,8 @@ import '../features/calls/call_page.dart';
 import '../features/common/overlay.dart';
 import '../features/onboarding/onboarding_pages.dart';
 import '../features/moments/moment_burst.dart';
+import '../features/settings/update.dart';
+import '../net/updater.dart';
 
 /// The three tabs with the floating glass pill over them, and Cariño's
 /// progressive blur along the bottom edge (as Idris's shell).
@@ -155,6 +157,8 @@ class _AppShellState extends State<AppShell> {
           ),
           // A call ringing opens the incoming call screen (K2).
           const _CallListener(),
+          // Checks for a newer Moose, and says what's new after an update.
+          const _UpdateListener(),
           // A hug, poke, kiss or miss-you arriving covers everything (C25).
           Consumer(
             builder: (context, ref, _) {
@@ -184,6 +188,40 @@ class _AppShellState extends State<AppShell> {
       ),
     );
   }
+}
+
+class _UpdateListener extends ConsumerStatefulWidget {
+  const _UpdateListener();
+
+  @override
+  ConsumerState<_UpdateListener> createState() => _UpdateListenerState();
+}
+
+class _UpdateListenerState extends ConsumerState<_UpdateListener> {
+  late final AppLifecycleListener _life = AppLifecycleListener(
+    onResume: () => ref.read(updaterProvider.notifier).resumed(),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _life; // listening from now
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final whatsNew = await ref.read(updaterProvider.notifier).start();
+      if (whatsNew != null && mounted) {
+        await showWhatsNew(context, whatsNew);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _life.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 class _CallListener extends ConsumerWidget {
