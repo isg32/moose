@@ -67,15 +67,22 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Generate env.json for dart-define
+        run: |
+          cat << EOF > env.json
+          {
+            "MOOSE_API_URL": "${{ secrets.MOOSE_API_URL }}",
+            "MOOSE_AUTH_URL": "${{ secrets.MOOSE_AUTH_URL }}"
+          }
+          EOF
+
       - name: Build signed APKs
         env:
           MOOSE_KEYSTORE_FILE: ${{ runner.temp }}/release-key.jks
           MOOSE_KEYSTORE_PASSWORD: ${{ secrets.MOOSE_KEYSTORE_PASSWORD }}
           MOOSE_KEY_PASSWORD: ${{ secrets.MOOSE_KEY_PASSWORD }}
           MOOSE_KEY_ALIAS: ${{ secrets.MOOSE_KEY_ALIAS }}
-          MOOSE_API_URL: ${{ secrets.MOOSE_API_URL }}
-          MOOSE_AUTH_URL: ${{ secrets.MOOSE_AUTH_URL }}
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release --split-per-abi --dart-define-from-file=env.json
 
       - name: Check the APKs are signed with the release key
         run: |
