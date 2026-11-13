@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:qr/qr.dart';
 
 import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_colors.dart';
@@ -352,6 +354,16 @@ class _BackgroundPageState extends ConsumerState<BackgroundPage> {
 }
 
 /// A QR code drawn in black on a white card (always: scanners need it).
+/// What a pairing QR holds: "moose:" and the code.
+String pairQr(String code) => 'moose:$code';
+
+/// The code in a scanned QR (or a code typed straight in), or null.
+String? codeFromQr(String raw) {
+  final m = RegExp(r'^(?:moose:)?([A-Za-z2-9]{6})$').firstMatch(raw.trim());
+  return m?[1]?.toUpperCase();
+}
+
+/// A real QR of [data] (C5), black on a white card so any camera reads it.
 class QrCard extends StatelessWidget {
   const QrCard({super.key, required this.data, this.size = 147});
 
@@ -370,49 +382,39 @@ class QrCard extends StatelessWidget {
       ),
       child: SizedBox.square(
         dimension: size,
-        child: CustomPaint(painter: _QrPainter(data.hashCode)),
+        child: CustomPaint(painter: _QrPainter(data)),
       ),
     ),
   );
 }
 
 class _QrPainter extends CustomPainter {
-  _QrPainter(this.seed);
+  _QrPainter(this.data)
+    : _image = QrImage(QrCode(payload: QrPayload.fromString(data)));
 
-  final int seed;
+  final String data;
+  final QrImage _image;
 
   @override
   void paint(Canvas canvas, Size size) {
-    const n = 21;
+    final n = _image.moduleCount;
     final cell = size.width / n;
     final p = Paint()..color = VColors.black;
-    bool? finder(int x, int y) {
-      for (final (ox, oy) in [(0, 0), (14, 0), (0, 14)]) {
-        final dx = x - ox, dy = y - oy;
-        if (dx >= 0 && dx < 7 && dy >= 0 && dy < 7) {
-          return dx == 0 ||
-              dx == 6 ||
-              dy == 0 ||
-              dy == 6 ||
-              (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4);
-        }
-      }
-      return null;
-    }
-
     for (var y = 0; y < n; y++) {
       for (var x = 0; x < n; x++) {
-        final f = finder(x, y);
-        final on = f ?? ((x * 7 + y * 13 + x * y * 3 + seed) % 5 < 2);
-        if (on) {
-          canvas.drawRect(Rect.fromLTWH(x * cell, y * cell, cell, cell), p);
+        if (_image.isDark(y, x)) {
+          // A hair of overlap so neighbouring modules don't seam.
+          canvas.drawRect(
+            Rect.fromLTWH(x * cell, y * cell, cell + 0.3, cell + 0.3),
+            p,
+          );
         }
       }
     }
   }
 
   @override
-  bool shouldRepaint(_QrPainter old) => old.seed != seed;
+  bool shouldRepaint(_QrPainter old) => old.data != data;
 }
 
 /// C5: show your code; your person types or scans it. The server makes the
@@ -510,7 +512,7 @@ class _CreatePairPageState extends ConsumerState<CreatePairPage> {
           ),
         ),
         const SizedBox(height: 10),
-        Center(child: QrCard(data: code)),
+        Center(child: QrCard(data: pairQr(code))),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -726,11 +728,14 @@ class _JoinPageState extends ConsumerState<JoinPage> {
           InlineError(_error!),
         ],
         const SizedBox(height: 24),
-        _SmallButton(
-          VIcon.qr,
-          'Scan their QR instead',
-          () => context.push(OnboardingRoutes.scan),
-        ),
+        _SmallButton(VIcon.qr, 'Scan their QR instead', () async {
+          // The scanner comes back with the code it read (Neon).
+          final read = await context.push<String>(OnboardingRoutes.scan);
+          if (read != null && mounted) {
+            _code.text = read;
+            await _join(read);
+          }
+        }),
       ],
       bottom: [
         VButton.primary(
@@ -743,38 +748,70 @@ class _JoinPageState extends ConsumerState<JoinPage> {
   }
 }
 
-/// C7: point at their QR. Always dark, it's a viewfinder; tap reads it in
-/// the mock.
-class ScanPage extends ConsumerWidget {
+/// C7: point at their QR. Always dark, it's a viewfinder. On Neon it's
+/// the camera, and a Moose code it reads goes back to Join; in the mock a
+/// tap reads it.
+class ScanPage extends ConsumerStatefulWidget {
   const ScanPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ScanPage> createState() => _ScanPageState();
+}
+
+class _ScanPageState extends ConsumerState<ScanPage> {
+  var _done = false;
+
+  void _read(BarcodeCapture capture) {
+    if (_done) return;
+    for (final b in capture.barcodes) {
+      final code = codeFromQr(b.rawValue ?? '');
+      if (code == null) continue;
+      _done = true;
+      unawaited(HapticFeedback.heavyImpact());
+      context.pop(code);
+      return;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final pad = MediaQuery.paddingOf(context);
+    final camera = ref.read(onNeonProvider);
     return VInkScope(
       ink: VColors.white,
       child: GestureDetector(
-        onTap: () {
-          if (ref.read(onNeonProvider)) {
-            // The camera reader isn't in yet: type the code.
-            showToast(context, 'Type their code for now');
-            context.pop();
-            return;
-          }
-          HapticFeedback.heavyImpact();
-          ref.read(sessionProvider.notifier).pair();
-          context.go(OnboardingRoutes.paired);
-        },
+        onTap: camera
+            ? null
+            : () {
+                HapticFeedback.heavyImpact();
+                ref.read(sessionProvider.notifier).pair();
+                context.go(OnboardingRoutes.paired);
+              },
         child: ColoredBox(
           color: VColors.black,
           child: Stack(
             fit: StackFit.expand,
             children: [
-              const ArtBox(
-                art: 3,
-                begin: Alignment.center,
-                end: Alignment.bottomRight,
-              ),
+              if (camera)
+                MobileScanner(
+                  onDetect: _read,
+                  errorBuilder: (context, error) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Text(
+                        "Moose can't use the camera. Type their code instead.",
+                        textAlign: TextAlign.center,
+                        style: VText.inter(15, weight: 500),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                const ArtBox(
+                  art: 3,
+                  begin: Alignment.center,
+                  end: Alignment.bottomRight,
+                ),
               ColoredBox(color: VColors.black.withValues(alpha: 0.4)),
               Center(
                 child: SizedBox.square(
