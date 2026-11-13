@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "173505368247",
+    "project_id": "moose-realtime",
+    "storage_bucket": "moose-realtime.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:173505368247:android:ef7a1320a36fd08fa7bd32",
+        "android_client_info": {
+          "package_name": "com.isg32.moose"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpFy3ttZRifKbSYbw5v90nX-uWiE7qCZQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
