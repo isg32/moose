@@ -41,6 +41,9 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
+    // Clear of the tab pill floating over the bottom.
+    await t.drag(find.byType(Scrollable).first, const Offset(0, -220));
+    await frames(t);
     await t.tap(find.text('Media on this phone'));
     await frames(t);
     await t.tap(find.text('Clear').first);
@@ -63,11 +66,11 @@ void main() {
 
     // About: Idris's layout, with the developer.
     await t.scrollUntilVisible(
-      find.text('Version 0.22.2 · licences, developer'),
+      find.text('Version 0.23.0 · licences, developer'),
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    await t.tap(find.text('Version 0.22.2 · licences, developer'));
+    await t.tap(find.text('Version 0.23.0 · licences, developer'));
     await frames(t);
     expect(find.text('Moose'), findsWidgets);
     await t.scrollUntilVisible(

@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/widgets/v_page.dart';
 import '../core/icons/v_icons.dart';
 import '../core/theme/v_text.dart';
 import '../core/theme/v_tokens.dart';
@@ -239,17 +240,23 @@ class _TabSwapState extends State<_TabSwap>
     super.dispose();
   }
 
+  late final _eased = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
+
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _c,
-    child: widget.child,
-    builder: (context, child) {
-      if (_c.value == 1) return child!;
-      final t = Curves.easeOutCubic.transform(_c.value);
-      return Opacity(
-        opacity: 0.35 + 0.65 * t,
-        child: Transform.scale(scale: 0.98 + 0.02 * t, child: child),
-      );
-    },
+  Widget build(BuildContext context) => VEntrance(
+    // The pages' veils grow their blur with this (see VVeil).
+    animation: _eased,
+    child: AnimatedBuilder(
+      animation: _c,
+      child: widget.child,
+      builder: (context, child) {
+        if (_c.value == 1) return child!;
+        final t = _eased.value;
+        return Opacity(
+          opacity: 0.35 + 0.65 * t,
+          child: Transform.scale(scale: 0.98 + 0.02 * t, child: child),
+        );
+      },
+    ),
   );
 }

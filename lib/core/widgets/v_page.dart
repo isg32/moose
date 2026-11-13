@@ -306,11 +306,35 @@ class VVeil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRect(
+    final entry = VEntrance.of(context);
+    Widget veil(double t) => ClipRect(
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-        child: ColoredBox(color: VPalette.of(context).veil),
+        filter: ImageFilter.blur(sigmaX: 30 * t, sigmaY: 30 * t),
+        child: ColoredBox(
+          color: VPalette.of(context).veil
+              .withValues(alpha: VPalette.of(context).veil.a * t),
+        ),
       ),
     );
+    if (entry == null) return veil(1);
+    // A blur can't be faded by fading what's above it: grow its strength
+    // (and the veil's tint) with the page coming in.
+    return AnimatedBuilder(
+      animation: entry,
+      builder: (context, _) => veil(entry.value.clamp(0.0, 1.0)),
+    );
   }
+}
+
+/// How far a page has come in (0–1), for what has to animate itself, like
+/// [VVeil]'s blur. The app shell sets it when a tab is switched to.
+class VEntrance extends InheritedNotifier<Animation<double>> {
+  const VEntrance({
+    super.key,
+    required Animation<double> animation,
+    required super.child,
+  }) : super(notifier: animation);
+
+  static Animation<double>? of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<VEntrance>()?.notifier;
 }

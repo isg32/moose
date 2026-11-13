@@ -262,6 +262,7 @@ class SettingsPage extends ConsumerWidget {
             ],
             VListRow(
               title: 'Hide in recent apps',
+              subtitle: 'Also blocks screenshots of Moose',
               trailing: VSwitch(
                 value: settings.hideInRecents,
                 onChanged: (v) => s.update((x) => x.copyWith(hideInRecents: v)),

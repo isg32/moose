@@ -71,6 +71,11 @@ class LocalStore {
         : [for (final p in packs) _pack((p as Map).cast<String, Object?>())];
     final st = (j['settings'] as Map?)?.cast<String, Object?>();
     if (st != null) settings = AppSettings.fromJson(st);
+    // Before v2, hiding in recents (which blocks screenshots) was on by
+    // default; it's off unless chosen now.
+    if (((j['v'] as num?) ?? 1) < 2) {
+      settings = settings.copyWith(hideInRecents: false);
+    }
     messages = [
       for (final m in (j['messages'] as List?) ?? const [])
         _message((m as Map).cast<String, Object?>()),
@@ -78,7 +83,7 @@ class LocalStore {
   }
 
   Map<String, Object?> _json() => {
-    'v': 1,
+    'v': 2,
     'me': myName,
     'myPhoto': myPhoto,
     'partnerPhoto': partnerPhoto,

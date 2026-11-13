@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
 import '../../core/theme/v_colors.dart';
+import '../../core/widgets/v_page.dart';
 
 /// Puts the keyboard away for good: the field loses focus too, so closing
 /// whatever opens next doesn't hand focus back to it and pop the keyboard
@@ -28,16 +29,19 @@ Future<T?> showOverlayPage<T>(BuildContext context, WidgetBuilder builder) {
           curve: Curves.easeOutQuart,
           reverseCurve: Curves.easeInCubic,
         );
-        return FadeTransition(
-          opacity: a,
-          child: SlideTransition(
-            position: Tween(
-              begin: const Offset(0, 0.06),
-              end: Offset.zero,
-            ).animate(a),
-            child: ScaleTransition(
-              scale: Tween(begin: 0.985, end: 1.0).animate(a),
-              child: child,
+        return VEntrance(
+          animation: a,
+          child: FadeTransition(
+            opacity: a,
+            child: SlideTransition(
+              position: Tween(
+                begin: const Offset(0, 0.06),
+                end: Offset.zero,
+              ).animate(a),
+              child: ScaleTransition(
+                scale: Tween(begin: 0.985, end: 1.0).animate(a),
+                child: child,
+              ),
             ),
           ),
         );
@@ -65,8 +69,10 @@ class MoosePageRoute<T> extends PageRoute<T>
 
   final WidgetBuilder builder;
 
+  /// The page's veil grows its blur as the page slides in (see VVeil).
   @override
-  Widget buildContent(BuildContext context) => builder(context);
+  Widget buildContent(BuildContext context) =>
+      VEntrance(animation: animation!, child: builder(context));
 
   @override
   String? get title => null;

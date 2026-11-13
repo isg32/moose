@@ -69,14 +69,33 @@ class NeonCalls implements CallLink {
   Future<RTCPeerConnection> _open({required bool video}) async {
     await _ensureRenderers();
     final pc = await createPeerConnection(_ice);
+    // Ask for 720p at 30 fps: with no size, Android cameras start small,
+    // and the picture on the other end was unwatchable.
     final stream = await navigator.mediaDevices.getUserMedia({
-      'audio': true,
-      'video': video ? {'facingMode': 'user'} : false,
+      'audio': {
+        'echoCancellation': true,
+        'noiseSuppression': true,
+        'autoGainControl': true,
+      },
+      'video': video
+          ? {
+              'facingMode': 'user',
+              'width': {'ideal': 1280},
+              'height': {'ideal': 720},
+              'frameRate': {'ideal': 30},
+              'mandatory': {
+                'minWidth': '640',
+                'minHeight': '480',
+                'minFrameRate': '24',
+              },
+            }
+          : false,
     });
     _local = stream;
     local.srcObject = video ? stream : null;
     for (final t in stream.getTracks()) {
-      await pc.addTrack(t, stream);
+      final sender = await pc.addTrack(t, stream);
+      if (t.kind == 'video') await _sharpen(sender);
     }
     pc.onTrack = (e) {
       if (e.streams.isNotEmpty) remote.srcObject = e.streams.first;
@@ -85,6 +104,12 @@ class NeonCalls implements CallLink {
       switch (s) {
         case RTCPeerConnectionState.RTCPeerConnectionStateConnected:
           _connected = true;
+          // Again now it's negotiated: some encoders ignore it before.
+          unawaited(() async {
+            for (final s in await pc.getSenders()) {
+              if (s.track?.kind == 'video') await _sharpen(s);
+            }
+          }());
           _ringOut?.cancel();
           _say(const CallUpdate(CallPhase.connected));
         case RTCPeerConnectionState.RTCPeerConnectionStateFailed:
@@ -95,6 +120,28 @@ class NeonCalls implements CallLink {
     };
     _pc = pc;
     return pc;
+  }
+
+  /// Up to 2.5 Mbps and 30 fps for our video, and when the network is
+  /// tight, frames go before sharpness (WebRTC's defaults keep it small).
+  Future<void> _sharpen(RTCRtpSender sender) async {
+    try {
+      final p = sender.parameters;
+      final encodings = p.encodings;
+      if (encodings == null || encodings.isEmpty) {
+        p.encodings = [RTCRtpEncoding(maxBitrate: 2500000, maxFramerate: 30)];
+      } else {
+        for (final e in encodings) {
+          e
+            ..maxBitrate = 2500000
+            ..maxFramerate = 30;
+        }
+      }
+      p.degradationPreference = RTCDegradationPreference.MAINTAIN_RESOLUTION;
+      await sender.setParameters(p);
+    } on Object {
+      // Not every platform takes these; the defaults still work.
+    }
   }
 
   /// The local description once its candidates are in (or after 4 s).

@@ -667,7 +667,7 @@ class AppSettings {
     this.showPreview = false,
     this.appLock = true,
     this.lockAfter = LockAfter.s30,
-    this.hideInRecents = true,
+    this.hideInRecents = false,
   });
 
   final bool enterSends;

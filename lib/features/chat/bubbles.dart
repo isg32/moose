@@ -3,7 +3,6 @@ import 'package:flutter/widgets.dart';
 
 import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_colors.dart';
-import '../../core/theme/v_palette.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/widgets/v_buttons.dart';
 import '../../core/widgets/v_glass.dart';
@@ -167,7 +166,9 @@ class _Bubble extends StatelessWidget {
       bottomLeft: Radius.circular(out ? 20 : 6),
       bottomRight: Radius.circular(out ? 6 : 20),
     );
-    final fg = out && !failed ? paper : ink;
+    // Theirs look like yours (solid ink, no blur): only the side and the
+    // tail corner tell them apart.
+    final fg = !failed ? paper : ink;
     final body = VInkScope(
       ink: fg,
       child: Padding(
@@ -184,7 +185,7 @@ class _Bubble extends StatelessWidget {
                   padding: _media
                       ? const EdgeInsets.fromLTRB(4, 4, 4, 6)
                       : const EdgeInsets.only(bottom: 6),
-                  child: _QuoteView(m.reply!, partner: partner, onInk: out),
+                  child: _QuoteView(m.reply!, partner: partner, onInk: !failed),
                 ),
               _content(context),
             ],
@@ -196,18 +197,9 @@ class _Bubble extends StatelessWidget {
     if (failed) {
       return VOutlined(radius: 20, outline: VOutline.dashed, child: body);
     }
-    if (out) {
-      return DecoratedBox(
-        decoration: BoxDecoration(color: ink, borderRadius: radius),
-        child: body,
-      );
-    }
-    return VGlass(
-      radius: 20,
-      borderRadius: radius,
-      tint: VPalette.of(context).glassCard,
-      blur: 16,
-      child: ColoredBox(color: VColors.transparent, child: body),
+    return DecoratedBox(
+      decoration: BoxDecoration(color: ink, borderRadius: radius),
+      child: body,
     );
   }
 
