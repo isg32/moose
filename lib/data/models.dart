@@ -149,7 +149,11 @@ class Song {
     required this.artist,
     required this.length,
     required this.art,
+    this.thumb,
   });
+
+  /// The cover on the web; [art] stands in until it loads (or on the mock).
+  final String? thumb;
 
   final String videoId;
   final String title;
@@ -173,7 +177,13 @@ class Meme {
     this.aspect = 1.2,
     this.title = '',
     this.subreddit,
+    this.url,
+    this.thumb,
   });
+
+  /// The picture (or GIF) on the web, and a smaller one for the picker.
+  final String? url;
+  final String? thumb;
 
   final String id;
   final MemeSource source;
@@ -241,6 +251,9 @@ class Sticker {
     this.shape = 0,
     this.favourite = false,
     this.from = 'me',
+    this.path,
+    this.blob,
+    this.blobKey,
   }) : strokes = const [];
 
   const Sticker.doodle({
@@ -249,7 +262,16 @@ class Sticker {
     this.favourite = false,
     this.from = 'me',
   }) : art = 0,
-       shape = 0;
+       shape = 0,
+       path = null,
+       blob = null,
+       blobKey = null;
+
+  /// Photo stickers: the cut photo on this phone, and its sealed copy in
+  /// storage (with that copy's key) while it travels.
+  final String? path;
+  final String? blob;
+  final String? blobKey;
 
   final String id;
 
@@ -266,7 +288,29 @@ class Sticker {
 
   Sticker withFavourite(bool f) => isDoodle
       ? Sticker.doodle(id: id, strokes: strokes, favourite: f, from: from)
-      : Sticker.photo(id: id, art: art, shape: shape, favourite: f, from: from);
+      : Sticker.photo(
+          id: id,
+          art: art,
+          shape: shape,
+          favourite: f,
+          from: from,
+          path: path,
+          blob: blob,
+          blobKey: blobKey,
+        );
+
+  /// A photo sticker with its file or sealed copy set.
+  Sticker withFile({String? path, String? blob, String? blobKey}) =>
+      Sticker.photo(
+        id: id,
+        art: art,
+        shape: shape,
+        favourite: favourite,
+        from: from,
+        path: path ?? this.path,
+        blob: blob ?? this.blob,
+        blobKey: blobKey ?? this.blobKey,
+      );
 }
 
 /// A named set of stickers (S5).

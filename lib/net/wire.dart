@@ -194,6 +194,8 @@ abstract final class Wire {
       'aspect': meme.aspect,
       'title': meme.title,
       'sub': ?meme.subreddit,
+      'url': ?meme.url,
+      'thumb': ?meme.thumb,
     },
     StickerBody(:final sticker) => {
       't': 'sticker',
@@ -203,6 +205,9 @@ abstract final class Wire {
       else ...{
         'art': sticker.art,
         'shape': sticker.shape,
+        'blob': ?sticker.blob,
+        'k': ?sticker.blobKey,
+        if (local) 'path': ?sticker.path,
       },
     },
     CallBody(:final video, :final outcome, :final length) => {
@@ -220,7 +225,10 @@ abstract final class Wire {
       't': 'video',
       'video': _media(video, local: local),
     },
-    RoundVideoBody(:final video) => {'t': 'round', 'video': _media(video)},
+    RoundVideoBody(:final video) => {
+      't': 'round',
+      'video': _media(video, local: local),
+    },
     VoiceBody(:final length, :final wave, :final blob, :final blobKey) => {
       't': 'voice',
       'ms': length.inMilliseconds,
@@ -253,6 +261,8 @@ abstract final class Wire {
         aspect: (j['aspect'] as num).toDouble(),
         title: j['title'] as String,
         subreddit: j['sub'] as String?,
+        url: j['url'] as String?,
+        thumb: j['thumb'] as String?,
       ),
     ),
     'sticker' when j['strokes'] != null => StickerBody(
@@ -268,6 +278,9 @@ abstract final class Wire {
         from: 'partner',
         art: (j['art'] as num).toInt(),
         shape: (j['shape'] as num).toInt(),
+        path: j['path'] as String?,
+        blob: j['blob'] as String?,
+        blobKey: j['k'] as String?,
       ),
     ),
     'call' => CallBody(
@@ -301,6 +314,7 @@ abstract final class Wire {
     'artist': s.artist,
     'ms': s.length.inMilliseconds,
     'art': s.art,
+    'thumb': ?s.thumb,
   };
 
   static Song _toSong(Map<String, Object?> j) => Song(
@@ -309,6 +323,7 @@ abstract final class Wire {
     artist: j['artist'] as String,
     length: Duration(milliseconds: (j['ms'] as num).toInt()),
     art: (j['art'] as num).toInt(),
+    thumb: j['thumb'] as String?,
   );
 
   static Map<String, Object?> _media(Media m, {bool local = false}) => {

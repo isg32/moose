@@ -15,6 +15,7 @@ import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../../net/web_memes.dart';
 import '../common/art.dart';
 import '../common/choice_sheet.dart';
 import '../common/dot_loader.dart';
@@ -414,7 +415,10 @@ class _Memes extends ConsumerStatefulWidget {
 
 class _MemesState extends ConsumerState<_Memes> {
   final _search = TextEditingController();
-  var _source = MemeSource.klipy;
+  // KLIPY first, as the canvas has it; Reddit when there's no KLIPY key.
+  late var _source = ref.read(onNeonProvider) && !WebMemes.hasKlipy
+      ? MemeSource.reddit
+      : MemeSource.klipy;
   late MemeKind? _kind = widget.kind;
   var _query = '';
   Meme? _chosen;
@@ -523,6 +527,7 @@ class _MemesState extends ConsumerState<_Memes> {
                   children: [
                     ArtBox(
                       art: _chosen!.art,
+                      url: _chosen!.thumb ?? _chosen!.url,
                       width: 44,
                       height: 44,
                       radius: BorderRadius.circular(10),
@@ -613,6 +618,7 @@ class _Masonry extends StatelessWidget {
                     aspectRatio: m.aspect,
                     child: ArtBox(
                       art: m.art,
+                      url: m.thumb ?? m.url,
                       radius: BorderRadius.circular(14),
                       child: OnMedia(
                         child: Align(

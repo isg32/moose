@@ -145,6 +145,9 @@ abstract interface class DoodleRepository {
 
 abstract interface class StickerRepository {
   List<StickerPack> load();
+
+  /// The library changed; keep it on this phone.
+  void save(List<StickerPack> packs);
 }
 
 abstract interface class MemeRepository {
@@ -161,4 +164,10 @@ abstract interface class StorageRepository {
 
   /// Meme and song previews.
   int get cacheBytes;
+
+  /// Deletes what one kind of media ([label]) keeps on this phone.
+  Future<void> clear(String label);
+
+  /// Empties the cache of meme and song previews.
+  Future<void> clearCache();
 }

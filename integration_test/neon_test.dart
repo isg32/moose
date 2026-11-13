@@ -18,6 +18,7 @@ import 'package:moose/features/moments/moment_burst.dart';
 import 'package:moose/features/onboarding/onboarding_pages.dart';
 import 'package:moose/net/config.dart';
 import 'package:moose/net/local_store.dart';
+import 'package:moose/net/background_check.dart';
 import 'package:moose/net/neon_backend.dart';
 import 'package:moose/net/neon_calls.dart';
 import 'package:moose/net/phone_media.dart';
@@ -78,10 +79,32 @@ void main() {
   ) async {
     final config = NeonConfig.fromEnvironment;
     expect(config, isNotNull, reason: 'build with env.json');
-    final dir = await (await getTemporaryDirectory()).createTemp('moose-e2e');
+    // The app's real storage and Keystore (the background check reads
+    // them), wiped first so this is a brand-new phone.
+    final dir = await getApplicationSupportDirectory();
+    for (final name in [
+      'moose.json',
+      'moose.json.tmp',
+      'background-check.json',
+    ]) {
+      final f = File('${dir.path}/$name');
+      if (f.existsSync()) f.deleteSync();
+    }
+    const vault = SecureVault();
+    for (final k in [
+      'auth.email',
+      'auth.password',
+      'auth.cookie',
+      'identity.x25519',
+      'lock.pin',
+      'lock.decoy',
+      'lock.decoyName',
+    ]) {
+      await vault.write(k, null);
+    }
     final backend = await NeonBackend.open(
       config!,
-      vault: MemoryVault(),
+      vault: vault,
       dir: dir,
       label: 'e2e',
     );
@@ -91,12 +114,19 @@ void main() {
       ..media = photos
       ..voice = PhoneVoice(backend.mediaDir)
       ..calls = NeonCalls(backend)
+      ..notifyAway = (data) async {
+        final n = await Push.describe(
+          data,
+          vault: backend.vault,
+          store: backend.store,
+        );
+        if (n != null) await Push.show(n, id: n.moment ? 2 : 1);
+      }
       ..pushToken = Push.token
       ..askNotifications = Push.ask;
     await Push.init(onWake: () => backend.wake?.call());
     expect(await Push.token(), isNotNull, reason: 'Firebase gave a token');
-    final c = ProviderContainer(overrides: backend.overrides());
-    addTearDown(c.dispose);
+    var c = ProviderContainer(overrides: backend.overrides());
     await binding.convertFlutterSurfaceToImage();
     await t.pumpWidget(
       UncontrolledProviderScope(container: c, child: const MooseApp()),
@@ -574,6 +604,55 @@ void main() {
     );
     await frames(t);
 
+    // 9½ · Moose is closed: the background check (every 15 s in this
+    // build) finds her message and notifies, without taking it. Opened
+    // again, Moose takes it.
+    await type(t, 'closing');
+    await frames(t, 200);
+    await t.tap(find.bySemanticsLabel('Send'));
+    await until(t, '"closing" sent', () {
+      final last = c.read(messagesProvider).lastWhere((m) => m.fromMe);
+      return last.quote().text == 'closing' &&
+          last.delivery != Delivery.pending;
+    });
+    await Push.clear();
+    await t.pumpWidget(const SizedBox.shrink());
+    await t.pump(const Duration(seconds: 1));
+    c.dispose(); // the live socket is gone with it
+    BackgroundCheck.init();
+    await BackgroundCheck.start();
+    expect(await BackgroundCheck.running, isTrue);
+    final closedAt = DateTime.now();
+    while (DateTime.now().difference(closedAt).inSeconds < 70) {
+      await Future<void>.delayed(const Duration(seconds: 1));
+    }
+    expect(await BackgroundCheck.lastCheck(), isNotNull, reason: 'it checked');
+    expect(
+      (await backend.api.inbox()).length,
+      greaterThan(0),
+      reason: 'the check only peeks: her message still waits',
+    );
+    await BackgroundCheck.stop();
+    final reopened = await NeonBackend.open(
+      config,
+      vault: vault,
+      dir: dir,
+      label: 'e2e',
+    );
+    c = ProviderContainer(overrides: reopened.overrides());
+    await t.pumpWidget(
+      UncontrolledProviderScope(container: c, child: const MooseApp()),
+    );
+    await until(
+      t,
+      'her message from while we were closed',
+      () => c
+          .read(messagesProvider)
+          .any((m) => !m.fromMe && m.quote().text == 'while you were closed'),
+      within: const Duration(seconds: 40),
+    );
+    await frames(t);
+
     // 10 · Bye.
     await type(t, 'bye');
     await frames(t, 200);
@@ -590,7 +669,7 @@ void main() {
 
     // 6 · The conversation is on the phone, and the server holds nothing.
     final all = c.read(messagesProvider);
-    await backend.store.flush();
+    await reopened.store.flush();
     final again = await LocalStore.open(dir);
     expect(again.messages.length, all.length);
     expect(again.partner?.name, 'Aatika');
@@ -600,10 +679,11 @@ void main() {
       containsAll(["Aatika's board", 'Sunday plans']),
       reason: 'the boards are kept',
     );
-    expect(await backend.api.inbox(), isEmpty);
-    await dir.delete(recursive: true);
-    expect(File('${dir.path}/moose.json').existsSync(), isFalse);
-  }, timeout: const Timeout(Duration(minutes: 5)));
+    expect(await reopened.api.inbox(), isEmpty);
+    await t.pumpWidget(const SizedBox.shrink());
+    c.dispose();
+    File('${dir.path}/moose.json').deleteSync();
+  }, timeout: const Timeout(Duration(minutes: 9)));
 }
 
 /// The gallery, for the test: one photo, drawn on the phone.

@@ -17,10 +17,14 @@ class ArtBox extends StatelessWidget {
     this.begin = Alignment.topLeft,
     this.end = Alignment.bottomRight,
     this.path,
+    this.url,
   });
 
   final int art;
   final String? path;
+
+  /// A picture on the web (song covers, memes), when there's no [path].
+  final String? url;
   final BorderRadius radius;
   final Widget? child;
   final double? width;
@@ -32,19 +36,26 @@ class ArtBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final (a, b) = VMockArt.of(art);
     final file = path;
+    final web = url;
     return Container(
       width: width,
       height: height,
-      clipBehavior: file == null ? Clip.none : Clip.antiAlias,
+      clipBehavior: file == null && web == null ? Clip.none : Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: radius,
         gradient: LinearGradient(colors: [a, b], begin: begin, end: end),
-        image: file == null
-            ? null
-            : DecorationImage(
+        image: file != null
+            ? DecorationImage(
                 image: ResizeImage(FileImage(File(file)), width: 1080),
                 fit: BoxFit.cover,
-              ),
+              )
+            : web != null
+            ? DecorationImage(
+                image: NetworkImage(web),
+                fit: BoxFit.cover,
+                onError: (_, _) {},
+              )
+            : null,
       ),
       child: child,
     );

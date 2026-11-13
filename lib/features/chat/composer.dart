@@ -15,7 +15,7 @@ import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_progress.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
-import '../../data/providers.dart' show Voice;
+import '../../data/providers.dart' show RoundCamera, Voice;
 import '../common/art.dart';
 import '../common/overlay.dart';
 import '../common/parts.dart';
@@ -40,7 +40,9 @@ class ComposerActions {
   /// A voice note: its [path] and [wave] when it was really recorded.
   final void Function(Duration length, {String? path, List<double>? wave})
   onSendVoice;
-  final void Function(Duration length) onSendRound;
+
+  /// A round video: its [path] when it was really recorded.
+  final void Function(Duration length, {String? path}) onSendRound;
   final VoidCallback onAttach;
   final VoidCallback onStickers;
   final void Function(String caption)? onSendMedia;
@@ -63,6 +65,7 @@ class Composer extends StatefulWidget {
     this.enterSends = false,
     this.enabled = true,
     this.voice,
+    this.roundCamera,
   });
 
   final ComposerActions actions;
@@ -78,6 +81,9 @@ class Composer extends StatefulWidget {
 
   /// The real microphone (Neon builds); null records pretend.
   final Voice? voice;
+
+  /// The front camera for round videos (Neon builds); null is pretend.
+  final RoundCamera? roundCamera;
 
   @override
   State<Composer> createState() => ComposerState();
@@ -234,11 +240,19 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
     });
     if (_round) {
       _roundOpen = true;
+      final camera = widget.roundCamera;
+      final preview = ValueNotifier<Widget?>(null);
+      if (camera != null) {
+        unawaited(
+          camera.open().then((w) => preview.value = w, onError: (Object _) {}),
+        );
+      }
       unawaited(
         showOverlayPage<void>(
           context,
           (_) => RoundRecorder(
             length: _roundLength,
+            preview: preview,
             onCancel: _cancel,
             onStop: _finish,
           ),
@@ -285,6 +299,7 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
     _clock?.cancel();
     unawaited(_levels?.cancel());
     if (!_round) unawaited(widget.voice?.cancel());
+    if (_round) unawaited(widget.roundCamera?.close());
     HapticFeedback.lightImpact();
     _closeRound();
     setState(() => _rec = _Rec.none);
@@ -303,7 +318,13 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
       return;
     }
     if (round) {
-      widget.actions.onSendRound(len);
+      final camera = widget.roundCamera;
+      if (camera == null) {
+        widget.actions.onSendRound(len);
+        return;
+      }
+      final path = await camera.stop();
+      if (path != null) widget.actions.onSendRound(len, path: path);
       return;
     }
     if (voice == null) {
@@ -814,8 +835,11 @@ class RoundRecorder extends StatelessWidget {
     required this.length,
     required this.onCancel,
     required this.onStop,
+    this.preview,
   });
 
+  /// The front camera's picture, once it's open (Neon builds).
+  final ValueListenable<Widget?>? preview;
   final ValueListenable<Duration> length;
   final VoidCallback onCancel;
   final VoidCallback onStop;
@@ -839,13 +863,20 @@ class RoundRecorder extends StatelessWidget {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      const ClipOval(
-                        child: ArtBox(
-                          art: 0,
-                          width: 280,
-                          height: 280,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                      ClipOval(
+                        child: SizedBox.square(
+                          dimension: 280,
+                          child: ValueListenableBuilder<Widget?>(
+                            valueListenable:
+                                preview ?? ValueNotifier<Widget?>(null),
+                            builder: (context, camera, _) =>
+                                camera ??
+                                const ArtBox(
+                                  art: 0,
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                          ),
                         ),
                       ),
                       VRing(

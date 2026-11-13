@@ -28,6 +28,13 @@ import 'settings_pages.dart';
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
+  static String _checkLine({required bool neon, DateTime? last}) {
+    if (!neon) return 'Every 6 min · last 2 min ago';
+    if (last == null) return 'Every 6 min · not yet';
+    final m = DateTime.now().difference(last).inMinutes;
+    return 'Every 6 min · last ${m < 1 ? 'just now' : '$m min ago'}';
+  }
+
   Future<void> _rename(BuildContext context, WidgetRef ref) async {
     final c = TextEditingController(text: ref.read(pairingProvider).me.name);
     final name = await showVSheet<String>(
@@ -162,9 +169,12 @@ class SettingsPage extends ConsumerWidget {
               onTap: () =>
                   pushPage<void>(context, (_) => const NotificationsPage()),
             ),
-            const VListRow(
+            VListRow(
               title: 'Background check',
-              subtitle: 'Every 6 min · last 2 min ago',
+              subtitle: _checkLine(
+                neon: ref.watch(onNeonProvider),
+                last: ref.watch(backgroundCheckProvider).value,
+              ),
               value: 'Running',
               chevron: false,
             ),
@@ -255,9 +265,10 @@ class SettingsPage extends ConsumerWidget {
               title: 'Clear cache',
               subtitle: 'Meme and song previews',
               trailing: Text(bytes(cache), style: VText.doto(15)),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                showToast(context, 'Cache cleared');
+              onTap: () async {
+                unawaited(HapticFeedback.selectionClick());
+                await ref.read(storageRepositoryProvider).clearCache();
+                if (context.mounted) showToast(context, 'Cache cleared');
               },
             ),
           ],

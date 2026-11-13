@@ -12,9 +12,15 @@ import 'app/version.dart';
 import 'core/theme/v_colors.dart';
 import 'features/crash_overlay.dart';
 import 'net/config.dart';
+import 'data/providers.dart';
+import 'net/background_check.dart';
 import 'net/neon_backend.dart';
 import 'net/neon_calls.dart';
 import 'net/phone_media.dart';
+import 'net/phone_round.dart';
+import 'net/phone_songs.dart';
+import 'net/phone_storage.dart';
+import 'net/web_memes.dart';
 import 'net/phone_voice.dart';
 import 'net/push.dart';
 import 'net/vault.dart';
@@ -56,13 +62,26 @@ Future<void> main() async {
           vault: const SecureVault(),
           dir: await getApplicationSupportDirectory(),
         );
+  final songs = backend == null ? null : YouTubeSongs();
+  final cache = backend == null ? null : await getTemporaryDirectory();
   if (backend != null) {
     backend
       ..media = PhoneMedia(backend.mediaDir)
       ..voice = PhoneVoice(backend.mediaDir)
       ..calls = NeonCalls(backend)
+      ..startChecking = BackgroundCheck.start
+      ..stopChecking = BackgroundCheck.stop
+      ..notifyAway = (data) async {
+        final n = await Push.describe(
+          data,
+          vault: backend.vault,
+          store: backend.store,
+        );
+        if (n != null) await Push.show(n, id: n.moment ? 2 : 1);
+      }
       ..askNotifications = Push.ask
       ..pushToken = Push.token;
+    BackgroundCheck.init();
     try {
       await Push.init(onWake: () => backend.wake?.call());
     } on Object catch (e) {
@@ -72,7 +91,23 @@ Future<void> main() async {
   }
   runApp(
     ProviderScope(
-      overrides: backend?.overrides() ?? const [],
+      overrides: [
+        ...?backend?.overrides(),
+        if (backend != null) ...[
+          backgroundCheckProvider.overrideWith(
+            (ref) => BackgroundCheck.lastCheck(),
+          ),
+          // Songs come from YouTube (search, and the 15 s clips).
+          musicRepositoryProvider.overrideWithValue(songs!),
+          songPlayerProvider.overrideWithValue(songs),
+          // Memes from Reddit (and KLIPY with a key).
+          memeRepositoryProvider.overrideWithValue(WebMemes()),
+          roundCameraProvider.overrideWithValue(PhoneRound(backend.mediaDir)),
+          storageRepositoryProvider.overrideWithValue(
+            PhoneStorage(backend.store, backend.mediaDir, cache!),
+          ),
+        ],
+      ],
       child: const MooseApp(splash: true),
     ),
   );

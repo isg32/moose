@@ -184,6 +184,7 @@ class _SongRow extends StatelessWidget {
           children: [
             ArtBox(
               art: s.art,
+              url: s.thumb,
               width: 52,
               height: 52,
               radius: BorderRadius.circular(12),
@@ -310,13 +311,34 @@ class _RangePickerPageState extends ConsumerState<RangePickerPage> {
   @override
   void dispose() {
     _stop?.cancel();
+    if (_playing) unawaited(_player?.stop());
     _scroll.dispose();
     super.dispose();
   }
 
+  late final SongPlayer? _player = ref.read(songPlayerProvider);
+
   void _preview() {
     _stop?.cancel();
     setState(() => _playing = !_playing);
+    final player = _player;
+    if (player != null) {
+      // The real clip, from YouTube.
+      if (!_playing) {
+        unawaited(player.stop());
+        return;
+      }
+      unawaited(
+        player.play(
+          widget.song,
+          _start,
+          onDone: () {
+            if (mounted) setState(() => _playing = false);
+          },
+        ),
+      );
+      return;
+    }
     if (_playing) {
       _stop = Timer(_clip, () {
         if (mounted) setState(() => _playing = false);
@@ -352,6 +374,7 @@ class _RangePickerPageState extends ConsumerState<RangePickerPage> {
               const SizedBox(height: 18),
               ArtBox(
                 art: widget.song.art,
+                url: widget.song.thumb,
                 width: 230,
                 height: 230,
                 radius: BorderRadius.circular(28),

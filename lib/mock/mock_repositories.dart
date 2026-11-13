@@ -159,6 +159,9 @@ class MockDoodleRepository implements DoodleRepository {
 class MockStickerRepository implements StickerRepository {
   @override
   List<StickerPack> load() => MockData.stickerPacks();
+
+  @override
+  void save(List<StickerPack> packs) {}
 }
 
 class MockMemeRepository implements MemeRepository {
@@ -210,4 +213,10 @@ class MockStorageRepository implements StorageRepository {
 
   @override
   int get cacheBytes => MockData.cacheBytes;
+
+  @override
+  Future<void> clear(String label) async {}
+
+  @override
+  Future<void> clearCache() async {}
 }

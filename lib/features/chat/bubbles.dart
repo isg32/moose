@@ -724,7 +724,12 @@ class _RoundVideo extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 ClipOval(
-                  child: ArtBox(art: video.art, width: size, height: size),
+                  child: video.path == null
+                      ? ArtBox(art: video.art, width: size, height: size)
+                      : SizedBox.square(
+                          dimension: size,
+                          child: RoundPlayer(video.path!, playing: playing),
+                        ),
                 ),
                 VRing(
                   value: playing ? 0.38 : 0,
@@ -839,6 +844,7 @@ class _Music extends StatelessWidget {
             children: [
               ArtBox(
                 art: b.song.art,
+                url: b.song.thumb,
                 width: 48,
                 height: 48,
                 radius: BorderRadius.circular(12),
@@ -913,6 +919,7 @@ class _MemeContent extends StatelessWidget {
           height: w / meme.aspect,
           child: ArtBox(
             art: meme.art,
+            url: meme.url,
             radius: BorderRadius.circular(16),
             child: OnMedia(
               child: Stack(

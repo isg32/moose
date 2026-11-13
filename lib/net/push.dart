@@ -41,8 +41,11 @@ abstract final class Push {
     await Firebase.initializeApp();
     FirebaseMessaging.onBackgroundMessage(_background);
     FirebaseMessaging.onMessage.listen((_) => onWake());
-    await _channels();
+    await ready();
   }
+
+  /// Takes down Moose's notifications.
+  static Future<void> clear() => _local.cancelAll();
 
   /// Asks for the notification permission (Android 13+).
   static Future<bool> ask() async {
@@ -65,7 +68,8 @@ abstract final class Push {
       // ignore: deprecated_member_use
       FirebaseMessaging.instance.onTokenRefresh;
 
-  static Future<void> _channels() async {
+  /// Sets up local notifications and their channels (any isolate).
+  static Future<void> ready() async {
     await _local.initialize(
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
@@ -123,9 +127,12 @@ abstract final class Push {
     };
   }
 
+  /// [tag] groups notifications (one per tag and id); the background
+  /// check uses its own.
   static Future<void> show(
     ({String title, String body, bool moment}) n, {
     required int id,
+    String? tag,
   }) => _local.show(
     id: id,
     title: n.title,
@@ -144,7 +151,7 @@ abstract final class Push {
             : AndroidNotificationCategory.message,
         color: n.moment ? VMoment.hug.color : null,
         // One notification per kind: a stream of messages stacks into one.
-        tag: n.moment ? 'moment' : 'messages',
+        tag: tag ?? (n.moment ? 'moment' : 'messages'),
       ),
     ),
   );
@@ -155,7 +162,7 @@ abstract final class Push {
 Future<void> _background(RemoteMessage message) async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  await Push._channels();
+  await Push.ready();
   final store = await LocalStore.open(await getApplicationSupportDirectory());
   final n = await Push.describe(
     message.data,

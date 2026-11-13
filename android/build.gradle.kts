@@ -2,6 +2,8 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        // NewPipeExtractor (song clips) is published on JitPack.
+        maven { url = uri("https://jitpack.io") }
     }
 }
 

@@ -34,9 +34,7 @@ Future<Sticker?> makeSticker(BuildContext context, WidgetRef ref) async {
     ],
   );
   if (from == null || !context.mounted) return null;
-  if (from == 'photo') {
-    return pushPage<Sticker>(context, (_) => const PhotoStickerPage(art: 7));
-  }
+  if (from == 'photo') return photoSticker(context, ref);
   final doodles = ref.read(doodlesProvider);
   final pick = await showChoiceSheet<Doodle>(
     context,
@@ -215,12 +213,30 @@ class _DoodleStickerSheetState extends ConsumerState<_DoodleStickerSheet> {
   }
 }
 
-/// S2: a sticker from a photo. The cut-out is drawn on stand-in art until
-/// real photos arrive in Phase 4.
+/// A photo sticker (S2): from the phone's gallery on Neon, from stand-in
+/// art on the mock.
+Future<Sticker?> photoSticker(BuildContext context, WidgetRef ref) async {
+  final source = ref.read(mediaSourceProvider);
+  String? path;
+  if (source != null) {
+    final picked = await source.gallery();
+    if (picked.isEmpty || !context.mounted) return null;
+    path = picked.first.path;
+  }
+  return pushPage<Sticker>(
+    context,
+    (_) => PhotoStickerPage(art: 7, path: path),
+  );
+}
+
+/// S2: a sticker from a photo: the cut-out, its outline and a caption.
 class PhotoStickerPage extends ConsumerStatefulWidget {
-  const PhotoStickerPage({super.key, required this.art});
+  const PhotoStickerPage({super.key, required this.art, this.path});
 
   final int art;
+
+  /// The photo on this phone; null draws the stand-in art.
+  final String? path;
 
   @override
   ConsumerState<PhotoStickerPage> createState() => _PhotoStickerPageState();
@@ -236,6 +252,7 @@ class _PhotoStickerPageState extends ConsumerState<PhotoStickerPage> {
   Sticker _make() => Sticker.photo(
     id: 'st${DateTime.now().microsecondsSinceEpoch}',
     art: widget.art,
+    path: widget.path,
   );
 
   void _save({required bool send}) {
@@ -298,6 +315,7 @@ class _PhotoStickerPageState extends ConsumerState<PhotoStickerPage> {
                           ),
                           child: ArtBox(
                             art: widget.art,
+                            path: widget.path,
                             radius: stickerRadius(0, 230, 270),
                           ),
                         ),
@@ -628,10 +646,7 @@ class StickerLibraryPage extends ConsumerWidget {
             VListRow(
               title: 'From a photo',
               leading: const VIconView(VIcon.image, size: 20),
-              onTap: () => pushPage<Sticker>(
-                context,
-                (_) => const PhotoStickerPage(art: 7),
-              ),
+              onTap: () => photoSticker(context, ref),
             ),
             VListRow(
               title: 'From a doodle',

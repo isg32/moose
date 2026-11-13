@@ -120,6 +120,26 @@ class ChatPageState extends ConsumerState<ChatPage> {
 
   void _play(Message m, Duration length) {
     _playTimer?.cancel();
+    final songs = ref.read(songPlayerProvider);
+    if (songs != null && m.body is MusicBody) {
+      final b = m.body as MusicBody;
+      unawaited(songs.stop());
+      if (_playing == m.id) {
+        setState(() => _playing = null);
+        return;
+      }
+      setState(() => _playing = m.id);
+      unawaited(
+        songs.play(
+          b.song,
+          b.start,
+          onDone: () {
+            if (mounted && _playing == m.id) setState(() => _playing = null);
+          },
+        ),
+      );
+      return;
+    }
     final voice = ref.read(voiceProvider);
     final file = switch (m.body) {
       VoiceBody(:final path) => path,
@@ -344,6 +364,7 @@ class ChatPageState extends ConsumerState<ChatPage> {
               child: Composer(
                 enabled: !session.decoy,
                 voice: ref.watch(voiceProvider),
+                roundCamera: ref.watch(roundCameraProvider),
                 partner: partner.name,
                 replyTo: _replyTo,
                 media: _picked,
@@ -358,12 +379,14 @@ class ChatPageState extends ConsumerState<ChatPage> {
                       path: path,
                     ),
                   ),
-                  onSendRound: (len) => _send(
+                  onSendRound: (len, {path}) => _send(
                     RoundVideoBody(
                       Media(
                         id: 'rv${DateTime.now().millisecondsSinceEpoch}',
                         art: 0,
+                        aspect: 1,
                         duration: len,
+                        path: path,
                       ),
                     ),
                   ),

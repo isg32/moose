@@ -64,6 +64,14 @@ class NeonBackend {
   /// Asks for the notification permission.
   Future<bool> Function() askNotifications = () async => true;
 
+  /// Shows a notification for a message taken while Moose isn't on
+  /// screen (its live socket still runs in the background).
+  Future<void> Function(Map<String, dynamic> push)? notifyAway;
+
+  /// Starts and stops the background check (once paired, and on unpair).
+  Future<void> Function()? startChecking;
+  Future<void> Function()? stopChecking;
+
   /// Real calls (WebRTC); null keeps them pretend.
   CallLink? calls;
 
@@ -156,6 +164,7 @@ class NeonBackend {
       }),
       chatThemeProvider.overrideWith(() => _StoredTheme(store)),
       doodleRepositoryProvider.overrideWithValue(_StoredDoodles(store)),
+      stickerRepositoryProvider.overrideWithValue(_StoredStickers(store)),
       mediaSourceProvider.overrideWithValue(media),
       voiceProvider.overrideWithValue(voice),
       callLinkProvider.overrideWithValue(calls),
@@ -208,6 +217,37 @@ class _StoredDoodles implements DoodleRepository {
   void save(List<Doodle> doodles) {
     _store
       ..doodles = doodles
+      ..changed();
+  }
+}
+
+/// The sticker library: yours, and the ones you saved from your person.
+class _StoredStickers implements StickerRepository {
+  _StoredStickers(this._store);
+  final LocalStore _store;
+
+  @override
+  List<StickerPack> load() =>
+      _store.stickers ??
+      const [
+        StickerPack(
+          id: 'ours',
+          name: 'Ours',
+          note: 'Made by you two',
+          stickers: [],
+        ),
+        StickerPack(
+          id: 'saved',
+          name: 'Saved',
+          note: 'From your person',
+          stickers: [],
+        ),
+      ];
+
+  @override
+  void save(List<StickerPack> packs) {
+    _store
+      ..stickers = packs
       ..changed();
   }
 }
@@ -329,6 +369,7 @@ class NeonPairRepository implements PairRepository {
 
   @override
   Future<void> unpair() async {
+    await b.stopChecking?.call();
     await b.api.unpair();
     await b.store.clear();
   }
@@ -391,6 +432,7 @@ class NeonChatRepository implements ChatRepository {
       }
       try {
         await _checkPairing();
+        if (b.store.paired) unawaited(b.startChecking?.call());
         await _registerPush();
         await _catchUp();
         final done = Completer<void>();
@@ -424,6 +466,7 @@ class NeonChatRepository implements ChatRepository {
   Future<void> _checkPairing() async {
     final me = await b.api.me();
     if (!me.paired && b.store.paired) {
+      await b.stopChecking?.call();
       await b.store.clear();
       _emit(const Unpaired());
     }
@@ -459,6 +502,9 @@ class NeonChatRepository implements ChatRepository {
           if (b.store.messages.any((x) => x.id == sent.id)) break;
           final message = _arrived(sent);
           delivered.add(message.id);
+          if (!b.isOpen()) {
+            unawaited(b.notifyAway?.call({'kind': m.kind, 'body': m.body}));
+          }
           _emit(Incoming(message));
           _fetchMedia(message);
           if (message.body case MomentBody(:final moment)
@@ -525,6 +571,7 @@ class NeonChatRepository implements ChatRepository {
           for (final p in photos) waiting(p),
         ], caption: caption),
         VideoBody(:final video) => VideoBody(waiting(video)),
+        RoundVideoBody(:final video) => RoundVideoBody(waiting(video)),
         final b => b,
       },
     );
@@ -536,8 +583,21 @@ class NeonChatRepository implements ChatRepository {
     final media = switch (m.body) {
       PhotoBody(:final photos) => photos,
       VideoBody(:final video) => [video],
+      RoundVideoBody(:final video) => [video],
       _ => const <Media>[],
     };
+    if (m.body case StickerBody(
+      sticker: Sticker(:final blob?, :final blobKey?, :final id),
+    )) {
+      unawaited(() async {
+        try {
+          final path = await _download(blob, blobKey, 'sticker-$id');
+          _emit(MediaReady(m.id, 'sticker', path));
+        } on Object {
+          // Left in storage: the next start tries again.
+        }
+      }());
+    }
     if (m.body case VoiceBody(:final blob?, :final blobKey?)) {
       unawaited(() async {
         try {
@@ -592,6 +652,20 @@ class NeonChatRepository implements ChatRepository {
     VideoBody(:final video) => m.copyWith(
       body: VideoBody(await _upload(video)),
     ),
+    RoundVideoBody(:final video) => m.copyWith(
+      body: RoundVideoBody(await _upload(video)),
+    ),
+    StickerBody(:final sticker)
+        when sticker.path != null && sticker.blob == null =>
+      await () async {
+        final sealed = await Channel.sealBlob(
+          await File(sticker.path!).readAsBytes(),
+        );
+        final key = await b.api.upload(sealed.bytes);
+        return m.copyWith(
+          body: StickerBody(sticker.withFile(blob: key, blobKey: sealed.key)),
+        );
+      }(),
     VoiceBody(:final path, :final blob) when path != null && blob == null =>
       await () async {
         final sealed = await Channel.sealBlob(await File(path).readAsBytes());

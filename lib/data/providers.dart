@@ -79,6 +79,32 @@ abstract interface class Voice {
 
 final voiceProvider = Provider<Voice?>((ref) => null);
 
+/// Plays a song's 15 s clip from YouTube. Null on the mock, where a timer
+/// stands in.
+abstract interface class SongPlayer {
+  /// Plays [song] from [start] for 15 s; [onDone] runs when it stops.
+  Future<void> play(Song song, Duration start, {void Function()? onDone});
+
+  Future<void> stop();
+}
+
+final songPlayerProvider = Provider<SongPlayer?>((ref) => null);
+
+/// The front camera for round video notes. Null on the mock, where the
+/// circle shows stand-in art.
+abstract interface class RoundCamera {
+  /// Opens the camera and starts recording; its preview, or null.
+  Future<Widget?> open();
+
+  /// Stops recording; the video's file.
+  Future<String?> stop();
+
+  /// Stops and throws the recording away.
+  Future<void> close();
+}
+
+final roundCameraProvider = Provider<RoundCamera?>((ref) => null);
+
 /// How a call is going.
 enum CallPhase { ringing, connecting, connected, ended }
 
@@ -123,6 +149,9 @@ final askNotificationsProvider = Provider<Future<bool> Function()>(
   (ref) =>
       () async => true,
 );
+
+/// When the background check last ran (Neon), or null.
+final backgroundCheckProvider = FutureProvider<DateTime?>((ref) async => null);
 
 /// True when Moose runs on Neon, false on the mock partner.
 final onNeonProvider = Provider<bool>((ref) => false);
@@ -298,7 +327,11 @@ class MessagesNotifier extends Notifier<List<Message>> {
           for (final p in photos) done(p),
         ], caption: caption),
         VideoBody(:final video) => VideoBody(done(video)),
+        RoundVideoBody(:final video) => RoundVideoBody(done(video)),
         final VoiceBody v when mediaId == 'voice' => v.copyWith(path: path),
+        StickerBody(:final sticker) when mediaId == 'sticker' => StickerBody(
+          sticker.withFile(path: path),
+        ),
         final b => b,
       },
     );
@@ -607,7 +640,11 @@ final stickersProvider = NotifierProvider<StickersNotifier, List<StickerPack>>(
 
 class StickersNotifier extends Notifier<List<StickerPack>> {
   @override
-  List<StickerPack> build() => ref.read(stickerRepositoryProvider).load();
+  List<StickerPack> build() {
+    final repo = ref.read(stickerRepositoryProvider);
+    listenSelf((_, next) => repo.save(next));
+    return repo.load();
+  }
 
   List<Sticker> get favourites => [
     for (final p in state)
@@ -704,7 +741,10 @@ class StorageNotifier extends Notifier<List<StorageUse>> {
   @override
   List<StorageUse> build() => ref.read(storageRepositoryProvider).load();
 
-  void clear(String label) => state = [
-    for (final s in state) s.label == label ? StorageUse(label, 0) : s,
-  ];
+  void clear(String label) {
+    unawaited(ref.read(storageRepositoryProvider).clear(label));
+    state = [
+      for (final s in state) s.label == label ? StorageUse(label, 0) : s,
+    ];
+  }
 }

@@ -21,8 +21,11 @@ join, then plays a script against whatever the phone sends:
   doodles           makes her own board "Aatika's board"; when the phone
                     makes one and draws, she draws a heart on it too
   "brb"             presses Home on the phone (adb), sends "you there?",
-                    checks Firebase put a notification up, then reopens
-                    Moose
+                    checks a notification went up (from Firebase, or from
+                    Moose itself still running), then reopens Moose
+  "closing"         Moose is closed and its background check started: she
+                    sends "while you were closed" and checks the check
+                    notified
   a call            answers after 2 s with a tone (and a test card on video),
                     checks the call connected and the phone's audio (and
                     video) came through, then waits for the phone to end it
@@ -358,6 +361,26 @@ class Aatika:
         self.call_id = None
         log("hung up")
 
+    def notified(self, seconds: int, tag: str | None = None) -> bool:
+        """A Moose notification from Aatika saying "New message" is up
+        (with [tag]: only one posted under that tag)."""
+        end = time.time() + seconds
+        while time.time() < end:
+            dump = self.adb("shell", "dumpsys", "notification", "--noredact")
+            for b in dump.split("NotificationRecord("):
+                if f"pkg={APP_ID}" in b and "Aatika" in b and "New message" in b and (
+                        tag is None or f"tag={tag} " in b or f"|{tag}|" in b):
+                    return True
+            time.sleep(1)
+        return False
+
+    def closed_check(self) -> None:
+        time.sleep(20)  # Moose closes and its background check starts
+        self.text("while you were closed")
+        log("sent a message while Moose is closed")
+        self.check("background check notified while closed", self.notified(75, tag="bg"),
+                   "Aatika · New message")
+
     def adb(self, *args: str) -> str:
         return subprocess.run(["adb", *args], capture_output=True, text=True, timeout=30).stdout
 
@@ -371,17 +394,8 @@ class Aatika:
                        "push is off (no backend/firebase-sa.json): skipped")
         else:
             self.check("push: wake-up sent", sent.get("pushed") == "sent", sent.get("pushed"))
-            shown = None
-            for _ in range(30):
-                dump = self.adb("shell", "dumpsys", "notification", "--noredact")
-                block = [b for b in dump.split("NotificationRecord(") if f"pkg={APP_ID}" in b]
-                hit = [b for b in block if "Aatika" in b and "New message" in b]
-                if hit:
-                    shown = hit[0]
-                    break
-                time.sleep(1)
-            self.check("push: notification shown while backgrounded", shown is not None,
-                       "Aatika · New message" if shown else "none in 30 s")
+        self.check("notification shown while backgrounded", self.notified(30),
+                   "Aatika · New message")
         log("bringing Moose back")
         self.adb("shell", "monkey", "-p", APP_ID, "-c", "android.intent.category.LAUNCHER", "1")
 
@@ -510,6 +524,8 @@ class Aatika:
                         self.new_phone()
                     elif text == "call me":
                         threading.Thread(target=self.ring_phone, daemon=True).start()
+                    elif text == "closing":
+                        threading.Thread(target=self.closed_check, daemon=True).start()
                     elif text == "back!":
                         self.check("phone took mail while away", True)
                 elif kind == "moment":

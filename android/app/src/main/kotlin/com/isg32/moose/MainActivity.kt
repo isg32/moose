@@ -3,6 +3,7 @@ package com.isg32.moose
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import com.isg32.moose.youtube.YouTubeChannel
 
 class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
@@ -15,6 +16,8 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         CrashFiles.register(this, flutterEngine.dartExecutor.binaryMessenger)
+        // Song clips (C27, C28): NewPipe finds the stream (see youtube.dart).
+        YouTubeChannel.register(flutterEngine.dartExecutor.binaryMessenger)
         // "Hide in recent apps" (C36): FLAG_SECURE blanks Moose in the
         // app switcher and blocks screenshots of it.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "moose/window")

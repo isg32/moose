@@ -43,6 +43,9 @@ android {
 }
 
 dependencies {
+    // NewPipe's extractor finds a song's stream (as in Idris; YouTubeChannel.kt).
+    implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.27.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }
 

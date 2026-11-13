@@ -76,6 +76,7 @@ class StickerView extends StatelessWidget {
             ),
             child: ArtBox(
               art: sticker.art,
+              path: sticker.path,
               radius: stickerRadius(sticker.shape, size, size),
             ),
           );

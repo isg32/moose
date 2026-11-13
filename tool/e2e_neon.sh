@@ -49,7 +49,8 @@ flutter drive \
   --driver=test_driver/integration_test.dart \
   --target=integration_test/neon_test.dart \
   --dart-define-from-file=env.json \
-  --dart-define=PARTNER_CODE="$code" || phone=$?
+  --dart-define=PARTNER_CODE="$code" \
+  --dart-define=MOOSE_CHECK_EVERY=15 || phone=$?
 
 # If the phone gave up, Aatika has no one to talk to.
 [[ $phone == 0 ]] || kill "$partner" 2>/dev/null || true

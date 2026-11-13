@@ -24,6 +24,9 @@ class LocalStore {
   AppSettings settings = const AppSettings();
   List<Doodle> doodles = const [];
 
+  /// The sticker library (null until first saved: Moose starts it empty).
+  List<StickerPack>? stickers;
+
   Timer? _save;
   Future<void> _writing = Future.value();
 
@@ -56,6 +59,10 @@ class LocalStore {
       for (final d in (j['doodles'] as List?) ?? const [])
         _doodle((d as Map).cast<String, Object?>()),
     ];
+    final packs = j['stickers'] as List?;
+    stickers = packs == null
+        ? null
+        : [for (final p in packs) _pack((p as Map).cast<String, Object?>())];
     final st = (j['settings'] as Map?)?.cast<String, Object?>();
     if (st != null) settings = AppSettings.fromJson(st);
     messages = [
@@ -73,6 +80,23 @@ class LocalStore {
     'code': securityCode,
     'theme': theme.toJson(),
     'settings': settings.toJson(),
+    if (stickers case final packs?)
+      'stickers': [
+        for (final p in packs)
+          {
+            'id': p.id,
+            'name': p.name,
+            'note': p.note,
+            'stickers': [
+              for (final s in p.stickers)
+                {
+                  'from': s.from,
+                  'fav': s.favourite,
+                  ...Wire.body(StickerBody(s), local: true),
+                },
+            ],
+          },
+      ],
     'doodles': [
       for (final d in doodles)
         {
@@ -112,6 +136,35 @@ class LocalStore {
     messages = const [];
     await flush();
   }
+
+  static StickerPack _pack(Map<String, Object?> j) => StickerPack(
+    id: j['id'] as String,
+    name: j['name'] as String,
+    note: (j['note'] as String?) ?? '',
+    stickers: [
+      for (final raw in j['stickers'] as List)
+        if (Wire.toBody((raw as Map).cast<String, Object?>()) case StickerBody(
+          :final sticker,
+        ))
+          _owned(sticker, raw['from'] as String?, raw['fav'] as bool?),
+    ],
+  );
+
+  static Sticker _owned(Sticker s, String? from, bool? fav) => s.isDoodle
+      ? Sticker.doodle(
+          id: s.id,
+          strokes: s.strokes,
+          favourite: fav ?? false,
+          from: from ?? 'me',
+        )
+      : Sticker.photo(
+          id: s.id,
+          art: s.art,
+          shape: s.shape,
+          favourite: fav ?? false,
+          from: from ?? 'me',
+          path: s.path,
+        );
 
   static Doodle _doodle(Map<String, Object?> j) => Doodle(
     id: j['id'] as String,

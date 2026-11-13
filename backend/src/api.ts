@@ -277,7 +277,7 @@ app.post("/v1/mail", async (c) => {
     pushed = await push(sent.token, {
       kind,
       id,
-      from: sent.sender,
+      sender: sent.sender, // "from" is reserved by FCM
       ...(sealed.length <= 3000 ? { body: sealed } : {}),
     });
     if (pushed === "unregistered")
