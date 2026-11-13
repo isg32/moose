@@ -58,6 +58,9 @@ class NeonBackend {
   /// The phone's gallery and camera; null keeps the mock pages.
   MediaSource? media;
 
+  /// The microphone and speaker for voice notes; null keeps them pretend.
+  Voice? voice;
+
   /// Asks for the notification permission.
   Future<bool> Function() askNotifications = () async => true;
 
@@ -130,7 +133,9 @@ class NeonBackend {
         return repo;
       }),
       chatThemeProvider.overrideWith(() => _StoredTheme(store)),
+      doodleRepositoryProvider.overrideWithValue(_StoredDoodles(store)),
       mediaSourceProvider.overrideWithValue(media),
+      voiceProvider.overrideWithValue(voice),
       askNotificationsProvider.overrideWithValue(() => askNotifications()),
       settingsProvider.overrideWith(() => _StoredSettings(store)),
       sessionProvider.overrideWith(
@@ -164,6 +169,22 @@ class _StoredTheme extends ChatThemeNotifier {
     super.set(theme);
     _store
       ..theme = theme
+      ..changed();
+  }
+}
+
+/// The doodle boards, kept with the conversation (they start empty).
+class _StoredDoodles implements DoodleRepository {
+  _StoredDoodles(this._store);
+  final LocalStore _store;
+
+  @override
+  List<Doodle> load() => _store.doodles;
+
+  @override
+  void save(List<Doodle> doodles) {
+    _store
+      ..doodles = doodles
       ..changed();
   }
 }
@@ -266,6 +287,17 @@ class NeonPairRepository implements PairRepository {
     await _register();
     try {
       return await b.adopt(await b.api.join(code));
+    } on NetError catch (e) {
+      if (e.status == 404 || e.status == 400) return null;
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<String>?> peek(String code) async {
+    try {
+      final them = await b.api.peek(code.toUpperCase());
+      return await securityCode(b.identity.publicKey, them.pubkey);
     } on NetError catch (e) {
       if (e.status == 404 || e.status == 400) return null;
       rethrow;
@@ -420,6 +452,8 @@ class NeonChatRepository implements ChatRepository {
           }
         case ReactEnvelope(:final id, :final emoji):
           _emit(ReactionChanged(id, emoji));
+        case DoodleEnvelope(:final op):
+          _emit(DoodleChanged(op));
         case ThemeEnvelope(:final theme, :final blob, :final blobKey):
           unawaited(_themeArrived(theme, blob, blobKey));
         case null:
@@ -481,6 +515,16 @@ class NeonChatRepository implements ChatRepository {
       VideoBody(:final video) => [video],
       _ => const <Media>[],
     };
+    if (m.body case VoiceBody(:final blob?, :final blobKey?)) {
+      unawaited(() async {
+        try {
+          final path = await _download(blob, blobKey, '${m.id}.m4a');
+          _emit(MediaReady(m.id, 'voice', path));
+        } on Object {
+          // Left in storage: the next start tries again.
+        }
+      }());
+    }
     for (final x in media) {
       if (x.blob == null || x.blobKey == null) continue;
       unawaited(() async {
@@ -525,6 +569,14 @@ class NeonChatRepository implements ChatRepository {
     VideoBody(:final video) => m.copyWith(
       body: VideoBody(await _upload(video)),
     ),
+    VoiceBody(:final path, :final blob) when path != null && blob == null =>
+      await () async {
+        final sealed = await Channel.sealBlob(await File(path).readAsBytes());
+        final key = await b.api.upload(sealed.bytes);
+        return m.copyWith(
+          body: (m.body as VoiceBody).copyWith(blob: key, blobKey: sealed.key),
+        );
+      }(),
     _ => m,
   };
 
@@ -560,6 +612,10 @@ class NeonChatRepository implements ChatRepository {
       _emit(DeliveryUpdate(message.id, ok ? Delivery.sent : Delivery.failed));
     }());
   }
+
+  @override
+  void shareDoodle(DoodleOp op) =>
+      unawaited(_post(MailKind.doodle, DoodleEnvelope(op)));
 
   @override
   void shareTheme(ChatTheme theme) => unawaited(() async {

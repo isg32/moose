@@ -15,6 +15,7 @@ import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_progress.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
+import '../../data/providers.dart' show Voice;
 import '../common/art.dart';
 import '../common/overlay.dart';
 import '../common/parts.dart';
@@ -35,7 +36,10 @@ class ComposerActions {
   });
 
   final void Function(String text) onSendText;
-  final void Function(Duration length) onSendVoice;
+
+  /// A voice note: its [path] and [wave] when it was really recorded.
+  final void Function(Duration length, {String? path, List<double>? wave})
+  onSendVoice;
   final void Function(Duration length) onSendRound;
   final VoidCallback onAttach;
   final VoidCallback onStickers;
@@ -58,6 +62,7 @@ class Composer extends StatefulWidget {
     this.media = const [],
     this.enterSends = false,
     this.enabled = true,
+    this.voice,
   });
 
   final ComposerActions actions;
@@ -70,6 +75,9 @@ class Composer extends StatefulWidget {
 
   /// Off in the decoy chat: everything shows, nothing sends.
   final bool enabled;
+
+  /// The real microphone (Neon builds); null records pretend.
+  final Voice? voice;
 
   @override
   State<Composer> createState() => ComposerState();
@@ -172,18 +180,51 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
 
   // Voice and round video recording.
 
-  void _start(LongPressStartDetails _) {
+  StreamSubscription<double>? _levels;
+  final List<double> _wave = [];
+
+  /// Where the finger went down to record. The hold is followed from here
+  /// by a Listener around the whole composer, because the layout switches
+  /// to the recording row underneath it and the mic button's own long
+  /// press would be lost with it.
+  Offset? _holdFrom;
+
+  void _start(LongPressStartDetails d) {
     if (!widget.enabled) return;
+    _holdFrom = d.globalPosition;
     HapticFeedback.mediumImpact();
     _length = Duration.zero;
     _slide = Offset.zero;
     _live.clear();
+    _wave.clear();
     _clock?.cancel();
+    final voice = widget.voice;
+    if (voice != null && !_round) {
+      // The real microphone: its loudness draws the live wave.
+      unawaited(
+        voice.start().then((ok) {
+          if (!ok && mounted) _cancel();
+        }),
+      );
+      unawaited(_levels?.cancel());
+      _levels = voice.levels.listen((v) {
+        _wave.add(v);
+        if (!mounted) return;
+        setState(() {
+          _live.add(0.08 + v * 0.92);
+          if (_live.length > 40) _live.removeAt(0);
+        });
+      });
+    }
     _clock = Timer.periodic(const Duration(milliseconds: 100), (_) {
       _length += const Duration(milliseconds: 100);
       if (_round) {
         _roundLength.value = _length;
         if (_length >= const Duration(minutes: 1)) _finish();
+        return;
+      }
+      if (widget.voice != null) {
+        setState(() {}); // the timer; the wave comes from the microphone
         return;
       }
       setState(() {
@@ -207,9 +248,22 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
     setState(() => _rec = _Rec.holding);
   }
 
-  void _move(LongPressMoveUpdateDetails d) {
+  void _move(LongPressMoveUpdateDetails d) => _slideTo(d.offsetFromOrigin);
+
+  void _pointerMove(PointerMoveEvent e) {
+    final from = _holdFrom;
+    if (from != null) _slideTo(e.position - from);
+  }
+
+  void _pointerUp(PointerEvent _) {
+    if (_holdFrom == null) return;
+    _holdFrom = null;
+    if (_rec == _Rec.holding) unawaited(_finish());
+  }
+
+  void _slideTo(Offset slide) {
     if (_rec != _Rec.holding) return;
-    _slide = d.offsetFromOrigin;
+    _slide = slide;
     if (_slide.dx < -120) {
       _cancel();
     } else if (!_round && _slide.dy < -80) {
@@ -220,33 +274,70 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
     }
   }
 
-  void _end(LongPressEndDetails _) {
-    if (_rec == _Rec.holding) _finish();
-  }
+  void _end(LongPressEndDetails _) => _pointerUp(const PointerUpEvent());
 
   void _closeRound() {
     if (_roundOpen) Navigator.of(context, rootNavigator: true).pop();
   }
 
   void _cancel() {
+    _holdFrom = null;
     _clock?.cancel();
+    unawaited(_levels?.cancel());
+    if (!_round) unawaited(widget.voice?.cancel());
     HapticFeedback.lightImpact();
     _closeRound();
     setState(() => _rec = _Rec.none);
   }
 
-  void _finish() {
+  Future<void> _finish() async {
     _clock?.cancel();
+    unawaited(_levels?.cancel());
     final len = _length;
     final round = _round;
     _closeRound();
     setState(() => _rec = _Rec.none);
-    if (len < const Duration(milliseconds: 600)) return;
-    round ? widget.actions.onSendRound(len) : widget.actions.onSendVoice(len);
+    final voice = round ? null : widget.voice;
+    if (len < const Duration(milliseconds: 600)) {
+      await voice?.cancel();
+      return;
+    }
+    if (round) {
+      widget.actions.onSendRound(len);
+      return;
+    }
+    if (voice == null) {
+      widget.actions.onSendVoice(len);
+      return;
+    }
+    final path = await voice.stop();
+    if (path == null) return;
+    widget.actions.onSendVoice(len, path: path, wave: _bars(_wave, 40));
+  }
+
+  /// [levels] squeezed (or stretched) into [n] bars.
+  static List<double> _bars(List<double> levels, int n) {
+    if (levels.isEmpty) return List.filled(n, 0.1);
+    return [
+      for (var i = 0; i < n; i++)
+        (levels[(i * levels.length / n).floor()] * 0.92 + 0.08).clamp(
+          0.08,
+          1.0,
+        ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
+    return Listener(
+      onPointerMove: _pointerMove,
+      onPointerUp: _pointerUp,
+      onPointerCancel: _pointerUp,
+      child: _body(context),
+    );
+  }
+
+  Widget _body(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -395,7 +486,7 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
                 child: ClipRect(
                   child: Align(
                     alignment: Alignment.centerRight,
-                    child: WaveBars(_live, height: 22),
+                    child: WaveBars(_live, height: 22, fit: true),
                   ),
                 ),
               ),

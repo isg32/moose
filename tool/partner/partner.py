@@ -14,10 +14,19 @@ join, then plays a script against whatever the phone sends:
   a moment          the same moment back
   a sticker         "cute 🥺"
   a photo           downloads and opens it, then sends a photo back
+  a voice note      downloads and opens it, then sends one back (a tone)
+                    and a 3 s video (a test pattern)
+  a video           downloads and opens it
   a theme           notes it
+  doodles           makes her own board "Aatika's board"; when the phone
+                    makes one and draws, she draws a heart on it too
   "brb"             presses Home on the phone (adb), sends "you there?",
                     checks Firebase put a notification up, then reopens
                     Moose
+  "lost your phone?" she gets a new phone: a new account and key make a
+                    code, the old phone sends it, the phone approves it
+                    (Settings › Partner › Their new phone), and the new
+                    phone says hello under the new key
   "bye"             "bye 👋", and she's done
 
 Every check lands in --report (JSON); the exit code is 0 only if all pass.
@@ -179,13 +188,16 @@ class Aatika:
 
     # Mail in: the live socket (Realtime), with a poll behind it.
     def listen(self) -> None:
+        gen = self.generation = getattr(self, "generation", 0) + 1
+        neon = self.neon
+
         def run() -> None:
-            while not self.done:
-                url = self.neon.api.replace("https", "wss") + "/v1/live?token=" + self.neon.token()
+            while not self.done and gen == self.generation:
+                url = neon.api.replace("https", "wss") + "/v1/live?token=" + neon.token()
                 try:
                     ws = websocket.create_connection(url, timeout=30)
                     log("live socket up")
-                    while not self.done:
+                    while not self.done and gen == self.generation:
                         frame = json.loads(ws.recv())
                         if frame.get("type") == "mail":
                             self.inbox.put(frame)
@@ -195,10 +207,10 @@ class Aatika:
                         time.sleep(2)
 
         def poll() -> None:
-            while not self.done:
+            while not self.done and gen == self.generation:
                 time.sleep(15)
                 try:
-                    for m in self.neon.call("GET", "/v1/mail"):
+                    for m in neon.call("GET", "/v1/mail"):
                         self.inbox.put(m)
                 except Exception:  # noqa: BLE001
                     pass
@@ -219,7 +231,12 @@ class Aatika:
                 try:
                     out.append(json.loads(aead_open(self.key, unb64(m["body"]))))
                 except Exception:  # noqa: BLE001
-                    self.check("every envelope opens", False, m["kind"])
+                    # Sealed for the old phone in the moment of a re-pair:
+                    # the new phone can't open it, and rightly drops it.
+                    if time.time() - getattr(self, "repaired_at", 0) < 15:
+                        log(f"dropped a {m['kind']} sealed for the old phone")
+                    else:
+                        self.check("every envelope opens", False, m["kind"])
         except queue.Empty:
             pass
         if ack:
@@ -243,6 +260,42 @@ class Aatika:
         media = {"id": f"aatika-photo-{self.n}", "art": 1, "aspect": 800 / 600, "bytes": len(data),
                  "blob": blob, "k": b64(file_key)}
         return self.message({"t": "photo", "photos": [media], "caption": "for you 📸"})
+
+    @staticmethod
+    def heart(cx: float, cy: float) -> dict:
+        """A heart in board space (390 × 700), as Wire._stroke writes it."""
+        import math
+        pts = []
+        for i in range(60):
+            a = i / 59 * 2 * math.pi
+            x = 16 * math.sin(a) ** 3
+            y = -(13 * math.cos(a) - 5 * math.cos(2 * a) - 2 * math.cos(3 * a) - math.cos(4 * a))
+            pts += [round((cx + x * 3) * 10000), round((cy + y * 3) * 10000)]
+        return {"by": "me", "tool": "neon", "argb": 0xFFFF5C7A, "size": 4.0, "opacity": 1.0, "p": pts}
+
+    def send_voice(self) -> dict:
+        tmp = Path(self.report.parent) / "aatika-voice.m4a"
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i",
+                        "sine=frequency=523:duration=2", "-c:a", "aac", "-b:a", "64k", str(tmp)],
+                       check=True, timeout=60)
+        data = tmp.read_bytes()
+        file_key = os.urandom(32)
+        blob = self.neon.upload(aead_seal(file_key, data))
+        wave = [int(30 + 60 * abs(((i * 7) % 20) - 10) / 10) for i in range(40)]
+        return self.message({"t": "voice", "ms": 2000, "wave": wave, "blob": blob, "k": b64(file_key)})
+
+    def send_video(self) -> dict:
+        tmp = Path(self.report.parent) / "aatika-video.mp4"
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i",
+                        "testsrc=size=480x270:rate=24:duration=3", "-c:v", "libx264",
+                        "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(tmp)],
+                       check=True, timeout=120)
+        data = tmp.read_bytes()
+        file_key = os.urandom(32)
+        blob = self.neon.upload(aead_seal(file_key, data))
+        media = {"id": f"aatika-video-{self.n}", "art": 4, "aspect": 480 / 270, "bytes": len(data),
+                 "ms": 3000, "blob": blob, "k": b64(file_key)}
+        return self.message({"t": "video", "video": media})
 
     def adb(self, *args: str) -> str:
         return subprocess.run(["adb", *args], capture_output=True, text=True, timeout=30).stdout
@@ -270,6 +323,35 @@ class Aatika:
                        "Aatika · New message" if shown else "none in 30 s")
         log("bringing Moose back")
         self.adb("shell", "monkey", "-p", APP_ID, "-c", "android.intent.category.LAUNCHER", "1")
+
+    def new_phone(self) -> None:
+        """Her phone is gone: a new account and key, paired again through
+        the phone's approval."""
+        old_key = self.key
+        neon = Neon(self.neon.api, self.neon.auth)
+        me = Identity()
+        neon.sign_up()
+        neon.call("PUT", "/v1/me", {"name": "Aatika", "pubkey": me.public})
+        code = neon.call("POST", "/v1/invites")["code"]
+        log(f"new phone, code {code}")
+        self.text(f"new phone code {code}")  # from the old phone, sealed with the old key
+        deadline = time.time() + 180
+        while time.time() < deadline:
+            mine = neon.call("GET", "/v1/me")
+            if mine.get("partner"):
+                break
+            time.sleep(2)
+        else:
+            self.check("phone approved the new phone", False, "not in 3 min")
+            return
+        self.neon, self.me = neon, me
+        self.key = me.channel_key(mine["partner"]["pubkey"])
+        self.repaired_at = time.time()
+        self.check("phone approved the new phone", self.key != old_key,
+                   " ".join(security_code(me.public, mine["partner"]["pubkey"])[:3]) + " …")
+        self.listen()  # the old phone's socket is done with
+        time.sleep(2)
+        self.text("it's me, on my new phone 📱")
 
     def run(self, code_file: Path) -> int:
         n = self.neon
@@ -300,6 +382,11 @@ class Aatika:
         self.post("theme", {"type": "theme", "theme": {"wallpaper": {"builtin": "dune", "photo": None},
                                                        "dim": 0.1, "blur": 0.0, "glass": 0.6, "ink": "auto"}})
         log("changed the theme to dune")
+        self.post("doodle", {"type": "doodle", "op": "create", "id": "aatika-board",
+                             "name": "Aatika's board", "paper": "dotted"})
+        self.post("doodle", {"type": "doodle", "op": "add", "id": "aatika-board",
+                             "strokes": [self.heart(80, 120)]})
+        log("made a board and drew on it")
 
         got: set[str] = set()
         until = time.time() + 900
@@ -315,6 +402,21 @@ class Aatika:
                     continue
                 if t == "react":
                     self.check("phone's ❤️ arrived", env.get("emoji") == "❤️", env.get("emoji"))
+                    continue
+                if t == "doodle":
+                    op = env["op"]
+                    if op == "create":
+                        self.check("phone's doodle board arrived", bool(env.get("name")), env.get("name"))
+                    elif op in ("add", "set") and env.get("strokes"):
+                        mine = [x for x in env["strokes"] if x.get("by") == "me"]
+                        if not self.checks.get("phone's strokes arrived"):
+                            self.check("phone's strokes arrived", len(mine) > 0,
+                                       f"{len(mine)} stroke(s), {len(mine[0]['p']) // 2 if mine else 0} points")
+                            self.post("doodle", {"type": "doodle", "op": "add", "id": env["id"],
+                                                 "strokes": [self.heart(220, 380)]})
+                            log("drew a heart on the phone's board")
+                    elif op == "here":
+                        got.add("here" if env.get("here") else "left")
                     continue
                 if t == "theme":
                     w = env["theme"]["wallpaper"]
@@ -340,6 +442,8 @@ class Aatika:
                         self.post("receipt", {"type": "react", "id": mid, "emoji": "❤️"})
                         self.post("typing", {"type": "typing", "on": False})
                         self.text("on it 🥰", reply=quote)
+                    elif text == "lost your phone?":
+                        self.new_phone()
                     elif text == "back!":
                         self.check("phone took mail while away", True)
                 elif kind == "moment":
@@ -349,6 +453,19 @@ class Aatika:
                 elif kind == "sticker":
                     self.check("phone's sticker arrived", True)
                     self.text("cute 🥺")
+                elif kind == "voice":
+                    data = aead_open(unb64(body["k"]), n.download(body["blob"]))
+                    self.check("phone's voice note opened", data[4:8] == b"ftyp",
+                               f"{len(data)} bytes, {body['ms'] / 1000:.1f} s")
+                    n.call("DELETE", f"/v1/blobs?key={requests.utils.quote(body['blob'], safe='')}")
+                    self.send_voice()
+                    self.send_video()
+                elif kind == "video":
+                    v = body["video"]
+                    data = aead_open(unb64(v["k"]), n.download(v["blob"]))
+                    self.check("phone's video opened", data[4:8] == b"ftyp",
+                               f"{len(data)} bytes, {v.get('ms', 0) / 1000:.1f} s")
+                    n.call("DELETE", f"/v1/blobs?key={requests.utils.quote(v['blob'], safe='')}")
                 elif kind == "photo":
                     p = body["photos"][0]
                     data = aead_open(unb64(p["k"]), n.download(p["blob"]))
@@ -358,6 +475,7 @@ class Aatika:
                     self.send_photo()
                     self.text("cute pic")
         self.check("seen receipts from the phone", "seen" in got)
+        self.check("phone said it was on the board", "here" in got and "left" in got)
         self.done = True
         failed = [k for k, v in self.checks.items() if not v["ok"]]
         log("all checks passed" if not failed else f"FAILED: {failed}")

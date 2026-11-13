@@ -12,6 +12,7 @@ import '../../core/widgets/v_progress.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
 import '../common/art.dart';
+import '../common/video_frame.dart';
 import '../common/parts.dart';
 import '../common/sticker_view.dart';
 import '../moments/moment_burst.dart';
@@ -651,6 +652,11 @@ class _Video extends StatelessWidget {
         child: OnMedia(
           child: Stack(
             children: [
+              if (video.path case final path?)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: VideoFrame(path),
+                ),
               Center(
                 child: Container(
                   width: 52,

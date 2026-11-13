@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:video_player/video_player.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../core/icons/v_icons.dart';
@@ -11,6 +13,7 @@ import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_progress.dart';
 import '../../data/models.dart';
 import '../common/art.dart';
+import '../common/video_frame.dart';
 import '../common/parts.dart';
 import '../common/rotation.dart';
 
@@ -68,16 +71,51 @@ class _MediaViewerState extends State<MediaViewer> {
   double _position = 0;
   Timer? _clock;
 
+  /// The real video on screen, when its file is on the phone.
+  VideoPlayerController? _video;
+
   @override
   void dispose() {
     _clock?.cancel();
+    _video?.dispose();
     _page.dispose();
     super.dispose();
   }
 
-  void _toggle() {
+  void _dropVideo() {
+    final v = _video;
+    _video = null;
+    unawaited(v?.dispose());
+  }
+
+  Future<void> _toggle() async {
     final item = widget.items[_at];
     _clock?.cancel();
+    final path = item.media.path;
+    if (path != null) {
+      var v = _video;
+      if (v == null) {
+        v = _video = VideoPlayerController.file(File(path));
+        await v.initialize();
+        v.addListener(() {
+          if (!mounted || _video != v) return;
+          final d = v!.value.duration.inMilliseconds;
+          final ended = d > 0 && v.value.position.inMilliseconds >= d - 50;
+          setState(() {
+            _playing = v!.value.isPlaying && !ended;
+            _position = d == 0 ? 0 : v.value.position.inMilliseconds / d;
+            if (ended) _position = 1;
+          });
+        });
+      }
+      if (v.value.isPlaying) {
+        await v.pause();
+      } else {
+        if (v.value.position >= v.value.duration) await v.seekTo(Duration.zero);
+        await v.play();
+      }
+      return;
+    }
     if (_playing) {
       setState(() => _playing = false);
       return;
@@ -137,6 +175,7 @@ class _MediaViewerState extends State<MediaViewer> {
     itemCount: widget.items.length,
     onPageChanged: (i) {
       _clock?.cancel();
+      _dropVideo();
       setState(() {
         _at = i;
         _playing = false;
@@ -152,35 +191,44 @@ class _MediaViewerState extends State<MediaViewer> {
             aspectRatio: it.media.aspect,
             child: ArtBox(
               art: it.media.art,
-              path: it.media.path,
+              path: it.video ? null : it.media.path,
               child: it.video
-                  ? Center(
-                      child: Semantics(
-                        button: true,
-                        label: _playing ? 'Pause' : 'Play',
-                        child: VTappable(
-                          onTap: _toggle,
-                          child: Opacity(
-                            opacity: _playing && i == _at ? 0 : 1,
-                            child: Container(
-                              width: 68,
-                              height: 68,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: VColors.black.withValues(alpha: 0.4),
-                                border: Border.all(color: VColors.white),
-                              ),
-                              child: const Center(
-                                child: VIconView(
-                                  VIcon.play,
-                                  size: 28,
-                                  color: VColors.white,
+                  ? Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (i == _at && _video?.value.isInitialized == true)
+                          VideoPlayer(_video!)
+                        else if (it.media.path case final path?)
+                          VideoFrame(path),
+                        Center(
+                          child: Semantics(
+                            button: true,
+                            label: _playing ? 'Pause' : 'Play',
+                            child: VTappable(
+                              onTap: _toggle,
+                              child: Opacity(
+                                opacity: _playing && i == _at ? 0 : 1,
+                                child: Container(
+                                  width: 68,
+                                  height: 68,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: VColors.black.withValues(alpha: 0.4),
+                                    border: Border.all(color: VColors.white),
+                                  ),
+                                  child: const Center(
+                                    child: VIconView(
+                                      VIcon.play,
+                                      size: 28,
+                                      color: VColors.white,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     )
                   : null,
             ),

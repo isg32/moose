@@ -101,6 +101,16 @@ class MooseApi {
     );
   }
 
+  /// Who made [code] (name and public key), without joining it.
+  Future<Member> peek(String code) async {
+    final j = await _call('GET', '/v1/invites/${Uri.encodeComponent(code)}');
+    return Member(
+      id: '',
+      name: (j['name'] as String?) ?? '',
+      pubkey: (j['pubkey'] as String?) ?? '',
+    );
+  }
+
   /// Joins [code]; throws [NetError] 404 when it has expired or was used.
   Future<Me> join(String code) async =>
       Me.fromJson(await _call('POST', '/v1/join', {'code': code}));

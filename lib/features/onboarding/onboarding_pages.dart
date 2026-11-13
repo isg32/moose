@@ -13,6 +13,7 @@ import '../../core/widgets/v_buttons.dart';
 import '../../core/widgets/v_glass.dart';
 import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_list.dart';
+import '../../core/widgets/v_page.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
@@ -21,6 +22,7 @@ import '../common/art.dart';
 import '../common/avatar.dart';
 import '../common/dot_loader.dart';
 import '../common/keypad.dart';
+import '../common/overlay.dart';
 import '../common/parts.dart';
 import '../common/toast.dart';
 import 'step_page.dart';
@@ -592,7 +594,11 @@ class _SmallButton extends StatelessWidget {
 
 /// C6: type their code (or scan it).
 class JoinPage extends ConsumerStatefulWidget {
-  const JoinPage({super.key});
+  const JoinPage({super.key, this.repair = false});
+
+  /// From Settings › Partner: the code is the partner's new phone's, and
+  /// joining it replaces their old one after you approve (C9).
+  final bool repair;
 
   @override
   ConsumerState<JoinPage> createState() => _JoinPageState();
@@ -612,7 +618,50 @@ class _JoinPageState extends ConsumerState<JoinPage> {
 
   var _joining = false;
 
+  Future<void> _repair(String code) async {
+    setState(() => _joining = true);
+    String? error;
+    try {
+      final repo = ref.read(pairRepositoryProvider);
+      final newCode = await repo.peek(code);
+      if (!mounted) return;
+      if (newCode != null) {
+        final ok = await pushPage<bool>(
+          context,
+          (_) => RepairRequestPage(code: newCode),
+        );
+        if (!mounted) return;
+        if (ok == true) {
+          final pairing = await repo.join(code);
+          if (!mounted) return;
+          if (pairing != null) {
+            ref.read(pairingProvider.notifier).set(pairing);
+            showToast(
+              context,
+              'Paired with ${pairing.partner.name}’s new phone',
+            );
+            Navigator.of(context).pop();
+            return;
+          }
+        } else {
+          setState(() => _joining = false);
+          return;
+        }
+      }
+      error = 'That code has expired. Ask for a new one.';
+    } on Object {
+      error = "Couldn't reach Moose's server. Try again.";
+    }
+    if (!mounted) return;
+    unawaited(HapticFeedback.heavyImpact());
+    setState(() {
+      _joining = false;
+      _error = error;
+    });
+  }
+
   Future<void> _join(String code) async {
+    if (widget.repair) return _repair(code);
     if (code == MockData.repairCode && !ref.read(onNeonProvider)) {
       context.go(OnboardingRoutes.waiting);
       return;
@@ -900,7 +949,10 @@ class PairedPage extends ConsumerWidget {
 
 /// C9: your partner has a new phone; approve it only if it's her.
 class RepairRequestPage extends ConsumerWidget {
-  const RepairRequestPage({super.key});
+  const RepairRequestPage({super.key, this.code = MockData.newSecurityCode});
+
+  /// The new phone's security code with this one.
+  final List<String> code;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -908,9 +960,9 @@ class RepairRequestPage extends ConsumerWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Builder(
-          builder: (context) => ColoredBox(color: VPalette.of(context).veil),
-        ),
+        // The full page's veil and blur (rule 3), so whatever opened it
+        // doesn't show through.
+        const VVeil(),
         StepPage(
           top: 96,
           eyebrow: 'New phone',
@@ -931,7 +983,7 @@ class RepairRequestPage extends ConsumerWidget {
                   children: [
                     Text('NEW SECURITY CODE', style: VText.eyebrow),
                     const SizedBox(height: 12),
-                    const SecurityCode(MockData.newSecurityCode),
+                    SecurityCode(code),
                     const SizedBox(height: 12),
                     Text(
                       'Ask $partner to read hers out. Every group should match.',

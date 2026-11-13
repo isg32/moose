@@ -131,6 +131,12 @@ class PartnerPage extends ConsumerWidget {
               chevron: false,
             ),
             VListRow(
+              title: 'Their new phone',
+              subtitle: 'Lost theirs? Type the code their new Moose shows',
+              onTap: () =>
+                  pushPage<void>(context, (_) => const JoinPage(repair: true)),
+            ),
+            VListRow(
               title: 'Messages waiting',
               subtitle: 'Sealed on the server for ${p.partner.name}',
               trailing: Text('${p.waitingOnServer}', style: VText.doto(15)),

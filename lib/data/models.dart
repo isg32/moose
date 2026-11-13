@@ -336,7 +336,32 @@ class VoiceBody extends Body {
     required this.wave,
     this.played = false,
     this.position = Duration.zero,
+    this.path,
+    this.blob,
+    this.blobKey,
   });
+
+  /// The recording on this phone, once it's here.
+  final String? path;
+
+  /// Its sealed copy in Neon storage, and that copy's own key.
+  final String? blob;
+  final String? blobKey;
+
+  VoiceBody copyWith({
+    bool? played,
+    String? path,
+    String? blob,
+    String? blobKey,
+  }) => VoiceBody(
+    length: length,
+    wave: wave,
+    played: played ?? this.played,
+    position: position,
+    path: path ?? this.path,
+    blob: blob ?? this.blob,
+    blobKey: blobKey ?? this.blobKey,
+  );
 
   final Duration length;
 
@@ -512,6 +537,48 @@ class Doodle {
     paper: paper,
     partnerHere: partnerHere,
   );
+}
+
+/// One change to a shared doodle board, sent to (or from) the partner.
+sealed class DoodleOp {
+  const DoodleOp();
+}
+
+class DoodleCreated extends DoodleOp {
+  const DoodleCreated(this.doodle);
+  final Doodle doodle;
+}
+
+/// New strokes on the end of the board (the usual case).
+class StrokesAdded extends DoodleOp {
+  const StrokesAdded(this.id, this.strokes);
+  final String id;
+  final List<Stroke> strokes;
+}
+
+/// The whole board (after an undo, an erase or a lasso move).
+class StrokesSet extends DoodleOp {
+  const StrokesSet(this.id, this.strokes);
+  final String id;
+  final List<Stroke> strokes;
+}
+
+class DoodleRenamed extends DoodleOp {
+  const DoodleRenamed(this.id, this.name);
+  final String id;
+  final String name;
+}
+
+class DoodleDeleted extends DoodleOp {
+  const DoodleDeleted(this.id);
+  final String id;
+}
+
+/// The partner opened ([here]) or left the board [id] (the "live" dot).
+class DoodlePresence extends DoodleOp {
+  const DoodlePresence(this.id, this.here);
+  final String id;
+  final bool here;
 }
 
 /// What one kind of media uses on this phone (C38).

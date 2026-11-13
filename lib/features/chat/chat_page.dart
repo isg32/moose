@@ -120,6 +120,30 @@ class ChatPageState extends ConsumerState<ChatPage> {
 
   void _play(Message m, Duration length) {
     _playTimer?.cancel();
+    final voice = ref.read(voiceProvider);
+    final file = switch (m.body) {
+      VoiceBody(:final path) => path,
+      _ => null,
+    };
+    if (voice != null && file != null) {
+      // A real recording: play it, and the bubble follows the player.
+      unawaited(voice.stopPlaying());
+      if (_playing == m.id) {
+        setState(() => _playing = null);
+        return;
+      }
+      setState(() => _playing = m.id);
+      if (!m.fromMe) _messages.played(m.id);
+      unawaited(
+        voice.play(
+          file,
+          onDone: () {
+            if (mounted && _playing == m.id) setState(() => _playing = null);
+          },
+        ),
+      );
+      return;
+    }
     if (_playing == m.id) {
       setState(() => _playing = null);
       return;
@@ -319,6 +343,7 @@ class ChatPageState extends ConsumerState<ChatPage> {
               padding: EdgeInsets.only(bottom: lift),
               child: Composer(
                 enabled: !session.decoy,
+                voice: ref.watch(voiceProvider),
                 partner: partner.name,
                 replyTo: _replyTo,
                 media: _picked,
@@ -326,8 +351,13 @@ class ChatPageState extends ConsumerState<ChatPage> {
                 actions: ComposerActions(
                   onSendText: (t) => _send(TextBody(t)),
                   onTyping: (on) => ref.read(chatRepositoryProvider).typing(on),
-                  onSendVoice: (len) =>
-                      _send(VoiceBody(length: len, wave: MockData.voiceWave)),
+                  onSendVoice: (len, {path, wave}) => _send(
+                    VoiceBody(
+                      length: len,
+                      wave: wave ?? MockData.voiceWave,
+                      path: path,
+                    ),
+                  ),
                   onSendRound: (len) => _send(
                     RoundVideoBody(
                       Media(

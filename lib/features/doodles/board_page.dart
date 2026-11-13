@@ -83,6 +83,23 @@ class _BoardPageState extends ConsumerState<BoardPage> {
   final _settings = <PenTool, PenSettings>{};
 
   late List<Stroke> _strokes = _doodle.strokes;
+
+  /// Kept from the start, to say "left" after this page is gone.
+  late final DoodlesNotifier _doodles = ref.read(doodlesProvider.notifier);
+
+  @override
+  void initState() {
+    super.initState();
+    // The partner's board list shows the live dot while this is open.
+    _doodles.present(widget.id, here: true);
+  }
+
+  @override
+  void dispose() {
+    _doodles.present(widget.id, here: false);
+    super.dispose();
+  }
+
   final _undo = <List<Stroke>>[];
   final _redo = <List<Stroke>>[];
 
@@ -371,6 +388,18 @@ class _BoardPageState extends ConsumerState<BoardPage> {
 
   @override
   Widget build(BuildContext context) {
+    // The partner's strokes arrive in the provider: draw them. (Ours are
+    // the very list we set, so they're skipped.)
+    ref.listen(
+      doodlesProvider.select(
+        (all) => all.where((d) => d.id == widget.id).firstOrNull?.strokes,
+      ),
+      (_, next) {
+        if (next != null && !identical(next, _strokes)) {
+          setState(() => _strokes = next);
+        }
+      },
+    );
     final doodle = ref
         .watch(doodlesProvider)
         .firstWhere((d) => d.id == widget.id, orElse: () => _doodle);

@@ -54,6 +54,29 @@ abstract interface class MediaSource {
 
 final mediaSourceProvider = Provider<MediaSource?>((ref) => null);
 
+/// The microphone and speaker for voice notes. Null on the mock, where
+/// recording is pretend and playback is a timer.
+abstract interface class Voice {
+  /// Starts recording; false when the microphone isn't allowed.
+  Future<bool> start();
+
+  /// 0–1 loudness while recording, about ten times a second.
+  Stream<double> get levels;
+
+  /// Stops and returns the recording's file.
+  Future<String?> stop();
+
+  /// Stops and throws the recording away.
+  Future<void> cancel();
+
+  /// Plays [path]; [onDone] runs when it ends or is stopped.
+  Future<void> play(String path, {void Function()? onDone});
+
+  Future<void> stopPlaying();
+}
+
+final voiceProvider = Provider<Voice?>((ref) => null);
+
 /// Asks for the notification permission; true when granted. Always yes
 /// on the mock.
 final askNotificationsProvider = Provider<Future<bool> Function()>(
@@ -214,6 +237,8 @@ class MessagesNotifier extends Notifier<List<Message>> {
           for (final m in state)
             if (m.id == messageId) _withFile(m, mediaId, path) else m,
         ];
+      case DoodleChanged(:final op):
+        ref.read(doodlesProvider.notifier).applyRemote(op);
       case ThemeChanged(:final theme):
         ref.read(chatThemeProvider.notifier).set(theme);
       case OnlineChanged(:final online):
@@ -233,6 +258,7 @@ class MessagesNotifier extends Notifier<List<Message>> {
           for (final p in photos) done(p),
         ], caption: caption),
         VideoBody(:final video) => VideoBody(done(video)),
+        final VoiceBody v when mediaId == 'voice' => v.copyWith(path: path),
         final b => b,
       },
     );
@@ -328,13 +354,7 @@ class MessagesNotifier extends Notifier<List<Message>> {
   void played(String id) => state = [
     for (final m in state)
       if (m.id == id && m.body is VoiceBody)
-        m.copyWith(
-          body: VoiceBody(
-            length: (m.body as VoiceBody).length,
-            wave: (m.body as VoiceBody).wave,
-            played: true,
-          ),
-        )
+        m.copyWith(body: (m.body as VoiceBody).copyWith(played: true))
       else
         m,
   ];
@@ -417,7 +437,73 @@ final doodlesProvider = NotifierProvider<DoodlesNotifier, List<Doodle>>(
 
 class DoodlesNotifier extends Notifier<List<Doodle>> {
   @override
-  List<Doodle> build() => ref.read(doodleRepositoryProvider).load();
+  List<Doodle> build() {
+    final repo = ref.read(doodleRepositoryProvider);
+    listenSelf((_, next) => repo.save(next));
+    return repo.load();
+  }
+
+  void _share(DoodleOp op) => ref.read(chatRepositoryProvider).shareDoodle(op);
+
+  /// A change from the partner's phone.
+  void applyRemote(DoodleOp op) {
+    final partner = ref.read(pairingProvider).partner.name;
+    Doodle edited(Doodle d, List<Stroke> strokes) => d.copyWith(
+      strokes: strokes,
+      editedBy: partner,
+      editedAt: DateTime.now(),
+    );
+    switch (op) {
+      case DoodleCreated(:final doodle):
+        if (state.any((d) => d.id == doodle.id)) return;
+        state = [
+          Doodle(
+            id: doodle.id,
+            name: doodle.name,
+            strokes: const [],
+            editedBy: partner,
+            editedAt: doodle.editedAt,
+            paper: doodle.paper,
+          ),
+          ...state,
+        ];
+      case StrokesAdded(:final id, :final strokes):
+        state = [
+          for (final d in state)
+            d.id == id ? edited(d, [...d.strokes, ...strokes]) : d,
+        ];
+      case StrokesSet(:final id, :final strokes):
+        state = [for (final d in state) d.id == id ? edited(d, strokes) : d];
+      case DoodleRenamed(:final id, :final name):
+        state = [
+          for (final d in state) d.id == id ? d.copyWith(name: name) : d,
+        ];
+      case DoodleDeleted(:final id):
+        state = [
+          for (final d in state)
+            if (d.id != id) d,
+        ];
+      case DoodlePresence(:final id, :final here):
+        state = [
+          for (final d in state)
+            d.id == id
+                ? Doodle(
+                    id: d.id,
+                    name: d.name,
+                    strokes: d.strokes,
+                    editedBy: d.editedBy,
+                    editedAt: d.editedAt,
+                    paper: d.paper,
+                    partnerHere: here,
+                  )
+                : d,
+        ];
+    }
+  }
+
+  /// You opened ([here]) or left board [id]: the partner sees the live dot.
+  void present(String id, {required bool here}) =>
+      _share(DoodlePresence(id, here));
 
   Doodle create(String name, Paper paper) {
     final d = Doodle(
@@ -429,27 +515,48 @@ class DoodlesNotifier extends Notifier<List<Doodle>> {
       paper: paper,
     );
     state = [d, ...state];
+    _share(DoodleCreated(d));
     return d;
   }
 
-  void setStrokes(String id, List<Stroke> strokes) => state = [
-    for (final d in state)
-      d.id == id
-          ? d.copyWith(
-              strokes: strokes,
-              editedBy: 'You',
-              editedAt: DateTime.now(),
-            )
-          : d,
-  ];
+  void setStrokes(String id, List<Stroke> strokes) {
+    final before = state.where((d) => d.id == id).firstOrNull?.strokes;
+    state = [
+      for (final d in state)
+        d.id == id
+            ? d.copyWith(
+                strokes: strokes,
+                editedBy: 'You',
+                editedAt: DateTime.now(),
+              )
+            : d,
+    ];
+    // Strokes added on the end go as just those; anything else (undo,
+    // erase, a lasso move) sends the whole board.
+    final appended =
+        before != null &&
+        strokes.length > before.length &&
+        Iterable<int>.generate(before.length)
+            .every((i) => identical(strokes[i], before[i]));
+    _share(
+      appended
+          ? StrokesAdded(id, strokes.sublist(before.length))
+          : StrokesSet(id, strokes),
+    );
+  }
 
-  void rename(String id, String name) =>
-      state = [for (final d in state) d.id == id ? d.copyWith(name: name) : d];
+  void rename(String id, String name) {
+    state = [for (final d in state) d.id == id ? d.copyWith(name: name) : d];
+    _share(DoodleRenamed(id, name));
+  }
 
-  void delete(String id) => state = [
-    for (final d in state)
-      if (d.id != id) d,
-  ];
+  void delete(String id) {
+    state = [
+      for (final d in state)
+        if (d.id != id) d,
+    ];
+    _share(DoodleDeleted(id));
+  }
 }
 
 // Stickers.

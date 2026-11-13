@@ -183,6 +183,21 @@ app.post("/v1/invites", async (c) => {
   throw new HTTPException(503, { message: "try again" });
 });
 
+// Who made this code, without joining it: the old phone shows the new
+// phone's security code (C9) before anyone approves a re-pair.
+app.get("/v1/invites/:code", async (c) => {
+  const code = c.req.param("code").toUpperCase();
+  if (!/^[A-Z0-9]{6}$/.test(code)) throw new HTTPException(400, { message: "code" });
+  await me(c);
+  const { rows } = await q<{ name: string; pubkey: string }>(
+    `select m.name, m.pubkey from invites i join members m on m.user_id = i.creator
+     where i.code = $1 and i.expires_at > now() and i.creator <> $2`,
+    [code, c.get("user")],
+  );
+  if (!rows[0]) throw new HTTPException(404, { message: "expired" });
+  return c.json(rows[0]);
+});
+
 app.post("/v1/join", async (c) => {
   const { code } = await body<{ code?: unknown }>(c);
   if (typeof code !== "string" || !/^[A-Z0-9]{6}$/.test(code.toUpperCase()))

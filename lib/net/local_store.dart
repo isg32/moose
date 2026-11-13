@@ -22,6 +22,7 @@ class LocalStore {
   List<Message> messages = const [];
   ChatTheme theme = const ChatTheme();
   AppSettings settings = const AppSettings();
+  List<Doodle> doodles = const [];
 
   Timer? _save;
   Future<void> _writing = Future.value();
@@ -51,6 +52,10 @@ class LocalStore {
     securityCode = [for (final g in (j['code'] as List?) ?? const []) '$g'];
     final t = (j['theme'] as Map?)?.cast<String, Object?>();
     if (t != null) theme = ChatTheme.fromJson(t);
+    doodles = [
+      for (final d in (j['doodles'] as List?) ?? const [])
+        _doodle((d as Map).cast<String, Object?>()),
+    ];
     final st = (j['settings'] as Map?)?.cast<String, Object?>();
     if (st != null) settings = AppSettings.fromJson(st);
     messages = [
@@ -68,6 +73,17 @@ class LocalStore {
     'code': securityCode,
     'theme': theme.toJson(),
     'settings': settings.toJson(),
+    'doodles': [
+      for (final d in doodles)
+        {
+          'id': d.id,
+          'name': d.name,
+          'paper': d.paper.name,
+          'by': d.editedBy,
+          'at': d.editedAt.toIso8601String(),
+          'strokes': [for (final s in d.strokes) Wire.stroke(s)],
+        },
+    ],
     'messages': [for (final m in messages) _stored(m)],
   };
 
@@ -96,6 +112,18 @@ class LocalStore {
     messages = const [];
     await flush();
   }
+
+  static Doodle _doodle(Map<String, Object?> j) => Doodle(
+    id: j['id'] as String,
+    name: j['name'] as String,
+    paper: Paper.values.asNameMap()[j['paper']] ?? Paper.dotted,
+    editedBy: j['by'] as String,
+    editedAt: DateTime.parse(j['at'] as String),
+    strokes: [
+      for (final s in j['strokes'] as List)
+        Wire.toStroke((s as Map).cast<String, Object?>()),
+    ],
+  );
 
   static Map<String, Object?> _stored(Message m) => {
     ...Wire.fromMessage(m, local: true),

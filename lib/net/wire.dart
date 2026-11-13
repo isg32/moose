@@ -19,6 +19,7 @@ sealed class Envelope {
     ], Delivery.values.byName(j['state'] as String)),
     'typing' => TypingEnvelope(j['on'] as bool),
     'react' => ReactEnvelope(j['id'] as String, j['emoji'] as String?),
+    'doodle' => DoodleEnvelope(Wire.doodleOp(j)),
     'theme' => ThemeEnvelope(
       ChatTheme.fromJson((j['theme'] as Map).cast<String, Object?>()),
       blob: j['blob'] as String?,
@@ -69,6 +70,15 @@ class ReactEnvelope extends Envelope {
 
   @override
   Map<String, Object?> toJson() => {'type': 'react', 'id': id, 'emoji': emoji};
+}
+
+/// A change to a shared doodle board (C29–C35).
+class DoodleEnvelope extends Envelope {
+  const DoodleEnvelope(this.op);
+  final DoodleOp op;
+
+  @override
+  Map<String, Object?> toJson() => {'type': 'doodle', ...Wire.fromDoodleOp(op)};
 }
 
 /// The shared theme, last write wins. A photo wallpaper travels sealed in
@@ -175,10 +185,14 @@ abstract final class Wire {
       'video': _media(video, local: local),
     },
     RoundVideoBody(:final video) => {'t': 'round', 'video': _media(video)},
-    VoiceBody(:final length, :final wave) => {
+    VoiceBody(:final length, :final wave, :final blob, :final blobKey) => {
       't': 'voice',
       'ms': length.inMilliseconds,
       'wave': [for (final w in wave) (w * 100).round()],
+      'blob': ?blob,
+      'k': ?blobKey,
+      if (local) 'path': ?b.path,
+      if (local && b.played) 'played': true,
     },
     SystemBody(:final kind, :final text) => {
       't': 'system',
@@ -233,6 +247,10 @@ abstract final class Wire {
     'voice' => VoiceBody(
       length: Duration(milliseconds: (j['ms'] as num).toInt()),
       wave: [for (final w in j['wave'] as List) (w as num) / 100],
+      blob: j['blob'] as String?,
+      blobKey: j['k'] as String?,
+      path: j['path'] as String?,
+      played: j['played'] as bool? ?? false,
     ),
     'system' => SystemBody(
       SystemKind.values.byName(j['kind'] as String),
@@ -281,8 +299,79 @@ abstract final class Wire {
     path: j['path'] as String?,
   );
 
-  // Points in a 0–1 box keep 4 decimals: plenty for a phone screen.
+  static Map<String, Object?> fromDoodleOp(DoodleOp op) => switch (op) {
+    DoodleCreated(:final doodle) => {
+      'op': 'create',
+      'id': doodle.id,
+      'name': doodle.name,
+      'paper': doodle.paper.name,
+    },
+    StrokesAdded(:final id, :final strokes) => {
+      'op': 'add',
+      'id': id,
+      'strokes': [for (final s in strokes) stroke(s)],
+    },
+    StrokesSet(:final id, :final strokes) => {
+      'op': 'set',
+      'id': id,
+      'strokes': [for (final s in strokes) stroke(s)],
+    },
+    DoodleRenamed(:final id, :final name) => {
+      'op': 'rename',
+      'id': id,
+      'name': name,
+    },
+    DoodleDeleted(:final id) => {'op': 'delete', 'id': id},
+    DoodlePresence(:final id, :final here) => {
+      'op': 'here',
+      'id': id,
+      'here': here,
+    },
+  };
+
+  /// An op as it arrives: strokes swap 'me' and 'partner'.
+  static DoodleOp doodleOp(Map<String, Object?> j) {
+    final id = j['id'] as String;
+    List<Stroke> strokes() => [
+      for (final s in j['strokes'] as List) toStroke(_map(s)!, flip: true),
+    ];
+    return switch (j['op']) {
+      'create' => DoodleCreated(
+        Doodle(
+          id: id,
+          name: j['name'] as String,
+          strokes: const [],
+          editedBy: 'partner',
+          editedAt: DateTime.now(),
+          paper: Paper.values.asNameMap()[j['paper']] ?? Paper.dotted,
+        ),
+      ),
+      'add' => StrokesAdded(id, strokes()),
+      'set' => StrokesSet(id, strokes()),
+      'rename' => DoodleRenamed(id, j['name'] as String),
+      'delete' => DoodleDeleted(id),
+      _ => DoodlePresence(id, j['here'] as bool? ?? false),
+    };
+  }
+
+  static Map<String, Object?> stroke(Stroke s) => _stroke(s);
+
+  static Stroke toStroke(Map<String, Object?> j, {bool flip = false}) {
+    final s = _toStroke(j);
+    final by = (j['by'] as String?) ?? 'partner';
+    return Stroke(
+      tool: s.tool,
+      argb: s.argb,
+      size: s.size,
+      opacity: s.opacity,
+      points: s.points,
+      by: flip ? (by == 'me' ? 'partner' : 'me') : by,
+    );
+  }
+
+  // Points keep 4 decimals: plenty for a phone screen.
   static Map<String, Object?> _stroke(Stroke s) => {
+    'by': s.by,
     'tool': s.tool.name,
     'argb': s.argb,
     'size': s.size,

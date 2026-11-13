@@ -94,7 +94,12 @@ class WaveBars extends StatelessWidget {
     this.height = 28,
     this.barWidth = 3,
     this.gap = 2,
+    this.fit = false,
   });
+
+  /// Show only the newest bars that fit (a live recording). Off in
+  /// bubbles, which size themselves to their bars.
+  final bool fit;
 
   final List<double> wave;
   final double played;
@@ -106,23 +111,33 @@ class WaveBars extends StatelessWidget {
   Widget build(BuildContext context) {
     final ink = VInk.of(context);
     final cut = (wave.length * played).floor();
+    Widget bars(int from) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = from; i < wave.length; i++) ...[
+          if (i > from) SizedBox(width: gap),
+          Container(
+            width: barWidth,
+            height: (wave[i] * height).clamp(3.0, height),
+            decoration: BoxDecoration(
+              color: ink.withValues(alpha: i < cut || played == 0 ? 1 : 0.35),
+              borderRadius: BorderRadius.circular(barWidth),
+            ),
+          ),
+        ],
+      ],
+    );
+    if (!fit) return SizedBox(height: height, child: bars(0));
     return SizedBox(
       height: height,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < wave.length; i++) ...[
-            if (i > 0) SizedBox(width: gap),
-            Container(
-              width: barWidth,
-              height: (wave[i] * height).clamp(3.0, height),
-              decoration: BoxDecoration(
-                color: ink.withValues(alpha: i < cut || played == 0 ? 1 : 0.35),
-                borderRadius: BorderRadius.circular(barWidth),
-              ),
-            ),
-          ],
-        ],
+      child: LayoutBuilder(
+        builder: (context, box) {
+          // Only as many bars as fit, the newest kept.
+          final n = box.maxWidth.isFinite
+              ? ((box.maxWidth + gap) / (barWidth + gap)).floor()
+              : wave.length;
+          return bars(wave.length > n ? wave.length - n : 0);
+        },
       ),
     );
   }

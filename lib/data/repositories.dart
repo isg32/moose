@@ -22,6 +22,10 @@ abstract interface class PairRepository {
   /// Joins their code (C6): the pairing, or null when it has expired.
   Future<Pairing?> join(String code);
 
+  /// The security code the partner's new phone would have, from its code
+  /// (C9); null when the code has expired.
+  Future<List<String>?> peek(String code);
+
   /// Ends the pairing for both phones (C41).
   Future<void> unpair();
 }
@@ -77,6 +81,12 @@ class MediaReady extends ChatEvent {
   final String path;
 }
 
+/// The partner changed a doodle board.
+class DoodleChanged extends ChatEvent {
+  const DoodleChanged(this.op);
+  final DoodleOp op;
+}
+
 /// The partner applied a new shared theme (C22).
 class ThemeChanged extends ChatEvent {
   const ThemeChanged(this.theme);
@@ -117,6 +127,9 @@ abstract interface class ChatRepository {
   /// You applied [theme] for both of you.
   void shareTheme(ChatTheme theme);
 
+  /// You changed a doodle board.
+  void shareDoodle(DoodleOp op);
+
   /// The conversation changed; keep it on this phone.
   void store(List<Message> messages);
 
@@ -125,6 +138,9 @@ abstract interface class ChatRepository {
 
 abstract interface class DoodleRepository {
   List<Doodle> load();
+
+  /// The boards changed; keep them on this phone.
+  void save(List<Doodle> doodles);
 }
 
 abstract interface class StickerRepository {

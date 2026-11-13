@@ -24,6 +24,12 @@ class MockPairRepository implements PairRepository {
       code == MockData.inviteCode ? MockData.pairing() : null;
 
   @override
+  Future<List<String>?> peek(String code) async =>
+      code == MockData.repairCode || code == MockData.inviteCode
+      ? MockData.newSecurityCode
+      : null;
+
+  @override
   Future<void> unpair() async {}
 }
 
@@ -128,6 +134,9 @@ class MockChatRepository implements ChatRepository {
   void shareTheme(ChatTheme theme) {}
 
   @override
+  void shareDoodle(DoodleOp op) {}
+
+  @override
   void store(List<Message> messages) {}
 
   @override
@@ -142,6 +151,9 @@ class MockChatRepository implements ChatRepository {
 class MockDoodleRepository implements DoodleRepository {
   @override
   List<Doodle> load() => MockData.doodles();
+
+  @override
+  void save(List<Doodle> doodles) {}
 }
 
 class MockStickerRepository implements StickerRepository {

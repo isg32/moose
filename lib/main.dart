@@ -14,6 +14,7 @@ import 'features/crash_overlay.dart';
 import 'net/config.dart';
 import 'net/neon_backend.dart';
 import 'net/phone_media.dart';
+import 'net/phone_voice.dart';
 import 'net/push.dart';
 import 'net/vault.dart';
 import 'platform/crash_log.dart';
@@ -57,6 +58,7 @@ Future<void> main() async {
   if (backend != null) {
     backend
       ..media = PhoneMedia(backend.mediaDir)
+      ..voice = PhoneVoice(backend.mediaDir)
       ..askNotifications = Push.ask
       ..pushToken = Push.token;
     try {

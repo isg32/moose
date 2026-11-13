@@ -4,6 +4,8 @@
     <!-- Android 13+: message and moment notifications. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- Voice notes. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
         android:label="moose"
         android:name="${applicationName}"

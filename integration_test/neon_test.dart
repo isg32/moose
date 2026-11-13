@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -11,15 +12,19 @@ import 'package:moose/data/chat_theme.dart';
 import 'package:moose/data/models.dart';
 import 'package:moose/data/providers.dart';
 import 'package:moose/features/chat/chat_page.dart';
+import 'package:moose/features/common/video_frame.dart';
+import 'package:moose/features/media/media_viewer.dart';
 import 'package:moose/features/moments/moment_burst.dart';
 import 'package:moose/features/onboarding/onboarding_pages.dart';
 import 'package:moose/net/config.dart';
 import 'package:moose/net/local_store.dart';
 import 'package:moose/net/neon_backend.dart';
 import 'package:moose/net/phone_media.dart';
+import 'package:moose/net/phone_voice.dart';
 import 'package:moose/net/push.dart';
 import 'package:moose/net/vault.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:video_player/video_player.dart';
 
 /// Moose on this phone against the real Neon backend and Firebase, with
 /// Aatika emulated in Python on the computer (tool/partner/partner.py).
@@ -80,8 +85,10 @@ void main() {
       label: 'e2e',
     );
     // The gallery answers with a photo drawn here; Firebase is real.
+    final photos = _DrawnPhotos(backend.mediaDir);
     backend
-      ..media = _DrawnPhotos(backend.mediaDir)
+      ..media = photos
+      ..voice = PhoneVoice(backend.mediaDir)
       ..pushToken = Push.token
       ..askNotifications = Push.ask;
     await Push.init(onWake: () => backend.wake?.call());
@@ -242,7 +249,181 @@ void main() {
     c.read(chatRepositoryProvider).shareTheme(moss);
     await frames(t, 1500);
 
-    // 7 · Away: Home is pressed, a message comes, Firebase wakes the
+    // 6½ · A voice note, held on the mic and recorded for real, and one
+    // back from her that plays to the end (C16, B7).
+    final mic = find.bySemanticsLabel('Hold to record, tap for round video');
+    final hold = await t.startGesture(t.getCenter(mic));
+    for (var i = 0; i < 50; i++) {
+      await t.pump(const Duration(milliseconds: 50));
+    }
+    await hold.up();
+    await until(
+      t,
+      'our voice note',
+      () => c.read(messagesProvider).last.body is VoiceBody,
+      within: const Duration(seconds: 10),
+    );
+    final note = c.read(messagesProvider).lastWhere((m) => m.fromMe);
+    expect(note.body, isA<VoiceBody>());
+    final notePath = (note.body as VoiceBody).path;
+    expect(notePath, isNotNull, reason: 'recorded to a file');
+    expect(
+      File(notePath!).readAsBytesSync().sublist(4, 8),
+      'ftyp'.codeUnits,
+      reason: 'an AAC (.m4a) recording',
+    );
+    await until(
+      t,
+      'her voice note, down and opened',
+      () => c
+          .read(messagesProvider)
+          .any(
+            (m) =>
+                !m.fromMe &&
+                m.body is VoiceBody &&
+                (m.body as VoiceBody).path != null,
+          ),
+      within: const Duration(seconds: 60),
+    );
+    final hersVoice = c
+        .read(messagesProvider)
+        .lastWhere((m) => !m.fromMe && m.body is VoiceBody);
+    final played = Completer<void>();
+    await c
+        .read(voiceProvider)!
+        .play((hersVoice.body as VoiceBody).path!, onDone: played.complete);
+    final started = DateTime.now();
+    while (!played.isCompleted) {
+      if (DateTime.now().difference(started).inSeconds > 8) {
+        fail('her voice note never finished playing');
+      }
+      await t.pump(const Duration(milliseconds: 100));
+    }
+    expect(
+      DateTime.now().difference(started).inMilliseconds,
+      greaterThan(1500),
+      reason: 'it played its 2 s',
+    );
+    await frames(t);
+    await shot('06b-voice');
+
+    // 6¾ · Her video: its first frame in the bubble, playing in the viewer;
+    // then a video from our gallery back to her (B5, C21).
+    await until(
+      t,
+      'her video, down and opened',
+      () => c
+          .read(messagesProvider)
+          .any(
+            (m) =>
+                !m.fromMe &&
+                m.body is VideoBody &&
+                (m.body as VideoBody).video.path != null,
+          ),
+      within: const Duration(seconds: 60),
+    );
+    final herVideo =
+        (c
+                    .read(messagesProvider)
+                    .lastWhere((m) => !m.fromMe && m.body is VideoBody)
+                    .body
+                as VideoBody)
+            .video;
+    expect(
+      File(herVideo.path!).readAsBytesSync().sublist(4, 8),
+      'ftyp'.codeUnits,
+    );
+    await frames(t, 1000);
+    await t.tap(find.byType(VideoFrame).last);
+    await frames(t, 1000);
+    expect(find.byType(MediaViewer), findsOneWidget);
+    await t.tap(find.bySemanticsLabel('Play'));
+    await until(
+      t,
+      'the video playing',
+      () =>
+          find.byType(VideoPlayer).evaluate().isNotEmpty &&
+          find.bySemanticsLabel('Pause').evaluate().isNotEmpty,
+      within: const Duration(seconds: 10),
+    );
+    await frames(t, 1200);
+    await shot('06c-video');
+    await t.binding.handlePopRoute();
+    await frames(t);
+    final copy = File('${backend.mediaDir.path}/ours.mp4')
+      ..writeAsBytesSync(File(herVideo.path!).readAsBytesSync());
+    photos.nextVideo = await videoOf(copy, id: 'ours-video');
+    expect(photos.nextVideo!.duration!.inMilliseconds, greaterThan(2500));
+    await t.tap(
+      find
+          .byWidgetPredicate((w) => w is VIconView && w.icon == VIcon.plus)
+          .first,
+    );
+    await frames(t);
+    await t.tap(find.text('Gallery'));
+    await frames(t, 1000);
+    await t.tap(find.bySemanticsLabel(RegExp('^Send')).last);
+    await frames(t, 1000);
+    expect(c.read(messagesProvider).last.body, isA<VideoBody>());
+
+    // 7 · Doodles: her board, then ours, drawn on by both (C29–C31).
+    await t.tap(
+      find
+          .byWidgetPredicate((w) => w is VIconView && w.icon == VIcon.doodle)
+          .last,
+    );
+    await frames(t);
+    await until(
+      t,
+      'her board',
+      () => c
+          .read(doodlesProvider)
+          .any(
+            (d) =>
+                d.name == "Aatika's board" &&
+                d.strokes.any((s) => s.by == 'partner'),
+          ),
+    );
+    await frames(t);
+    expect(find.text("Aatika's board"), findsWidgets);
+    await t.tap(find.text('New doodle').first);
+    await frames(t);
+    await type(t, 'Sunday plans');
+    await frames(t, 300);
+    await t.tap(find.text('Create'));
+    await frames(t, 1000);
+    final board = c
+        .read(doodlesProvider)
+        .firstWhere((d) => d.name == 'Sunday plans');
+    final g = await t.startGesture(const Offset(100, 500));
+    for (var i = 0; i < 24; i++) {
+      await g.moveBy(const Offset(9, -6));
+      await t.pump(const Duration(milliseconds: 16));
+    }
+    await g.up();
+    await until(
+      t,
+      'her heart on our board',
+      () => c
+          .read(doodlesProvider)
+          .firstWhere((d) => d.id == board.id)
+          .strokes
+          .any((s) => s.by == 'partner'),
+    );
+    final ours = c.read(doodlesProvider).firstWhere((d) => d.id == board.id);
+    expect(ours.strokes.where((s) => s.by == 'me'), hasLength(1));
+    await frames(t, 800);
+    await shot('07-doodle');
+    await t.tap(find.bySemanticsLabel('Back'));
+    await frames(t);
+    await t.tap(
+      find
+          .byWidgetPredicate((w) => w is VIconView && w.icon == VIcon.chat)
+          .last,
+    );
+    await frames(t);
+
+    // 8 · Away: Home is pressed, a message comes, Firebase wakes the
     // phone and a notification shows; then Moose is opened again.
     await type(t, 'brb');
     await frames(t, 200);
@@ -272,7 +453,76 @@ void main() {
     await t.tap(find.bySemanticsLabel('Send'));
     await frames(t, 1500);
 
-    // 8 · Bye.
+    // 9 · Aatika loses her phone: her new one shows a code, we approve it
+    // from Settings › Partner, and she's back under a new key (C9, C37).
+    final oldPartner = c.read(pairingProvider).partner.id;
+    final oldCode = c.read(pairingProvider).securityCode;
+    await type(t, 'lost your phone?');
+    await frames(t, 200);
+    await t.tap(find.bySemanticsLabel('Send'));
+    await until(
+      t,
+      'her new phone\'s code',
+      () => c
+          .read(messagesProvider)
+          .any(
+            (m) => !m.fromMe && m.quote().text.startsWith('new phone code '),
+          ),
+      within: const Duration(seconds: 60),
+    );
+    final newCode = c
+        .read(messagesProvider)
+        .lastWhere((m) => m.quote().text.startsWith('new phone code '))
+        .quote()
+        .text
+        .substring('new phone code '.length);
+    await t.tap(
+      find
+          .byWidgetPredicate((w) => w is VIconView && w.icon == VIcon.gear)
+          .last,
+    );
+    await frames(t);
+    await t.tap(find.text('Aatika').first);
+    await frames(t);
+    await t.tap(find.text('Their new phone'));
+    await frames(t);
+    await t.enterText(find.byType(EditableText).last, newCode);
+    await frames(t, 300);
+    await t.tap(find.text('Join'));
+    await until(
+      t,
+      'the approve page',
+      () => find.byType(RepairRequestPage).evaluate().isNotEmpty,
+    );
+    await frames(t);
+    await shot('09-new-phone');
+    await t.tap(find.text("It's Aatika, approve"));
+    await until(
+      t,
+      'the new pairing',
+      () => c.read(pairingProvider).partner.id != oldPartner,
+    );
+    expect(c.read(pairingProvider).securityCode, isNot(oldCode));
+    await until(
+      t,
+      'hello from her new phone',
+      () => c
+          .read(messagesProvider)
+          .any(
+            (m) => !m.fromMe && m.quote().text == "it's me, on my new phone 📱",
+          ),
+      within: const Duration(seconds: 60),
+    );
+    await t.binding.handlePopRoute(); // Android's Back, off the Partner page
+    await frames(t);
+    await t.tap(
+      find
+          .byWidgetPredicate((w) => w is VIconView && w.icon == VIcon.chat)
+          .last,
+    );
+    await frames(t);
+
+    // 10 · Bye.
     await type(t, 'bye');
     await frames(t, 200);
     await t.tap(find.bySemanticsLabel('Send'));
@@ -284,7 +534,7 @@ void main() {
           .any((m) => !m.fromMe && m.quote().text == 'bye 👋'),
     );
     await frames(t);
-    await shot('07-bye');
+    await shot('08-bye');
 
     // 6 · The conversation is on the phone, and the server holds nothing.
     final all = c.read(messagesProvider);
@@ -293,6 +543,11 @@ void main() {
     expect(again.messages.length, all.length);
     expect(again.partner?.name, 'Aatika');
     expect(again.theme.wallpaper.builtin, 'moss', reason: 'the theme is kept');
+    expect(
+      again.doodles.map((d) => d.name),
+      containsAll(["Aatika's board", 'Sunday plans']),
+      reason: 'the boards are kept',
+    );
     expect(await backend.api.inbox(), isEmpty);
     await dir.delete(recursive: true);
     expect(File('${dir.path}/moose.json').existsSync(), isFalse);
@@ -304,8 +559,16 @@ class _DrawnPhotos implements MediaSource {
   _DrawnPhotos(this.dir);
   final Directory dir;
 
+  /// Picked next instead of a drawn photo.
+  Media? nextVideo;
+
   @override
   Future<List<Media>> gallery() async {
+    final video = nextVideo;
+    if (video != null) {
+      nextVideo = null;
+      return [video];
+    }
     final rec = ui.PictureRecorder();
     ui.Canvas(rec)
       ..drawRect(
