@@ -9,6 +9,8 @@ import '../media/attach_sheet.dart';
 import '../media/media_pages.dart';
 import '../media/media_viewer.dart';
 import '../moments/poke_picker.dart';
+import '../music/music_pages.dart';
+import '../stickers/tray.dart';
 
 /// Where the chat hands off to the other features: attachments, stickers,
 /// music, the media viewer and calls.
@@ -74,13 +76,11 @@ class ChatHooks {
       pushPage<List<Media>>(context, (_) => const GalleryPage());
 
   /// The sticker, GIF and meme tray (S1, C26); returns what to send.
-  Future<Body?> stickers(
-    BuildContext context, {
-    bool startOnMemes = false,
-  }) async => null;
+  Future<Body?> stickers(BuildContext context, {bool startOnMemes = false}) =>
+      showTray(context, start: startOnMemes ? TrayTab.gifs : TrayTab.stickers);
 
   /// Music search and the 15 s picker (C27, C28).
-  Future<Body?> music(BuildContext context) async => null;
+  Future<Body?> music(BuildContext context) => pickSong(context);
 
   /// A doodle sent as a sticker.
   Future<Body?> doodle(BuildContext context, WidgetRef ref) async => null;

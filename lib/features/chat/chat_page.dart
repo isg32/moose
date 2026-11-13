@@ -19,6 +19,7 @@ import '../common/avatar.dart';
 import '../common/parts.dart';
 import '../common/toast.dart';
 import '../moments/poke_picker.dart';
+import '../stickers/sticker_maker.dart';
 import 'bubbles.dart';
 import 'chat_hooks.dart';
 import 'composer.dart';
@@ -85,6 +86,11 @@ class ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _onLongPress(Message m) async {
+    final body = m.body;
+    if (body is StickerBody && !m.fromMe) {
+      await showReceivedSticker(context, ref, body.sticker);
+      return;
+    }
     final partner = ref.read(pairingProvider).partner.name;
     final action = await showMessageActions(context, m: m, partner: partner);
     if (!mounted || action == null) return;
