@@ -1,0 +1,103 @@
+name: Build and release
+
+# Builds signed APKs (one per ABI) on every push to main and publishes them
+# as a GitHub release tagged v<version>-<short sha>.
+#
+# No keystore is committed. It comes from the MOOSE_KEYSTORE_BASE64
+# secret (`base64 -w0 release-key.jks`), is decoded into the runner's temp
+# folder for the build, and android/app/build.gradle.kts reads it through
+# the MOOSE_* variables, the same way build_signed.sh does locally.
+#
+# Secrets (in the "deployment" environment): MOOSE_KEYSTORE_BASE64,
+# MOOSE_KEYSTORE_PASSWORD, MOOSE_KEY_PASSWORD and, optionally,
+# MOOSE_KEY_ALIAS (defaults to "upload").
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    environment: deployment
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.9'
+          cache: true
+
+      - name: Accept Android SDK licences
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(grep -m1 '^version:' pubspec.yaml | sed 's/version: //; s/+.*//')
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          {
+            echo 'MESSAGE<<EOM'
+            git log -1 --format='%s'
+            echo 'EOM'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Decode the release keystore
+        env:
+          MOOSE_KEYSTORE_BASE64: ${{ secrets.MOOSE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$MOOSE_KEYSTORE_BASE64" ]; then
+            echo "MOOSE_KEYSTORE_BASE64 is not set" >&2
+            exit 1
+          fi
+          printf '%s' "$MOOSE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release-key.jks"
+
+      - run: flutter pub get
+
+      - name: Test
+        run: flutter test
+
+      - name: Build signed APKs
+        env:
+          MOOSE_KEYSTORE_FILE: ${{ runner.temp }}/release-key.jks
+          MOOSE_KEYSTORE_PASSWORD: ${{ secrets.MOOSE_KEYSTORE_PASSWORD }}
+          MOOSE_KEY_PASSWORD: ${{ secrets.MOOSE_KEY_PASSWORD }}
+          MOOSE_KEY_ALIAS: ${{ secrets.MOOSE_KEY_ALIAS }}
+          MOOSE_API_URL: ${{ secrets.MOOSE_API_URL }}
+          MOOSE_AUTH_URL: ${{ secrets.MOOSE_AUTH_URL }}
+        run: flutter build apk --release --split-per-abi
+
+      - name: Check the APKs are signed with the release key
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
+            | grep -q "Android Debug" && { echo "Signed with the debug key" >&2; exit 1; } || true
+
+      - name: Remove the keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release-key.jks"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}-${{ steps.version.outputs.SHA }}
+          name: Idris ${{ steps.version.outputs.VERSION }}
+          body: |
+            **Commit:** ${{ steps.version.outputs.SHA }}
+            **Message:** ${{ steps.version.outputs.MESSAGE }}
+
+            For most phones: `app-arm64-v8a-release.apk`.
+          files: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            build/app/outputs/flutter-apk/app-x86_64-release.apk
