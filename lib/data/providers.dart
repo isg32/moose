@@ -263,6 +263,11 @@ class PairingNotifier extends Notifier<Pairing> {
 
   void rename(String name) =>
       state = state.copyWith(me: state.me.copyWith(name: name));
+
+  /// Your picture, or null for your initial.
+  void setPhoto(String? path) => state = state.copyWith(
+    me: state.me.copyWith(photo: path, clearPhoto: path == null),
+  );
 }
 
 // The conversation.
@@ -315,6 +320,19 @@ class MessagesNotifier extends Notifier<List<Message>> {
         ];
       case DoodleChanged(:final op):
         ref.read(doodlesProvider.notifier).applyRemote(op);
+      case PartnerChanged(:final name, :final photo):
+        final p = ref.read(pairingProvider);
+        ref
+            .read(pairingProvider.notifier)
+            .set(
+              p.copyWith(
+                partner: p.partner.copyWith(
+                  name: name,
+                  photo: photo,
+                  clearPhoto: photo == null,
+                ),
+              ),
+            );
       case ThemeChanged(:final theme):
         ref.read(chatThemeProvider.notifier).set(theme);
       case OnlineChanged(:final online):

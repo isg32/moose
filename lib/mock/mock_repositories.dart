@@ -13,6 +13,9 @@ class MockPairRepository implements PairRepository {
   Future<void> setName(String name) async {}
 
   @override
+  Future<void> setPhoto(String? path) async {}
+
+  @override
   Future<String> invite() async => MockData.inviteCode;
 
   @override

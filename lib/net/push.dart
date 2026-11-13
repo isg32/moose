@@ -38,10 +38,12 @@ abstract final class Push {
   /// Sets up Firebase and the notification channels. [onWake] runs when a
   /// push arrives while Moose is open.
   static Future<void> init({required VoidCallback onWake}) async {
+    // Local notifications first: they work even where Firebase can't
+    // (the Linux desktop build).
+    await ready();
     await Firebase.initializeApp();
     FirebaseMessaging.onBackgroundMessage(_background);
     FirebaseMessaging.onMessage.listen((_) => onWake());
-    await ready();
   }
 
   /// Takes down Moose's notifications.
@@ -49,8 +51,14 @@ abstract final class Push {
 
   /// Asks for the notification permission (Android 13+).
   static Future<bool> ask() async {
-    final s = await FirebaseMessaging.instance.requestPermission();
-    return s.authorizationStatus == AuthorizationStatus.authorized;
+    try {
+      final s = await FirebaseMessaging.instance.requestPermission();
+      return s.authorizationStatus == AuthorizationStatus.authorized;
+    } on Object {
+      // No Firebase (the Linux desktop build): local notifications need
+      // no permission there.
+      return true;
+    }
   }
 
   static Future<String?> token() async {
@@ -73,6 +81,7 @@ abstract final class Push {
     await _local.initialize(
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        linux: LinuxInitializationSettings(defaultActionName: 'Open Moose'),
       ),
     );
     final android = _local

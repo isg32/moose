@@ -14,8 +14,12 @@ class Person {
 
   String get initial => name.isEmpty ? '?' : name[0].toUpperCase();
 
-  Person copyWith({String? name, String? photo}) =>
-      Person(id: id, name: name ?? this.name, photo: photo ?? this.photo);
+  Person copyWith({String? name, String? photo, bool clearPhoto = false}) =>
+      Person(
+        id: id,
+        name: name ?? this.name,
+        photo: clearPhoto ? null : photo ?? this.photo,
+      );
 }
 
 /// Where the partner is right now (A8).

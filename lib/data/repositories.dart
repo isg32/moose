@@ -11,6 +11,10 @@ abstract interface class PairRepository {
   /// Your name (and, for real, your public key) on the server.
   Future<void> setName(String name);
 
+  /// Your picture (a file on this phone), or null for your initial. Your
+  /// person gets it too.
+  Future<void> setPhoto(String? path);
+
   /// A fresh invite code for your person to type or scan (C5).
   Future<String> invite();
 
@@ -85,6 +89,13 @@ class MediaReady extends ChatEvent {
 class DoodleChanged extends ChatEvent {
   const DoodleChanged(this.op);
   final DoodleOp op;
+}
+
+/// The partner changed their name or picture.
+class PartnerChanged extends ChatEvent {
+  const PartnerChanged({required this.name, this.photo});
+  final String name;
+  final String? photo;
 }
 
 /// The partner applied a new shared theme (C22).

@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'app/app.dart';
@@ -28,6 +30,10 @@ import 'platform/crash_log.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // The Linux desktop build (a second Moose on a laptop) plays audio
+  // through libmpv.
+  final android = Platform.isAndroid;
+  if (Platform.isLinux) JustAudioMediaKit.ensureInitialized(linux: true);
   // First, so errors from here on are logged and shown, not lost.
   CrashLog.instance
     ..appVersion = mooseVersion
@@ -59,7 +65,11 @@ Future<void> main() async {
       ? null
       : await NeonBackend.open(
           config,
-          vault: const SecureVault(),
+          vault: android
+              ? const SecureVault()
+              : FileVault(
+                  '${(await getApplicationSupportDirectory()).path}/vault.json',
+                ),
           dir: await getApplicationSupportDirectory(),
         );
   final songs = backend == null ? null : YouTubeSongs();
@@ -69,8 +79,9 @@ Future<void> main() async {
       ..media = PhoneMedia(backend.mediaDir)
       ..voice = PhoneVoice(backend.mediaDir)
       ..calls = NeonCalls(backend)
-      ..startChecking = BackgroundCheck.start
-      ..stopChecking = BackgroundCheck.stop
+      // The background check is an Android foreground service.
+      ..startChecking = android ? BackgroundCheck.start : null
+      ..stopChecking = android ? BackgroundCheck.stop : null
       ..notifyAway = (data) async {
         final n = await Push.describe(
           data,
@@ -81,7 +92,7 @@ Future<void> main() async {
       }
       ..askNotifications = Push.ask
       ..pushToken = Push.token;
-    BackgroundCheck.init();
+    if (android) BackgroundCheck.init();
     try {
       await Push.init(onWake: () => backend.wake?.call());
     } on Object catch (e) {
@@ -105,7 +116,9 @@ Future<void> main() async {
           keepCheckingProvider.overrideWithValue(
             () => BackgroundCheck.keepGoing(paired: backend.store.paired),
           ),
-          roundCameraProvider.overrideWithValue(PhoneRound(backend.mediaDir)),
+          // Round videos need the phone's camera plugin (Android only).
+          if (android)
+            roundCameraProvider.overrideWithValue(PhoneRound(backend.mediaDir)),
           storageRepositoryProvider.overrideWithValue(
             PhoneStorage(backend.store, backend.mediaDir, cache!),
           ),

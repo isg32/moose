@@ -17,6 +17,10 @@ class LocalStore {
 
   Member? partner;
   String myName = '';
+
+  /// Your picture and your person's, as files on this phone.
+  String? myPhoto;
+  String? partnerPhoto;
   DateTime? since;
   List<String> securityCode = const [];
   List<Message> messages = const [];
@@ -51,6 +55,8 @@ class LocalStore {
     final p = (j['partner'] as Map?)?.cast<String, Object?>();
     partner = p == null ? null : Member.fromJson(p);
     myName = (j['me'] as String?) ?? '';
+    myPhoto = j['myPhoto'] as String?;
+    partnerPhoto = j['partnerPhoto'] as String?;
     since = j['since'] == null ? null : DateTime.parse(j['since'] as String);
     securityCode = [for (final g in (j['code'] as List?) ?? const []) '$g'];
     final t = (j['theme'] as Map?)?.cast<String, Object?>();
@@ -74,6 +80,8 @@ class LocalStore {
   Map<String, Object?> _json() => {
     'v': 1,
     'me': myName,
+    'myPhoto': myPhoto,
+    'partnerPhoto': partnerPhoto,
     if (partner case final p?)
       'partner': {'id': p.id, 'name': p.name, 'pubkey': p.pubkey},
     'since': since?.toIso8601String(),

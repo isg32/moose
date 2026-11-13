@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 
 import '../../core/theme/v_colors.dart';
@@ -6,8 +8,8 @@ import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
 
-/// A person's initial in a circle (A8): yours filled with ink, your
-/// partner's outlined, with an optional online dot.
+/// A person's picture, or their initial, in a circle (A8): yours filled
+/// with ink, your partner's outlined, with an optional online dot.
 class Avatar extends StatelessWidget {
   const Avatar(
     this.person, {
@@ -26,28 +28,48 @@ class Avatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ink = VInk.of(context);
     final paper = VInk.surfaceOf(context);
+    final photo = person.photo;
+    final hasPhoto =
+        photo != null && !photo.startsWith('mock:') && File(photo).existsSync();
     return SizedBox.square(
       dimension: size,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Positioned.fill(
-            child: VOutlined(
-              radius: size / 2,
-              outline: filled ? VOutline.none : VOutline.solid,
-              fill: filled ? ink : VColors.transparent,
-              child: Center(
-                child: Text(
-                  person.initial,
-                  style: VText.doto(
-                    size * 0.46,
-                    weight: 900,
-                    height: 1,
-                  ).copyWith(color: filled ? paper : ink),
+          if (hasPhoto)
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: ink),
+                  image: DecorationImage(
+                    image: ResizeImage(
+                      FileImage(File(photo)),
+                      width: (size * 3).round(),
+                    ),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            )
+          else
+            Positioned.fill(
+              child: VOutlined(
+                radius: size / 2,
+                outline: filled ? VOutline.none : VOutline.solid,
+                fill: filled ? ink : VColors.transparent,
+                child: Center(
+                  child: Text(
+                    person.initial,
+                    style: VText.doto(
+                      size * 0.46,
+                      weight: 900,
+                      height: 1,
+                    ).copyWith(color: filled ? paper : ink),
+                  ),
                 ),
               ),
             ),
-          ),
           if (online)
             Positioned(
               right: -1,

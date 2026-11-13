@@ -20,6 +20,11 @@ sealed class Envelope {
     'typing' => TypingEnvelope(j['on'] as bool),
     'react' => ReactEnvelope(j['id'] as String, j['emoji'] as String?),
     'doodle' => DoodleEnvelope(Wire.doodleOp(j)),
+    'profile' => ProfileEnvelope(
+      name: (j['name'] as String?) ?? '',
+      blob: j['blob'] as String?,
+      blobKey: j['k'] as String?,
+    ),
     'call' => CallEnvelope(
       op: j['op'] as String,
       id: j['id'] as String,
@@ -105,6 +110,23 @@ class CallEnvelope extends Envelope {
     'video': video,
     'sdp': ?sdp,
     'sdpType': ?sdpType,
+  };
+}
+
+/// Your name and picture for your person: the picture travels sealed in
+/// storage as [blob] with its own [blobKey]; none means your initial.
+class ProfileEnvelope extends Envelope {
+  const ProfileEnvelope({required this.name, this.blob, this.blobKey});
+  final String name;
+  final String? blob;
+  final String? blobKey;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'profile',
+    'name': name,
+    'blob': ?blob,
+    'k': ?blobKey,
   };
 }
 

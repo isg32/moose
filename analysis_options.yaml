@@ -6,6 +6,7 @@ analyzer:
     - "**/*.g.dart"
     - android/**
     - test_peek/**
+    - linux/**
   language:
     strict-casts: true
     strict-raw-types: true

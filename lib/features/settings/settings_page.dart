@@ -35,6 +35,41 @@ class SettingsPage extends ConsumerWidget {
     return 'Every 6 min · last ${m < 1 ? 'just now' : '$m min ago'}';
   }
 
+  /// Your name, your picture, or back to your initial.
+  Future<void> _you(BuildContext context, WidgetRef ref) async {
+    final hasPhoto = ref.read(pairingProvider).me.photo != null;
+    final what = await showChoiceSheet<String>(
+      context,
+      title: 'You',
+      choices: [
+        const Choice('name', 'Change name', icon: VIcon.doodle),
+        const Choice('photo', 'Choose a photo', icon: VIcon.image),
+        if (hasPhoto)
+          const Choice('initial', 'Use my initial', icon: VIcon.close),
+      ],
+    );
+    if (what == null || !context.mounted) return;
+    switch (what) {
+      case 'name':
+        await _rename(context, ref);
+      case 'photo':
+        final source = ref.read(mediaSourceProvider);
+        if (source == null) return;
+        final picked = await source.gallery();
+        final path = picked.where((m) => m.duration == null).firstOrNull?.path;
+        if (path == null) return;
+        ref.read(pairingProvider.notifier).setPhoto(path);
+        unawaited(
+          ref.read(pairRepositoryProvider).setPhoto(path).catchError((_) {}),
+        );
+      case 'initial':
+        ref.read(pairingProvider.notifier).setPhoto(null);
+        unawaited(
+          ref.read(pairRepositoryProvider).setPhoto(null).catchError((_) {}),
+        );
+    }
+  }
+
   Future<void> _rename(BuildContext context, WidgetRef ref) async {
     final c = TextEditingController(text: ref.read(pairingProvider).me.name);
     final name = await showVSheet<String>(
@@ -112,7 +147,7 @@ class SettingsPage extends ConsumerWidget {
               leading: Avatar(pairing.me, size: 44, filled: true),
               title: pairing.me.name,
               subtitle: 'Your name and picture',
-              onTap: () => _rename(context, ref),
+              onTap: () => _you(context, ref),
             ),
           ],
         ),

@@ -27,6 +27,7 @@ import '../common/keypad.dart';
 import '../common/overlay.dart';
 import '../common/parts.dart';
 import '../common/toast.dart';
+import 'pair_card.dart';
 import 'step_page.dart';
 
 /// Onboarding paths (outside the tabs).
@@ -135,6 +136,24 @@ class _NamePageState extends ConsumerState<NamePage> {
   );
   var _photo = false;
 
+  /// Your picture on this phone (Neon), once chosen.
+  String? _photoPath;
+
+  Future<void> _choosePhoto() async {
+    final source = ref.read(mediaSourceProvider);
+    if (source == null) {
+      setState(() => _photo = true); // the mock's stand-in picture
+      return;
+    }
+    final picked = await source.gallery();
+    final path = picked.where((m) => m.duration == null).firstOrNull?.path;
+    if (path == null || !mounted) return;
+    setState(() {
+      _photo = true;
+      _photoPath = path;
+    });
+  }
+
   @override
   void dispose() {
     _name.dispose();
@@ -165,7 +184,14 @@ class _NamePageState extends ConsumerState<NamePage> {
         Row(
           children: [
             _photo
-                ? const ClipOval(child: ArtBox(art: 7, width: 84, height: 84))
+                ? ClipOval(
+                    child: ArtBox(
+                      art: 7,
+                      path: _photoPath,
+                      width: 84,
+                      height: 84,
+                    ),
+                  )
                 : Avatar(
                     Person(id: 'me', name: initial),
                     size: 84,
@@ -178,13 +204,16 @@ class _NamePageState extends ConsumerState<NamePage> {
                 VPill(
                   'Use my initial',
                   fill: _photo ? VFill.outline : VFill.filled,
-                  onTap: () => setState(() => _photo = false),
+                  onTap: () => setState(() {
+                    _photo = false;
+                    _photoPath = null;
+                  }),
                 ),
                 const SizedBox(height: 10),
                 VPill(
                   'Choose a photo',
                   fill: _photo ? VFill.filled : VFill.dashed,
-                  onTap: () => setState(() => _photo = true),
+                  onTap: _choosePhoto,
                 ),
               ],
             ),
@@ -197,6 +226,13 @@ class _NamePageState extends ConsumerState<NamePage> {
           enabled: _name.text.trim().isNotEmpty,
           onPressed: () {
             ref.read(sessionProvider.notifier).setName(_name.text.trim());
+            ref.read(pairingProvider.notifier).setPhoto(_photoPath);
+            unawaited(
+              ref
+                  .read(pairRepositoryProvider)
+                  .setPhoto(_photoPath)
+                  .catchError((_) {}),
+            );
             // Best effort: pairing registers the name again anyway.
             unawaited(
               ref
@@ -519,11 +555,20 @@ class _CreatePairPageState extends ConsumerState<CreatePairPage> {
         Row(
           children: [
             Expanded(
-              child: _SmallButton(
-                VIcon.share,
-                'Share',
-                () => HapticFeedback.selectionClick(),
-              ),
+              child: _SmallButton(VIcon.share, 'Share', () async {
+                final code = _code;
+                if (code == null) return;
+                unawaited(HapticFeedback.selectionClick());
+                final session = ref.read(sessionProvider);
+                final me = ref.read(pairingProvider).me;
+                await sharePairCard(
+                  context,
+                  me: me.copyWith(
+                    name: session.name.isEmpty ? me.name : session.name,
+                  ),
+                  code: code,
+                );
+              }),
             ),
             const SizedBox(width: 10),
             Expanded(

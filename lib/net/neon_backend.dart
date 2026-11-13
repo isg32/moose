@@ -78,6 +78,28 @@ class NeonBackend {
   /// Call set-up from the partner, for the [calls] link.
   final callSignals = StreamController<CallEnvelope>.broadcast();
 
+  /// Sends your name and picture to your person (sealed; the picture
+  /// through storage).
+  Future<void> shareProfile() async {
+    if (!store.paired) return;
+    try {
+      String? blob;
+      String? key;
+      final photo = store.myPhoto;
+      if (photo != null && File(photo).existsSync()) {
+        final sealed = await Channel.sealBlob(await File(photo).readAsBytes());
+        blob = await api.upload(sealed.bytes);
+        key = sealed.key;
+      }
+      await post(
+        MailKind.theme,
+        ProfileEnvelope(name: store.myName, blob: blob, blobKey: key),
+      );
+    } on Object {
+      // Sent again next time it changes, or on the next pairing.
+    }
+  }
+
   /// Seals [env] for the partner and leaves it on the server.
   Future<bool> post(MailKind kind, Envelope env) async {
     final ch = await channel();
@@ -143,8 +165,16 @@ class NeonBackend {
   Pairing pairing() {
     final p = store.partner;
     return Pairing(
-      me: Person(id: 'me', name: store.myName.isEmpty ? 'You' : store.myName),
-      partner: Person(id: p?.id ?? 'partner', name: p?.name ?? ''),
+      me: Person(
+        id: 'me',
+        name: store.myName.isEmpty ? 'You' : store.myName,
+        photo: store.myPhoto,
+      ),
+      partner: Person(
+        id: p?.id ?? 'partner',
+        name: p?.name ?? '',
+        photo: store.partnerPhoto,
+      ),
       since: store.since ?? DateTime.now(),
       securityCode: store.securityCode,
       presence: Presence.away,
@@ -316,10 +346,19 @@ class NeonPairRepository implements PairRepository {
       ..myName = name
       ..changed();
     await b.api.setMe(name: name, pubkey: b.identity.publicKey);
+    await b.shareProfile();
   }
 
   Future<void> _register() =>
       b.api.setMe(name: b.store.myName, pubkey: b.identity.publicKey);
+
+  @override
+  Future<void> setPhoto(String? path) async {
+    b.store
+      ..myPhoto = path
+      ..changed();
+    await b.shareProfile();
+  }
 
   @override
   Future<String> invite() async {
@@ -334,7 +373,9 @@ class NeonPairRepository implements PairRepository {
       try {
         final me = await b.api.me();
         if (me.paired) {
-          yield await b.adopt(me);
+          final pairing = await b.adopt(me);
+          unawaited(b.shareProfile());
+          yield pairing;
           return;
         }
       } on NetError catch (e) {
@@ -349,7 +390,9 @@ class NeonPairRepository implements PairRepository {
   Future<Pairing?> join(String code) async {
     await _register();
     try {
-      return await b.adopt(await b.api.join(code));
+      final pairing = await b.adopt(await b.api.join(code));
+      unawaited(b.shareProfile());
+      return pairing;
     } on NetError catch (e) {
       if (e.status == 404 || e.status == 400) return null;
       rethrow;
@@ -523,6 +566,22 @@ class NeonChatRepository implements ChatRepository {
           _emit(ReactionChanged(id, emoji));
         case DoodleEnvelope(:final op):
           _emit(DoodleChanged(op));
+        case ProfileEnvelope(:final name, :final blob, :final blobKey):
+          unawaited(() async {
+            String? photo;
+            if (blob != null && blobKey != null) {
+              try {
+                photo = await _download(blob, blobKey, 'partner-${uuid()}');
+              } on Object {
+                return;
+              }
+            }
+            b.store
+              ..partnerPhoto = photo
+              ..changed();
+            if (name.isNotEmpty) b.store.partner = _renamed(name);
+            _emit(PartnerChanged(name: name, photo: photo));
+          }());
         case CallEnvelope():
           // An offer older than a minute rang out long ago.
           if (env.op == 'offer' &&
@@ -555,6 +614,11 @@ class NeonChatRepository implements ChatRepository {
   }
 
   Future<bool> _post(MailKind kind, Envelope env) => b.post(kind, env);
+
+  Member? _renamed(String name) {
+    final p = b.store.partner;
+    return p == null ? null : Member(id: p.id, name: name, pubkey: p.pubkey);
+  }
 
   /// A message as this phone keeps it: system notes in the partner's
   /// words, and photos waiting to come down from storage.
