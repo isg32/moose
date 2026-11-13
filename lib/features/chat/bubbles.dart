@@ -6,7 +6,6 @@ import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_colors.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/widgets/v_buttons.dart';
-import '../../core/widgets/v_glass.dart';
 import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_marquee.dart';
 import '../../core/widgets/v_progress.dart';
@@ -1087,10 +1086,12 @@ class _StickerMessage extends StatelessWidget {
           padding: const EdgeInsets.all(6),
           child: StickerView(sticker, size: 130, tilt: tilt),
         ),
-        VGlass(
-          radius: 999,
-          border: false,
-          blur: 14,
+        // A plain chip, no blur.
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: VInk.surfaceOf(context).withValues(alpha: 0.78),
+            borderRadius: BorderRadius.circular(999),
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             child: _Meta(m),

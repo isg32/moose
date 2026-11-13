@@ -326,7 +326,7 @@ class ChatPageState extends ConsumerState<ChatPage> {
           left: 0,
           right: 0,
           top: 0,
-          child: VEdgeBlur(edge: VEdge.top, solid: top + 64, fade: 44),
+          child: VEdgeBlur(edge: VEdge.top, solid: top + 64),
         ),
         Positioned(
           left: 0,
@@ -334,8 +334,7 @@ class ChatPageState extends ConsumerState<ChatPage> {
           bottom: 0,
           child: _Lift(
             rest: composerBottom,
-            builder: (lift) =>
-                VEdgeBlur(edge: VEdge.bottom, solid: lift + 44, fade: 40),
+            builder: (lift) => VEdgeBlur(edge: VEdge.bottom, solid: lift + 44),
           ),
         ),
         Positioned(

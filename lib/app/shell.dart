@@ -97,7 +97,7 @@ class _AppShellState extends State<AppShell> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: VEdgeBlur(edge: VEdge.bottom, solid: bottom + bar, fade: 32),
+            child: VEdgeBlur(edge: VEdge.bottom, solid: bottom + bar),
           ),
           Positioned(
             left: 0,

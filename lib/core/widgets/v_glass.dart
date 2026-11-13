@@ -593,7 +593,7 @@ class VEdgeBlur extends StatefulWidget {
     super.key,
     required this.edge,
     required this.solid,
-    this.fade = 24,
+    this.fade = VEdgeBlur.standardFade,
     this.maxRadius = 18,
   });
 
@@ -608,6 +608,10 @@ class VEdgeBlur extends StatefulWidget {
 
   /// Blur radius at the edge, in logical pixels.
   final double maxRadius;
+
+  /// The one fade every edge uses, top and bottom, on every tab, so the
+  /// blur reads the same wherever you are.
+  static const standardFade = 40.0;
 
   static Future<FragmentProgram>? _program;
 

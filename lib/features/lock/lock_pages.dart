@@ -128,7 +128,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
           left: 0,
           right: 0,
           top: 0,
-          child: VEdgeBlur(edge: VEdge.top, solid: pad.top, fade: 40),
+          child: VEdgeBlur(edge: VEdge.top, solid: pad.top),
         ),
         Column(
           children: [

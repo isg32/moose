@@ -5,6 +5,7 @@ import '../../core/theme/v_colors.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/widgets/v_buttons.dart';
 import '../../core/widgets/v_ink.dart';
+import '../../core/widgets/v_glass.dart';
 import '../../core/widgets/v_surface.dart';
 
 /// PIN dots (A6): filled for each digit typed, outlined for the rest;
@@ -94,18 +95,19 @@ class Keypad extends StatelessWidget {
         },
         child: SizedBox(
           height: 64,
-          child: VOutlined(
-            radius: 32,
-            outline: delete ? VOutline.none : VOutline.solid,
-            child: Center(
-              child: Text(
-                k,
-                style: delete
-                    ? VText.inter(22, weight: 400)
-                    : VText.doto(28, weight: 700),
-              ),
-            ),
-          ),
+          child: delete
+              ? Center(child: Text(k, style: VText.inter(22, weight: 400)))
+              // Digits sit on glass: the wallpaper blurred behind each key.
+              : VGlass(
+                  radius: 32,
+                  border: false, // the outline below draws it
+                  child: VOutlined(
+                    radius: 32,
+                    child: Center(
+                      child: Text(k, style: VText.doto(28, weight: 700)),
+                    ),
+                  ),
+                ),
         ),
       ),
     );
