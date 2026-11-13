@@ -17,66 +17,96 @@ class WebMemes implements MemeRepository {
   static const _klipyKey = String.fromEnvironment('MOOSE_KLIPY_KEY');
   static bool get hasKlipy => _klipyKey.isNotEmpty;
 
-  /// Where Reddit memes come from when nothing is typed.
-  static const subreddits = ['wholesomememes', 'memes', 'aww', 'catmemes'];
-
   @override
   Future<List<Meme>> search(
     String query,
     MemeSource source,
     MemeKind? kind,
   ) async => switch (source) {
-    MemeSource.reddit => _reddit(query),
+    MemeSource.reddit => _reddit(query, kind),
     MemeSource.klipy => hasKlipy ? _klipy(query, kind) : const [],
   };
 
-  Future<List<Meme>> _reddit(String query) async {
-    final q = query.trim().toLowerCase();
-    // A word that names a subreddit opens it; anything else filters the
-    // usual ones by title.
-    final subs = q.isNotEmpty && !q.contains(' ')
-        ? [q, ...subreddits]
-        : subreddits;
+  /// Where Reddit memes and GIFs come from.
+  static const _memeSubs = ['memes', 'wholesomememes', 'me_irl', 'dankmemes'];
+  static const _gifSubs = ['reactiongifs', 'HighQualityGifs', 'gifs'];
+
+  /// Reddit through meme-api.com, which fetches a subreddit's recent image
+  /// posts but can't search. So a search tries the words as subreddits
+  /// ("cat" → r/catmemes, r/cat) and filters the titles of the big ones'
+  /// recent posts; the empty search is what's popular.
+  Future<List<Meme>> _reddit(String query, MemeKind? kind) async {
+    final gifs = kind == MemeKind.gif || kind == MemeKind.clip;
+    final words = [
+      for (final w in query.toLowerCase().split(RegExp(r'[^a-z0-9]+')))
+        if (w.length > 1) w,
+    ];
+    final topical = <String>[
+      for (final w in words.take(3)) ...[
+        if (gifs) '${w}gifs' else '${w}memes',
+        w,
+      ],
+    ];
+    final general = gifs ? _gifSubs : _memeSubs;
+    final batches = await Future.wait([
+      for (final sub in topical) _gimme(sub, 25),
+      for (final sub in general) _gimme(sub, words.isEmpty ? 15 : 50),
+    ]);
+    final seen = <String>{};
     final out = <Meme>[];
-    for (final sub in subs.take(q.isEmpty ? 2 : 3)) {
-      try {
-        final res = await _http
-            .get(Uri.parse('https://meme-api.com/gimme/$sub/25'))
-            .timeout(const Duration(seconds: 12));
-        if (res.statusCode != 200) continue;
-        final memes = ((jsonDecode(res.body) as Map)['memes'] as List?) ?? [];
-        for (final raw in memes) {
-          final m = (raw as Map).cast<String, Object?>();
-          if (m['nsfw'] == true || m['spoiler'] == true) continue;
-          final url = m['url'] as String?;
-          if (url == null ||
-              !RegExp(r'\.(png|jpe?g|gif|webp)$').hasMatch(url)) {
-            continue;
-          }
-          final title = (m['title'] as String?) ?? '';
-          if (q.isNotEmpty && sub != q && !title.toLowerCase().contains(q)) {
-            continue;
-          }
-          out.add(
-            Meme(
-              id: (m['postLink'] as String?) ?? url,
-              source: MemeSource.reddit,
-              kind: url.endsWith('.gif') ? MemeKind.gif : MemeKind.meme,
-              art: url.length % 10,
-              aspect: 1,
-              title: title,
-              subreddit: m['subreddit'] as String?,
-              url: url,
-              // Reddit's preview links expire (404); the full picture lasts.
-              thumb: url,
-            ),
-          );
+    void take(List<Meme> ms, {required bool filter}) {
+      for (final m in ms) {
+        if (gifs && m.kind != MemeKind.gif) continue;
+        if (!gifs && kind == MemeKind.meme && m.kind == MemeKind.gif) continue;
+        if (filter &&
+            words.isNotEmpty &&
+            !words.any((w) => m.title.toLowerCase().contains(w))) {
+          continue;
         }
-      } on Object {
-        // One subreddit down doesn't empty the picker.
+        if (seen.add(m.url ?? m.id)) out.add(m);
       }
     }
+
+    for (var i = 0; i < batches.length; i++) {
+      take(batches[i], filter: i >= topical.length);
+    }
     return out;
+  }
+
+  Future<List<Meme>> _gimme(String sub, int count) async {
+    try {
+      final res = await _http
+          .get(Uri.parse('https://meme-api.com/gimme/$sub/$count'))
+          .timeout(const Duration(seconds: 12));
+      if (res.statusCode != 200) return const [];
+      final memes = ((jsonDecode(res.body) as Map)['memes'] as List?) ?? [];
+      return [
+        for (final raw in memes)
+          ?_redditMeme((raw as Map).cast<String, Object?>()),
+      ];
+    } on Object {
+      return const []; // one subreddit down doesn't empty the picker
+    }
+  }
+
+  static Meme? _redditMeme(Map<String, Object?> m) {
+    if (m['nsfw'] == true || m['spoiler'] == true) return null;
+    final url = m['url'] as String?;
+    if (url == null || !RegExp(r'\.(png|jpe?g|gif|webp)$').hasMatch(url)) {
+      return null;
+    }
+    return Meme(
+      id: (m['postLink'] as String?) ?? url,
+      source: MemeSource.reddit,
+      kind: url.endsWith('.gif') ? MemeKind.gif : MemeKind.meme,
+      art: url.length % 10,
+      aspect: 1,
+      title: (m['title'] as String?) ?? '',
+      subreddit: m['subreddit'] as String?,
+      url: url,
+      // Reddit's preview links expire (404); the full picture lasts.
+      thumb: url,
+    );
   }
 
   Future<List<Meme>> _klipy(String query, MemeKind? kind) async {

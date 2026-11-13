@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/version.dart';
 import '../../core/icons/v_icons.dart';
@@ -46,8 +47,17 @@ class MooseMark extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(size * 0.26),
-        border: size > 60 ? Border.all(color: VPalette.of(context).ink) : null,
       ),
+      // The edge drawn over the wallpaper, so no seam shows inside it.
+      foregroundDecoration: size > 60
+          ? BoxDecoration(
+              borderRadius: BorderRadius.circular(size * 0.26),
+              border: Border.all(
+                color: VPalette.of(context).ink,
+                strokeAlign: BorderSide.strokeAlignInside,
+              ),
+            )
+          : null,
       clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
@@ -616,14 +626,24 @@ class AboutPage extends StatelessWidget {
               subtitle: "You've probably guessed who made this app",
               chevron: false,
             ),
-            for (final (title, handle) in const [
-              ('GitHub', 'isg32'),
-              ('LinkedIn', 'sapangajjar101105'),
+            for (final (title, handle, link) in const [
+              ('GitHub', 'isg32', 'https://github.com/isg32'),
+              (
+                'LinkedIn',
+                'sapangajjar101105',
+                'https://www.linkedin.com/in/sapangajjar101105',
+              ),
             ])
               VListRow(
                 title: title,
                 value: handle,
-                onTap: () => Clipboard.setData(ClipboardData(text: handle)),
+                // Opens in the browser (or the app, if it's installed).
+                onTap: () => unawaited(
+                  launchUrl(
+                    Uri.parse(link),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                ),
               ),
           ],
         ),

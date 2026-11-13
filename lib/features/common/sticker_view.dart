@@ -81,9 +81,18 @@ class StickerView extends StatelessWidget {
         : Container(
             width: size,
             height: size,
+            // The photo fills the whole shape and the white edge is drawn
+            // over it, so no gap shows between them.
+            foregroundDecoration: BoxDecoration(
+              borderRadius: stickerRadius(sticker.shape, size, size),
+              border: Border.all(
+                color: VColors.white,
+                width: border,
+                strokeAlign: BorderSide.strokeAlignInside,
+              ),
+            ),
             decoration: BoxDecoration(
               borderRadius: stickerRadius(sticker.shape, size, size),
-              border: Border.all(color: VColors.white, width: border),
               boxShadow: shadow
                   ? [
                       BoxShadow(
