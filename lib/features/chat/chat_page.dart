@@ -37,8 +37,14 @@ class ChatPage extends ConsumerStatefulWidget {
 class ChatPageState extends ConsumerState<ChatPage> {
   final _scroll = ScrollController();
 
-  /// Messages after this were unread when the chat opened.
-  late final DateTime _lastRead = MockData.lastRead;
+  /// When the chat opened: what arrives after it is read as it comes.
+  final _openedAt = DateTime.now();
+
+  /// Messages after this were unread when the chat opened. On Neon there
+  /// is no read marker yet, so nothing is.
+  late final DateTime _lastRead = ref.read(onNeonProvider)
+      ? _openedAt
+      : MockData.lastRead;
   bool _showJump = false;
   int _newWhileAway = 0;
 
@@ -175,7 +181,10 @@ class ChatPageState extends ConsumerState<ChatPage> {
     const pillTop = AppShell.pillBottom + AppShell.pillHeight;
     final composerBottom = bottom + pillTop + 12;
     final unread = messages
-        .where((m) => !m.fromMe && m.at.isAfter(_lastRead))
+        .where(
+          (m) =>
+              !m.fromMe && m.at.isAfter(_lastRead) && !m.at.isAfter(_openedAt),
+        )
         .length;
 
     final actions = BubbleActions(
