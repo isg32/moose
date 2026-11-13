@@ -309,24 +309,22 @@ class VVeil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entry = VEntrance.of(context);
-    // No blur: the veil tint over the wallpaper, or solid paper when the
-    // person picked solid panels.
-    final veil = ColoredBox(
-      color: VPanels.solid(context)
-          ? VColors.onColor(VPalette.of(context).ink)
-          : VPalette.of(context).veil,
-    );
-    if (entry == null) return veil;
-    // Fades in with the page coming in.
-    return AnimatedBuilder(
-      animation: entry,
-      child: veil,
-      builder: (context, child) {
-        final t = entry.value.clamp(0.0, 1.0);
-        return Opacity(opacity: t, child: t == 0 ? null : child);
-      },
-    );
+    // No blur: its own copy of the wallpaper (so what's under the page
+    // never shows through) with the veil tint, or solid paper when the
+    // person picked solid panels. Opaque from the first frame: it slides in
+    // with its page, so the page's text never lies over the one beneath.
+    final wallpaper = VVeilBackdrop.wallpaperOf(context);
+    return VPanels.solid(context)
+        ? ColoredBox(color: VColors.onColor(VPalette.of(context).ink))
+        : RepaintBoundary(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ?wallpaper,
+                ColoredBox(color: VPalette.of(context).veil),
+              ],
+            ),
+          );
   }
 }
 
@@ -336,27 +334,23 @@ class VVeilBackdrop extends InheritedWidget {
   const VVeilBackdrop({
     super.key,
     required this.backdrop,
+    this.wallpaper,
     required super.child,
   });
 
+  /// The soft copy (the tab switch's cover).
   final Widget backdrop;
+
+  /// The wallpaper as it shows behind everything (a page's veil).
+  final Widget? wallpaper;
 
   static Widget? of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<VVeilBackdrop>()?.backdrop;
 
+  static Widget? wallpaperOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<VVeilBackdrop>()?.wallpaper;
+
   @override
-  bool updateShouldNotify(VVeilBackdrop old) => old.backdrop != backdrop;
-}
-
-/// How far a page has come in (0–1), for what has to animate itself, like
-/// [VVeil]'s blur. The app shell sets it when a tab is switched to.
-class VEntrance extends InheritedNotifier<Animation<double>> {
-  const VEntrance({
-    super.key,
-    required Animation<double> animation,
-    required super.child,
-  }) : super(notifier: animation);
-
-  static Animation<double>? of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<VEntrance>()?.notifier;
+  bool updateShouldNotify(VVeilBackdrop old) =>
+      old.backdrop != backdrop || old.wallpaper != wallpaper;
 }

@@ -89,6 +89,16 @@ class WebMemes implements MemeRepository {
     }
   }
 
+  /// The ~320 px preview meme-api lists, if any.
+  static String? _preview(Map<String, Object?> m) {
+    final previews = (m['preview'] as List?)?.whereType<String>().toList();
+    if (previews == null || previews.isEmpty) return null;
+    return previews.firstWhere(
+      (p) => p.contains('width=320'),
+      orElse: () => previews.last,
+    );
+  }
+
   static Meme? _redditMeme(Map<String, Object?> m) {
     if (m['nsfw'] == true || m['spoiler'] == true) return null;
     final url = m['url'] as String?;
@@ -104,8 +114,10 @@ class WebMemes implements MemeRepository {
       title: (m['title'] as String?) ?? '',
       subreddit: m['subreddit'] as String?,
       url: url,
-      // Reddit's preview links expire (404); the full picture lasts.
-      thumb: url,
+      // The picker shows Reddit's small preview (a GIF's full file can be
+      // 10 MB); it expires in time, but the full picture, which is what is
+      // sent, lasts.
+      thumb: _preview(m) ?? url,
     );
   }
 

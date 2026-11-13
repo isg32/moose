@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 
 import '../../core/theme/v_colors.dart';
+import '../../core/widgets/v_progress.dart';
 
 /// A photo, video, GIF or cover: the real file at [path] once it's on the
 /// phone, else one of [VMockArt]'s gradients standing in for it.
@@ -55,15 +56,42 @@ class ArtBox extends StatelessWidget {
                     : ResizeImage(FileImage(File(file)), width: 1080),
                 fit: BoxFit.cover,
               )
-            : web != null
-            ? DecorationImage(
-                image: NetworkImage(web),
-                fit: BoxFit.cover,
-                onError: (_, _) {},
-              )
             : null,
       ),
-      child: child,
+      child: web == null || file != null
+          ? child
+          : Stack(
+              fit: StackFit.passthrough,
+              children: [
+                // Decoded no wider than 720 px (a Reddit GIF can be 10 MB),
+                // with a spinner until it's ready, then fades in.
+                Positioned.fill(
+                  child: Image(
+                    image: ResizeImage(NetworkImage(web), width: 720),
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                    frameBuilder: (context, img, frame, sync) {
+                      if (sync) return img;
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (frame == null && (width == null || width! >= 64))
+                            const Center(child: VSpinner(size: 22)),
+                          AnimatedOpacity(
+                            opacity: frame == null ? 0 : 1,
+                            duration: const Duration(milliseconds: 260),
+                            curve: Curves.easeOut,
+                            child: img,
+                          ),
+                        ],
+                      );
+                    },
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                ),
+                ?child,
+              ],
+            ),
     );
   }
 }

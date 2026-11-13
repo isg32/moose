@@ -43,3 +43,4 @@ checked off when it follows the real thing.
 | Range picker preview | `lib/features/music/music_pages.dart` | Play icon only, static "Drag the wave" text | Spinner while loading, a playhead crossing the window, "Previewing · 0:04 / 0:15"; moving the wave stops the old preview | Real |
 | Range picker wave | `lib/features/music/music_pages.dart` (`_wave`) | Made-up bars seeded from the video id | — | Mock (YouTube gives no waveform; real one needs decoding the stream) |
 | Round recording limit | `lib/features/chat/composer.dart` | "/ 1:00" | The real limit | Real |
+| Recent photos strip | `lib/features/media/attach_sheet.dart` | Six mock photos above the attach buttons | Shown on the mock only; on Neon the row and its heading are left out (Gallery opens the phone's photos) | Mock (needs a gallery plugin to be real) |

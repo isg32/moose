@@ -85,6 +85,11 @@ class _MooseThemeState extends State<MooseTheme> {
                   dim: theme.dim,
                   soft: true,
                 ),
+                wallpaper: WallpaperView(
+                  wallpaper: theme.wallpaper,
+                  dim: theme.dim,
+                  blur: theme.blur,
+                ),
                 child: widget.child,
               ),
             ],

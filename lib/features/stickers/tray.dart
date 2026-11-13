@@ -272,11 +272,7 @@ class _StickersState extends ConsumerState<_Stickers> {
                 selected: _pack == null,
                 label: 'Favourites',
                 onTap: () => setState(() => _pack = null),
-                child: VIconView(
-                  VIcon.star,
-                  size: 20,
-                  color: _pack == null ? VInk.surfaceOf(context) : null,
-                ),
+                child: const VIconView(VIcon.star, size: 20),
               ),
               for (final p in packs)
                 _PackTab(
@@ -401,7 +397,11 @@ class _PackTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.center,
-          child: child,
+          // On the filled (selected) tab, icons take the paper colour so
+          // they show.
+          child: selected
+              ? VInkScope(ink: VInk.surfaceOf(context), child: child)
+              : child,
         ),
       ),
     ),

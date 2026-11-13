@@ -150,6 +150,9 @@ class _ThemeSheetState extends ConsumerState<ThemeSheet> {
                       Text('PALETTES', style: VText.eyebrow),
                       const SizedBox(height: 10),
                       GridView(
+                        // Not the status bar's inset, which a grid takes
+                        // by default.
+                        padding: EdgeInsets.zero,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         // A tile and its name, whatever the width.

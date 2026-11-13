@@ -110,26 +110,28 @@ class _AttachSheetState extends State<AttachSheet> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Text('RECENT', style: VText.eyebrow),
-                          const Spacer(),
-                          VTappable(
-                            onTap: () =>
-                                Navigator.of(context)
-                                    .pop(const AttachTile(AttachKind.gallery)),
-                            child: Text(
-                              _picked.isEmpty
-                                  ? 'All photos ›'
-                                  : 'Add ${_picked.length} ›',
-                              style: VText.inter(13, weight: 500),
+                      // Recent photos (the mock's; a real gallery strip
+                      // isn't wired yet, so on Neon the row is left out
+                      // rather than shown empty: Gallery opens them all).
+                      if (widget.recent) ...[
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Text('RECENT', style: VText.eyebrow),
+                            const Spacer(),
+                            VTappable(
+                              onTap: () => Navigator.of(context)
+                                  .pop(const AttachTile(AttachKind.gallery)),
+                              child: Text(
+                                _picked.isEmpty
+                                    ? 'All photos ›'
+                                    : 'Add ${_picked.length} ›',
+                                style: VText.inter(13, weight: 500),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      if (widget.recent)
+                          ],
+                        ),
+                        const SizedBox(height: 10),
                         SizedBox(
                           height: 84,
                           child: ListView.separated(
@@ -156,6 +158,7 @@ class _AttachSheetState extends State<AttachSheet> {
                             },
                           ),
                         ),
+                      ],
                       const SizedBox(height: 22),
                       if (_picked.isNotEmpty)
                         Padding(
@@ -168,6 +171,7 @@ class _AttachSheetState extends State<AttachSheet> {
                           ),
                         ),
                       GridView.count(
+                        padding: EdgeInsets.zero, // not the status bar's inset
                         crossAxisCount: 4,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),

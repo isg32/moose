@@ -106,6 +106,8 @@ class _MusicSearchPageState extends ConsumerState<MusicSearchPage> {
                         )
                       : results.when(
                           loading: () => ListView(
+                            padding:
+                                EdgeInsets.zero, // not the status bar's inset
                             children: const [
                               _SkeletonRow(),
                               _SkeletonRow(),

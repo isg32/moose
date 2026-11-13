@@ -39,11 +39,11 @@ abstract final class VColors {
   /// Light ink: white at 60 %.
   static const Color veilLight = Color(0x99FFFFFF);
 
-  /// Behind a popup, over the blur: black at 40 %.
-  static const Color popupScrim = Color(0x66000000);
+  /// Behind a popup (no blur under it): black at 70 %.
+  static const Color popupScrim = Color(0xB3000000);
 
-  /// Light ink: white at 40 %.
-  static const Color popupScrimLight = Color(0x66FFFFFF);
+  /// Light ink: white at 70 %.
+  static const Color popupScrimLight = Color(0xB3FFFFFF);
 
   /// Opacity of a disabled primary action.
   static const double disabledOpacity = 0.35;

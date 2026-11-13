@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+import '../theme/v_colors.dart';
+
 /// One line of text. When it doesn't fit it ends in "…", and while
 /// [running] it scrolls slowly across instead, pausing at the start, so the
 /// whole of it can be read (a song title while it plays).
@@ -167,12 +169,37 @@ class _RenderMarquee extends RenderProxyBox {
       final secs = _clock.value * 1000 % cycle;
       shift = math.max(0, secs - VMarquee.rest) * VMarquee.speed;
     }
-    context.pushClipRect(
-      needsCompositing,
+    if (line <= size.width + 0.5) {
+      context.paintChild(c, offset);
+      return;
+    }
+    // Scrolling: the text fades out at both ends instead of being cut.
+    context.pushClipRect(needsCompositing, offset, Offset.zero & size, (
+      context,
       offset,
-      Offset.zero & size,
-      (context, offset) => context.paintChild(c, offset - Offset(shift, 0)),
-    );
+    ) {
+      final bounds = offset & size;
+      final canvas = context.canvas;
+      canvas.saveLayer(bounds, Paint());
+      context.paintChild(c, offset - Offset(shift, 0));
+      final edge = math.min(18.0, size.width / 4) / size.width;
+      context.canvas.drawRect(
+        bounds,
+        Paint()
+          ..blendMode = BlendMode.dstIn
+          ..shader = LinearGradient(
+            colors: [
+              // Resting at its start, the first letters stay whole.
+              shift < 1 ? VColors.black : VColors.transparent,
+              VColors.black,
+              VColors.black,
+              VColors.transparent,
+            ],
+            stops: [0, edge, 1 - edge, 1],
+          ).createShader(bounds),
+      );
+      context.canvas.restore();
+    });
   }
 
   @override

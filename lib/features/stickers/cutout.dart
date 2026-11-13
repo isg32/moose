@@ -85,8 +85,9 @@ class Cutout extends ChangeNotifier {
       if (conf == null || conf.length != w * h) return false;
       final rgba = Uint8List(w * h * 4);
       for (var i = 0; i < conf.length; i++) {
-        // A soft edge: fully in above 0.7, out below 0.3.
-        final a = ((conf[i] - 0.3) / 0.4).clamp(0.0, 1.0);
+        // A soft edge: fully in above 0.8, out below 0.5, so a dim
+        // background the segmenter half-believes in leaves no faint box.
+        final a = ((conf[i] - 0.5) / 0.3).clamp(0.0, 1.0);
         final o = i * 4;
         rgba[o] = 255;
         rgba[o + 1] = 255;

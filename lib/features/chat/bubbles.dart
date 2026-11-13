@@ -410,7 +410,9 @@ class _WithReactions extends StatelessWidget {
       children: [
         child,
         Transform.translate(
-          offset: const Offset(0, -7),
+          // Tucked under a bubble's edge; a sticker's time chip has no
+          // edge to tuck under, so there they sit just below it.
+          offset: Offset(0, message.body is StickerBody ? 3 : -7),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Wrap(

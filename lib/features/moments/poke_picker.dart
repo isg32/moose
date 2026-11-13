@@ -86,6 +86,7 @@ class _PokePickerState extends ConsumerState<PokePicker> {
                   ),
                   const SizedBox(height: 12),
                   GridView.count(
+                    padding: EdgeInsets.zero, // not the status bar's inset
                     crossAxisCount: 2,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
