@@ -186,9 +186,13 @@ class Cutout extends ChangeNotifier {
 
   /// The sticker into [dst]: outline, the cut-out photo, the caption.
   void paint(Canvas c, Rect dst, {required Rect bounds}) {
-    final edge = dst.width * 0.022;
+    final edge = dst.width * 0.018;
     if (outline) {
-      // The mask grown by [edge] and filled white, under the photo.
+      // A white ring around the subject: the mask grown by [edge], filled
+      // white, with the mask itself taken out again. Nothing white sits
+      // under the subject, so where the cut is unsure (half see-through)
+      // the photo stays its own colour instead of washing out white.
+      c.saveLayer(bounds, Paint());
       c.saveLayer(
         bounds,
         Paint()
@@ -201,6 +205,10 @@ class Cutout extends ChangeNotifier {
           ..color = VColors.white
           ..blendMode = BlendMode.srcIn,
       );
+      c.restore();
+      c.saveLayer(bounds, Paint()..blendMode = BlendMode.dstOut);
+      _paintMask(c, dst);
+      c.restore();
       c.restore();
     }
     c.saveLayer(bounds, Paint());

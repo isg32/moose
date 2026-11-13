@@ -12,7 +12,6 @@ import '../../core/theme/v_colors.dart';
 import '../../core/theme/v_palette.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/widgets/v_buttons.dart';
-import '../../core/widgets/v_controls.dart';
 import '../../core/widgets/v_glass.dart';
 import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_list.dart';
@@ -111,8 +110,6 @@ class _DoodleStickerSheet extends ConsumerStatefulWidget {
 }
 
 class _DoodleStickerSheetState extends ConsumerState<_DoodleStickerSheet> {
-  var _outline = true;
-
   /// The mock's "Moose doodles" pack when there is one; else the first
   /// (on Neon: "Ours").
   late var _pack = () {
@@ -159,27 +156,15 @@ class _DoodleStickerSheetState extends ConsumerState<_DoodleStickerSheet> {
                     angle: -5 * math.pi / 180,
                     child: SizedBox.square(
                       dimension: 190,
+                      // The drawing as drawn, as it'll show in the chat.
                       child: StrokesView(
                         widget.strokes,
                         space: const Size(1, 1),
-                        outline: _outline ? 6 : 0,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text('White outline', style: VText.rowTitle),
-                    ),
-                    VSwitch(
-                      value: _outline,
-                      onChanged: (v) => setState(() => _outline = v),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
                 VListSection(
                   children: [
                     VListRow(

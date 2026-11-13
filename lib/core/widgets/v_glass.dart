@@ -53,8 +53,10 @@ class VGlass extends StatelessWidget {
     final sheet = t == palette.glassSheet;
     final glass = sheet || t == palette.glassBar || t == palette.glassCard;
     if (!glass) return t;
-    if (VPanels.solid(context)) return paper;
-    return paper.withValues(alpha: sheet ? 0.97 : 0.55);
+    // Sheets sit over text, which would only ghost through: always solid.
+    // Cards and the rest let the wallpaper through unless solid is picked.
+    if (sheet || VPanels.solid(context)) return paper;
+    return paper.withValues(alpha: 0.55);
   }
 
   @override
@@ -504,7 +506,7 @@ Future<T?> showVSheet<T>(
   FocusManager.instance.primaryFocus?.unfocus();
   return showCupertinoModalPopup<T>(
     context: context,
-    barrierColor: VColors.transparent,
+    barrierColor: VPalette.of(context).popupScrim,
     builder: (context) => VSheet(title: title, child: builder(context)),
   );
 }

@@ -161,7 +161,12 @@ class VTabPage extends StatelessWidget {
                 VSpace.gutter,
                 0,
                 VSpace.gutter,
-                VSpace.tabBarClearance + VBottomInset.of(context),
+                // Clear of the pill, its edge blur and the gesture bar, so
+                // the last line can scroll out sharp.
+                VSpace.tabBarClearance +
+                    20 +
+                    MediaQuery.viewPaddingOf(context).bottom +
+                    VBottomInset.of(context),
               ),
               sliver: SliverList.list(children: _gapped(children)),
             ),

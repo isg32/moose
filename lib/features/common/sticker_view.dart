@@ -72,11 +72,8 @@ class StickerView extends StatelessWidget {
     final Widget art = sticker.isDoodle
         ? SizedBox.square(
             dimension: size,
-            child: StrokesView(
-              sticker.strokes,
-              space: const Size(1, 1),
-              outline: border * 1.6,
-            ),
+            // Just the drawing, as drawn: no white rim around the strokes.
+            child: StrokesView(sticker.strokes, space: const Size(1, 1)),
           )
         : Container(
             width: size,
