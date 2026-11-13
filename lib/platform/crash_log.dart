@@ -96,10 +96,10 @@ class CrashLog {
     unawaited(_persist(log));
     // One popup at a time; later errors are in the log of the first.
     pending.value ??= CrashReport(
-      title: 'Something went wrong',
+      title: 'Something broke',
       summary:
-          'Moose ran into an unexpected problem. Your chats '
-          'are safe. The log below helps find the cause.',
+          'Moose hit an error. Your chats are safe on this phone. Copy the '
+          'details if you want to report it.',
       log: log,
     );
   }

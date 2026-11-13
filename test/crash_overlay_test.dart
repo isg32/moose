@@ -8,14 +8,14 @@ void main() {
     await t.pumpWidget(
       const CupertinoApp(home: CrashOverlay(child: Text('app'))),
     );
-    expect(find.text('Something went wrong'), findsNothing);
+    expect(find.text('Something broke'), findsNothing);
     CrashLog.instance.report(StateError('boom'), StackTrace.current);
     await t.pump();
-    expect(find.text('Something went wrong'), findsOneWidget);
-    expect(find.text('Copy log'), findsOneWidget);
+    expect(find.text('Something broke'), findsOneWidget);
+    expect(find.text('Copy details'), findsOneWidget);
     expect(find.text('Save to Downloads'), findsOneWidget);
-    await t.tap(find.text('Close'));
+    await t.tap(find.text('Back to Moose'));
     await t.pump();
-    expect(find.text('Something went wrong'), findsNothing);
+    expect(find.text('Something broke'), findsNothing);
   });
 }

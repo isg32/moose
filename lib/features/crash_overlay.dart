@@ -3,11 +3,10 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
-import '../core/theme/v_palette.dart';
 import '../core/theme/v_text.dart';
-import '../core/theme/v_tokens.dart';
 import '../core/widgets/v_buttons.dart';
-import '../core/widgets/v_glass.dart';
+import '../core/icons/v_icons.dart';
+import '../core/widgets/v_page.dart';
 import '../core/widgets/v_surface.dart';
 import '../platform/crash_log.dart';
 
@@ -68,91 +67,72 @@ class _CrashCardState extends State<_CrashCard> {
   Widget build(BuildContext context) {
     final r = widget.report;
     final pad = MediaQuery.paddingOf(context);
+    // C43: a full page over the veil: the warning, what happened, the log,
+    // and the way out.
     return SizedBox.expand(
       child: Semantics(
         scopesRoute: true,
         explicitChildNodes: true,
         label: r.title,
-        child: VGlass(
-          radius: 0,
-          border: false,
-          blur: 14,
-          tint: VPalette.of(context).glassSheet,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16, pad.top + 24, 16, pad.bottom + 24),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: VOutlined(
-                  radius: VRadius.sheet,
-                  fill: VPalette.of(context).paper,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          r.fromLastRun ? 'LAST TIME' : 'UNEXPECTED',
-                          style: VText.eyebrow,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(r.title, style: VText.doto(26, height: 1.1)),
-                        const SizedBox(height: 10),
-                        Text(
-                          r.summary,
-                          style: VText.inter(14, weight: 300, height: 1.45),
-                        ),
-                        const SizedBox(height: 16),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 180),
-                          child: VOutlined(
-                            radius: 14,
-                            outline: VOutline.dashed,
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.all(12),
-                              child: Text(r.log, style: VText.mono),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: VButton.secondary(
-                                'Copy log',
-                                onPressed: _copy,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: VButton.secondary(
-                                'Save to Downloads',
-                                onPressed: _save,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        VButton.primary(
-                          'Close',
-                          onPressed: CrashLog.instance.dismiss,
-                        ),
-                        if (_note != null) ...[
-                          const SizedBox(height: 10),
-                          Text(
-                            _note!,
-                            textAlign: TextAlign.center,
-                            style: VText.secondary,
-                          ),
-                        ],
-                      ],
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const VVeil(),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                pad.top + 72,
+                20,
+                pad.bottom + 32,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: VIconView(VIcon.warning, size: 36),
+                  ),
+                  const SizedBox(height: 12),
+                  if (r.fromLastRun) ...[
+                    Text('LAST TIME', style: VText.eyebrow),
+                    const SizedBox(height: 6),
+                  ],
+                  Text(r.title, style: VText.doto(34, height: 1)),
+                  const SizedBox(height: 12),
+                  Text(
+                    r.summary,
+                    style: VText.inter(14, weight: 300, height: 1.45),
+                  ),
+                  const SizedBox(height: 16),
+                  Flexible(
+                    child: VOutlined(
+                      radius: 16,
+                      outline: VOutline.dashed,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(r.log, style: VText.mono),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  VButton.secondary('Copy details', onPressed: _copy),
+                  const SizedBox(height: 12),
+                  VButton.primary(
+                    'Back to Moose',
+                    onPressed: CrashLog.instance.dismiss,
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: VLink(
+                      _note ?? 'Save to Downloads',
+                      style: VText.inter(13),
+                      onTap: _save,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
