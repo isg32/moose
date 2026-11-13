@@ -23,8 +23,23 @@ The values match the design canvas ([`design/DESIGN.md`](design/DESIGN.md)), so 
 | Doodles | `MockDoodleRepository` | Doodles, Board | Sunday plans (Aatika is on it), Our flat, Tic tac toe, Moose!. On Neon, boards start empty and sync sealed: create, strokes (added, or the whole board after an undo, erase or lasso), rename, delete, and a live dot while the other person has a board open; each phone keeps them in `moose.json` | Real |
 | Stickers | `MockStickerRepository` | Sticker tray, library, chat | Packs Ours, Moose doodles and Cat chaos (from Aatika); favourites On Neon the library starts with an empty "Ours" and "Saved", is kept in `moose.json`, and photo stickers are cut from real photos and sent sealed through storage. | Real |
 | Memes | `MockMemeRepository` | Meme picker | 16 GIFs, stickers, memes and clips from KLIPY and r/wholesomememes; searchable by title On Neon: Reddit memes from meme-api.com (no key) and KLIPY GIFs, stickers, memes and clips with `MOOSE_KLIPY_KEY` in env.json; a sent meme carries its link. | Real |
-| Songs | `MockMusicRepository` | Music search, range picker, music bubbles | "Sienna" by The Marías and its versions, plus "Yellow" On Neon: YouTube search (youtube_explode_dart) and the 15 s clip played from the stream each phone finds (NewPipe first, as in Idris). | Real |
+| Songs | `MockMusicRepository` | Music search, range picker, music bubbles | "Sienna" by The Marías and its versions, plus "Yellow" On Neon: YouTube search (youtube_explode_dart) and the 15 s clip played from the stream each phone finds (NewPipe first, as in Idris), with a loading spinner and live progress. The range picker's waveform is still made up (see Stand-ins inside widgets). | Partly |
 | Storage | `MockStorageRepository` | Settings, Storage | 1.4 GB across photos, videos, round videos, voice, doodles and wallpapers; 86 MB of cache On Neon: the real sizes of the files the conversation keeps, by kind; Clear deletes them, and Clear cache empties the image and temp caches. | Real |
 | Settings | `lib/data/providers.dart` (`SettingsNotifier`) | Settings, Notifications | App lock on after 30 s, previews off, autoplay GIFs, download on Wi-Fi. On Neon, settings are kept in `moose.json` and "Hide in recent apps" sets FLAG_SECURE | Real |
 | Notifications | `lib/net/push.dart`, `backend/src/push.ts` | System notifications | On Neon, the API sends a data-only Firebase push when a message, moment or call lands. The phone opens the sealed payload and shows "New message" (previews stay off) or the moment on its own channel. Push is on (`backend/firebase-sa.json` is deployed). When Moose is in the background with its live socket still open, it posts the notification itself. When it's closed, the background check (`lib/net/background_check.dart`, a quiet foreground service) looks for sealed mail every 6 min, notifies without taking it, and Settings shows when it last ran | Real |
 | Media art | `VMockArt` in `lib/core/theme/v_colors.dart` | Every photo, video, GIF, sticker and cover | Two-stop gradients from the canvas, standing in for real media | Mock |
+
+## Stand-ins inside widgets
+
+Values drawn straight into a widget rather than read from a repository. They
+are easy to miss when a dataset flips to Real, so each one is listed here and
+checked off when it follows the real thing.
+
+| Stand-in | File | Was | Now | Status |
+| --- | --- | --- | --- | --- |
+| Song clip progress | `lib/features/chat/bubbles.dart` (`_Music`) | Bar stuck at 46 %, "Playing · 0:07", no loading | Spinner and "Loading…" while the stream is found, then the bar and time follow `playbackProvider`; long titles scroll while playing (`VMarquee`) | Real |
+| Voice note progress | `lib/features/chat/bubbles.dart` (`_Voice`) | Wave stuck at 40 % played, length never counted | The wave fills and the time counts up from the player | Real |
+| Round video ring | `lib/features/chat/bubbles.dart` (`_RoundVideo`) | Ring stuck at 38 % | Follows the video player's position | Real |
+| Range picker preview | `lib/features/music/music_pages.dart` | Play icon only, static "Drag the wave" text | Spinner while loading, a playhead crossing the window, "Previewing · 0:04 / 0:15"; moving the wave stops the old preview | Real |
+| Range picker wave | `lib/features/music/music_pages.dart` (`_wave`) | Made-up bars seeded from the video id | — | Mock (YouTube gives no waveform; real one needs decoding the stream) |
+| Round recording limit | `lib/features/chat/composer.dart` | "/ 1:00" | The real limit | Real |

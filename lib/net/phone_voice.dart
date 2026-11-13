@@ -16,6 +16,7 @@ class PhoneVoice implements Voice {
   final _recorder = AudioRecorder();
   AudioPlayer? _player;
   StreamSubscription<PlayerState>? _state;
+  StreamSubscription<Duration>? _position;
   void Function()? _onDone;
 
   @override
@@ -42,13 +43,21 @@ class PhoneVoice implements Voice {
   Future<void> cancel() => _recorder.cancel();
 
   @override
-  Future<void> play(String path, {void Function()? onDone}) async {
+  Future<void> play(
+    String path, {
+    void Function(Duration elapsed)? onTick,
+    void Function()? onDone,
+  }) async {
     await stopPlaying();
     final player = _player ??= AudioPlayer();
     _onDone = onDone;
     await _state?.cancel();
     _state = player.playerStateStream.listen((s) {
       if (s.processingState == ProcessingState.completed) _done();
+    });
+    await _position?.cancel();
+    _position = player.positionStream.listen((p) {
+      if (player.playing) onTick?.call(p);
     });
     await player.setFilePath(path);
     unawaited(player.play());
@@ -62,6 +71,8 @@ class PhoneVoice implements Voice {
 
   @override
   Future<void> stopPlaying() async {
+    await _position?.cancel();
+    _position = null;
     await _player?.stop();
     _done();
   }

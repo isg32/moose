@@ -9,7 +9,9 @@ import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/widgets/v_buttons.dart';
 import '../../core/widgets/v_ink.dart';
+import '../../core/widgets/v_marquee.dart';
 import '../../core/widgets/v_page.dart';
+import '../../core/widgets/v_progress.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
@@ -283,6 +285,12 @@ class _RangePickerPageState extends ConsumerState<RangePickerPage> {
   late final _scroll = ScrollController(initialScrollOffset: 41 * _pps);
   Duration _start = const Duration(seconds: 41);
   bool _playing = false;
+
+  /// Finding and loading the song before any sound.
+  bool _loading = false;
+
+  /// How far into the clip the preview is.
+  Duration _elapsed = Duration.zero;
   Timer? _stop;
 
   late final List<double> _wave = () {
@@ -303,6 +311,8 @@ class _RangePickerPageState extends ConsumerState<RangePickerPage> {
       final s = (_scroll.offset / _pps).round().clamp(0, last).toInt();
       if (s != _start.inSeconds) {
         HapticFeedback.selectionClick();
+        // A new start: the preview playing the old one stops.
+        if (_playing) _preview();
         setState(() => _start = Duration(seconds: s));
       }
     });
@@ -320,30 +330,52 @@ class _RangePickerPageState extends ConsumerState<RangePickerPage> {
 
   void _preview() {
     _stop?.cancel();
-    setState(() => _playing = !_playing);
     final player = _player;
+    final on = !_playing;
+    setState(() {
+      _playing = on;
+      _loading = on;
+      _elapsed = Duration.zero;
+    });
+    void done() {
+      _stop?.cancel();
+      if (mounted) {
+        setState(() {
+          _playing = false;
+          _loading = false;
+          _elapsed = Duration.zero;
+        });
+      }
+    }
+
+    void tick(Duration e) {
+      if (mounted && _playing) {
+        setState(() {
+          _loading = false;
+          _elapsed = e;
+        });
+      }
+    }
+
     if (player != null) {
       // The real clip, from YouTube.
-      if (!_playing) {
+      if (!on) {
         unawaited(player.stop());
         return;
       }
-      unawaited(
-        player.play(
-          widget.song,
-          _start,
-          onDone: () {
-            if (mounted) setState(() => _playing = false);
-          },
-        ),
-      );
+      unawaited(player.play(widget.song, _start, onTick: tick, onDone: done));
       return;
     }
-    if (_playing) {
-      _stop = Timer(_clip, () {
-        if (mounted) setState(() => _playing = false);
-      });
-    }
+    if (!on) return;
+    // The mock: a short load, then a clock.
+    _stop = Timer.periodic(const Duration(milliseconds: 100), (t) {
+      final e = Duration(milliseconds: (t.tick - 8) * 100);
+      if (e >= _clip) {
+        done();
+      } else if (!e.isNegative) {
+        tick(e);
+      }
+    });
   }
 
   @override
@@ -380,12 +412,26 @@ class _RangePickerPageState extends ConsumerState<RangePickerPage> {
                 radius: BorderRadius.circular(28),
               ),
               const SizedBox(height: 16),
-              Text(
-                widget.song.title,
-                style: VText.doto(24),
-                textAlign: TextAlign.center,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Center(
+                  child: VMarquee(
+                    widget.song.title,
+                    style: VText.doto(24),
+                    running: true,
+                  ),
+                ),
               ),
-              Text(widget.song.artist, style: VText.inter(13, weight: 300)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Center(
+                  child: VMarquee(
+                    widget.song.artist,
+                    style: VText.inter(13, weight: 300),
+                    running: true,
+                  ),
+                ),
+              ),
               const Spacer(),
               SizedBox(
                 height: 72,
@@ -426,6 +472,20 @@ class _RangePickerPageState extends ConsumerState<RangePickerPage> {
                         ),
                       ),
                     ),
+                    // The playhead, crossing the window as the preview plays.
+                    if (_playing && !_loading)
+                      Positioned(
+                        left:
+                            side +
+                            window *
+                                (_elapsed.inMilliseconds / _clip.inMilliseconds)
+                                    .clamp(0.0, 1.0) -
+                            1,
+                        width: 2,
+                        top: 6,
+                        bottom: 6,
+                        child: IgnorePointer(child: ColoredBox(color: ink)),
+                      ),
                   ],
                 ),
               ),
@@ -444,8 +504,19 @@ class _RangePickerPageState extends ConsumerState<RangePickerPage> {
               Text.rich(
                 TextSpan(
                   children: [
-                    const TextSpan(text: 'Drag the wave to choose · '),
-                    TextSpan(text: '15 s', style: VText.inter(12, weight: 600)),
+                    TextSpan(
+                      text: _loading
+                          ? 'Loading the song… · '
+                          : _playing
+                          ? 'Previewing · '
+                          : 'Drag the wave to choose · ',
+                    ),
+                    TextSpan(
+                      text: _playing && !_loading
+                          ? '${mss(_elapsed)} / 0:15'
+                          : '15 s',
+                      style: VText.inter(12, weight: 600),
+                    ),
                   ],
                 ),
                 style: VText.secondary,
@@ -458,10 +529,19 @@ class _RangePickerPageState extends ConsumerState<RangePickerPage> {
                     Semantics(
                       button: true,
                       label: _playing ? 'Stop preview' : 'Play preview',
-                      child: VCircleButton(
-                        icon: _playing ? VIcon.pause : VIcon.play,
-                        size: 54,
-                        onTap: _preview,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          VCircleButton(
+                            icon: _playing ? VIcon.pause : VIcon.play,
+                            size: 54,
+                            onTap: _preview,
+                          ),
+                          if (_loading)
+                            const IgnorePointer(
+                              child: VSpinner(size: 54, strokeWidth: 2.5),
+                            ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 10),

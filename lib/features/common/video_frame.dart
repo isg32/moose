@@ -6,10 +6,18 @@ import 'package:video_player/video_player.dart';
 /// A round video note's file in its circle: still on its first frame, and
 /// playing (with sound) while [playing].
 class RoundPlayer extends StatefulWidget {
-  const RoundPlayer(this.path, {super.key, required this.playing});
+  const RoundPlayer(
+    this.path, {
+    super.key,
+    required this.playing,
+    this.progress,
+  });
 
   final String path;
   final bool playing;
+
+  /// Set to how far through it is (0–1) as it plays, for its ring.
+  final ValueNotifier<double>? progress;
 
   @override
   State<RoundPlayer> createState() => _RoundPlayerState();
@@ -20,9 +28,20 @@ class _RoundPlayerState extends State<RoundPlayer> {
     File(widget.path),
   );
 
+  void _report() {
+    final v = _c.value;
+    final p = widget.progress;
+    if (p == null || !v.isInitialized || v.duration == Duration.zero) return;
+    p.value = (v.position.inMilliseconds / v.duration.inMilliseconds).clamp(
+      0.0,
+      1.0,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
+    _c.addListener(_report);
     _c.initialize().then((_) {
       if (!mounted) return;
       setState(() {});
@@ -45,6 +64,7 @@ class _RoundPlayerState extends State<RoundPlayer> {
 
   @override
   void dispose() {
+    _c.removeListener(_report);
     _c.dispose();
     super.dispose();
   }

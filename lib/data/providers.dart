@@ -75,8 +75,13 @@ abstract interface class Voice {
   /// Stops and throws the recording away.
   Future<void> cancel();
 
-  /// Plays [path]; [onDone] runs when it ends or is stopped.
-  Future<void> play(String path, {void Function()? onDone});
+  /// Plays [path]; [onTick] gives how far in it is while it plays, and
+  /// [onDone] runs when it ends or is stopped.
+  Future<void> play(
+    String path, {
+    void Function(Duration elapsed)? onTick,
+    void Function()? onDone,
+  });
 
   Future<void> stopPlaying();
 }
@@ -86,13 +91,50 @@ final voiceProvider = Provider<Voice?>((ref) => null);
 /// Plays a song's 15 s clip from YouTube. Null on the mock, where a timer
 /// stands in.
 abstract interface class SongPlayer {
-  /// Plays [song] from [start] for 15 s; [onDone] runs when it stops.
-  Future<void> play(Song song, Duration start, {void Function()? onDone});
+  /// Plays [song] from [start] for 15 s. [onTick] gives how far into the
+  /// clip it is, from when sound starts (before that it is still finding
+  /// and loading the stream); [onDone] runs when it stops.
+  Future<void> play(
+    Song song,
+    Duration start, {
+    void Function(Duration elapsed)? onTick,
+    void Function()? onDone,
+  });
 
   Future<void> stop();
 }
 
 final songPlayerProvider = Provider<SongPlayer?>((ref) => null);
+
+/// What is playing in the chat (a voice note or a song clip): which
+/// message, whether it is still loading, and how far in it is.
+class Playback {
+  const Playback(this.id, {this.loading = false, this.elapsed = Duration.zero});
+
+  final String id;
+  final bool loading;
+  final Duration elapsed;
+}
+
+final playbackProvider = NotifierProvider<PlaybackNotifier, Playback?>(
+  PlaybackNotifier.new,
+);
+
+class PlaybackNotifier extends Notifier<Playback?> {
+  @override
+  Playback? build() => null;
+
+  void start(String id, {bool loading = false}) =>
+      state = Playback(id, loading: loading);
+
+  void tick(String id, Duration elapsed) {
+    if (state?.id == id) state = Playback(id, elapsed: elapsed);
+  }
+
+  void stop(String id) {
+    if (state?.id == id) state = null;
+  }
+}
 
 /// The front camera for round video notes. Null on the mock, where the
 /// circle shows stand-in art.

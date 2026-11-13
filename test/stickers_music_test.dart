@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moose/app/app.dart';
 import 'package:moose/core/icons/v_icons.dart';
+import 'package:moose/core/widgets/v_progress.dart';
 import 'package:moose/data/models.dart';
 import 'package:moose/data/providers.dart';
 
@@ -74,8 +75,42 @@ void main() {
     await frames(t);
     expect(find.text('0:41'), findsOneWidget);
     expect(find.text('0:56'), findsOneWidget);
+    // The preview loads (spinner), then counts through the clip.
+    await t.tap(find.bySemanticsLabel('Play preview'));
+    await t.pump(const Duration(milliseconds: 300));
+    expect(find.byType(VSpinner), findsOneWidget);
+    expect(find.textContaining('Loading the song'), findsOneWidget);
+    await frames(t, 2600);
+    expect(find.byType(VSpinner), findsNothing);
+    expect(find.textContaining(RegExp(r'0:0[1-3] / 0:15')), findsOneWidget);
+    await t.tap(find.bySemanticsLabel('Stop preview'));
+    await frames(t);
     await t.tap(find.text('Send to Aatika'));
     await frames(t);
+
+    // In the chat its bubble loads, then plays: the time moves on.
+    await t.tap(find.text('Sienna').last);
+    await frames(t, 1500);
+    final play = find.descendant(
+      of: find
+          .ancestor(
+            of: find.text('0:41 – 0:56').last,
+            matching: find.byType(Column),
+          )
+          .first,
+      matching: find.byWidgetPredicate(
+        (w) => w is VIconView && w.icon == VIcon.play,
+      ),
+    );
+    await t.tap(play);
+    await t.pump(const Duration(milliseconds: 300));
+    expect(find.text('Loading…'), findsOneWidget);
+    await frames(t, 2600);
+    expect(find.text('Loading…'), findsNothing);
+    expect(find.textContaining('Playing · 0:0'), findsOneWidget);
+    final first = c.read(playbackProvider)!.elapsed;
+    await frames(t, 1000);
+    expect(c.read(playbackProvider)!.elapsed, greaterThan(first));
     final body = c.read(messagesProvider).last.body as MusicBody;
     expect(body.song.title, 'Sienna');
     expect(body.start, const Duration(seconds: 41));

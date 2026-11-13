@@ -37,6 +37,7 @@ class YouTubeSongs implements MusicRepository, SongPlayer {
   Future<void> play(
     Song song,
     Duration start, {
+    void Function(Duration elapsed)? onTick,
     void Function()? onDone,
   }) async {
     await stop();
@@ -60,7 +61,13 @@ class YouTubeSongs implements MusicRepository, SongPlayer {
       }
       final end = start + const Duration(seconds: 15);
       _position = _player.positionStream.listen((p) {
-        if (p >= end) unawaited(stop());
+        if (p >= end) {
+          unawaited(stop());
+        } else if (_player.playing &&
+            _player.processingState == ProcessingState.ready) {
+          // Sound is coming: past loading.
+          onTick?.call(p - start < Duration.zero ? Duration.zero : p - start);
+        }
       });
       unawaited(_player.play());
     } on Object {

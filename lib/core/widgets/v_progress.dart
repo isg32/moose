@@ -420,3 +420,75 @@ class VDashedRule extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _DashedLine(color: VInk.of(context));
 }
+
+/// Loading: a quarter arc going round on a dotted track, in the ink.
+class VSpinner extends StatefulWidget {
+  const VSpinner({super.key, this.size = 20, this.strokeWidth = 2});
+
+  final double size;
+  final double strokeWidth;
+
+  @override
+  State<VSpinner> createState() => _VSpinnerState();
+}
+
+class _VSpinnerState extends State<VSpinner>
+    with SingleTickerProviderStateMixin {
+  late final _turn = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _turn.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: 'Loading',
+    child: RotationTransition(
+      turns: _turn,
+      child: CustomPaint(
+        size: Size.square(widget.size),
+        painter: _ArcPainter(VInk.of(context), widget.strokeWidth),
+      ),
+    ),
+  );
+}
+
+class _ArcPainter extends CustomPainter {
+  _ArcPainter(this.ink, this.stroke);
+  final Color ink;
+  final double stroke;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = (Offset.zero & size).deflate(stroke / 2);
+    canvas.drawArc(
+      rect,
+      0,
+      2 * math.pi,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..color = ink.withValues(alpha: 0.25),
+    );
+    canvas.drawArc(
+      rect,
+      -math.pi / 2,
+      math.pi * 0.6,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round
+        ..color = ink,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ArcPainter old) => old.ink != ink || old.stroke != stroke;
+}

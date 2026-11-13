@@ -133,58 +133,53 @@ class ChatPageState extends ConsumerState<ChatPage> {
 
   void _play(Message m, Duration length) {
     _playTimer?.cancel();
+    final playback = ref.read(playbackProvider.notifier);
     final songs = ref.read(songPlayerProvider);
-    if (songs != null && m.body is MusicBody) {
-      final b = m.body as MusicBody;
-      unawaited(songs.stop());
-      if (_playing == m.id) {
-        setState(() => _playing = null);
-        return;
-      }
-      setState(() => _playing = m.id);
-      unawaited(
-        songs.play(
-          b.song,
-          b.start,
-          onDone: () {
-            if (mounted && _playing == m.id) setState(() => _playing = null);
-          },
-        ),
-      );
-      return;
-    }
     final voice = ref.read(voiceProvider);
     final file = switch (m.body) {
       VoiceBody(:final path) => path,
       _ => null,
     };
-    if (voice != null && file != null) {
-      // A real recording: play it, and the bubble follows the player.
-      unawaited(voice.stopPlaying());
-      if (_playing == m.id) {
-        setState(() => _playing = null);
-        return;
-      }
-      setState(() => _playing = m.id);
-      if (!m.fromMe) _messages.played(m.id);
-      unawaited(
-        voice.play(
-          file,
-          onDone: () {
-            if (mounted && _playing == m.id) setState(() => _playing = null);
-          },
-        ),
-      );
-      return;
-    }
-    if (_playing == m.id) {
+    final song = m.body is MusicBody;
+    // Whatever else was playing stops first.
+    if (songs != null) unawaited(songs.stop());
+    if (voice != null) unawaited(voice.stopPlaying());
+    final again = _playing == m.id;
+    if (_playing != null) playback.stop(_playing!);
+    if (again) {
       setState(() => _playing = null);
       return;
     }
-    if (m.body is VoiceBody) _messages.played(m.id);
     setState(() => _playing = m.id);
-    _playTimer = Timer(length, () {
-      if (mounted) setState(() => _playing = null);
+    if (m.body is VoiceBody && !m.fromMe) _messages.played(m.id);
+    // A song finds and loads its stream before any sound: show that.
+    playback.start(m.id, loading: song);
+    void tick(Duration e) => playback.tick(m.id, e);
+    void done() {
+      playback.stop(m.id);
+      if (mounted && _playing == m.id) setState(() => _playing = null);
+    }
+
+    if (song && songs != null) {
+      final b = m.body as MusicBody;
+      unawaited(songs.play(b.song, b.start, onTick: tick, onDone: done));
+      return;
+    }
+    if (voice != null && file != null) {
+      // A real recording: the bubble follows the player.
+      unawaited(voice.play(file, onTick: tick, onDone: done));
+      return;
+    }
+    // The mock: a clock stands in, after a short load for songs.
+    final load = song ? 8 : 0; // ticks
+    _playTimer = Timer.periodic(const Duration(milliseconds: 100), (t) {
+      final e = Duration(milliseconds: (t.tick - load) * 100);
+      if (e >= length) {
+        t.cancel();
+        done();
+      } else if (!e.isNegative) {
+        tick(e);
+      }
     });
   }
 

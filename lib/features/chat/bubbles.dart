@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_colors.dart';
@@ -7,9 +8,11 @@ import '../../core/theme/v_text.dart';
 import '../../core/widgets/v_buttons.dart';
 import '../../core/widgets/v_glass.dart';
 import '../../core/widgets/v_ink.dart';
+import '../../core/widgets/v_marquee.dart';
 import '../../core/widgets/v_progress.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
+import '../../data/providers.dart' show Playback, playbackProvider;
 import '../common/art.dart';
 import '../common/video_frame.dart';
 import '../common/parts.dart';
@@ -686,7 +689,7 @@ class _Video extends StatelessWidget {
 
 /// A round video note (B6): a circle, no bubble, with its progress ring
 /// while playing, or muted autoplay.
-class _RoundVideo extends StatelessWidget {
+class _RoundVideo extends StatefulWidget {
   const _RoundVideo(
     this.m,
     this.video, {
@@ -698,6 +701,25 @@ class _RoundVideo extends StatelessWidget {
   final Media video;
   final bool playing;
   final VoidCallback onTap;
+
+  @override
+  State<_RoundVideo> createState() => _RoundVideoState();
+}
+
+class _RoundVideoState extends State<_RoundVideo> {
+  /// How far through the video is, for the ring.
+  final _progress = ValueNotifier<double>(0);
+
+  @override
+  void dispose() {
+    _progress.dispose();
+    super.dispose();
+  }
+
+  Message get m => widget.m;
+  Media get video => widget.video;
+  bool get playing => widget.playing;
+  VoidCallback get onTap => widget.onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -720,14 +742,29 @@ class _RoundVideo extends StatelessWidget {
                       ? ArtBox(art: video.art, width: size, height: size)
                       : SizedBox.square(
                           dimension: size,
-                          child: RoundPlayer(video.path!, playing: playing),
+                          child: RoundPlayer(
+                            video.path!,
+                            playing: playing,
+                            progress: _progress,
+                          ),
                         ),
                 ),
-                VRing(
-                  value: playing ? 0.38 : 0,
-                  size: size + 8,
-                  strokeWidth: 4,
-                ),
+                if (!playing)
+                  VRing(value: 0, size: size + 8, strokeWidth: 4)
+                else if (video.path != null)
+                  ValueListenableBuilder(
+                    valueListenable: _progress,
+                    builder: (context, p, _) =>
+                        VRing(value: p, size: size + 8, strokeWidth: 4),
+                  )
+                else
+                  // The mock has no player: the ring runs on a clock.
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
+                    duration: video.duration ?? const Duration(seconds: 10),
+                    builder: (context, p, _) =>
+                        VRing(value: p, size: size + 8, strokeWidth: 4),
+                  ),
                 if (!playing)
                   const OnMedia(
                     child: VIconView(
@@ -780,17 +817,29 @@ class _Voice extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: WaveBars(v.wave, played: playing ? 0.4 : 0),
+                child: _Progress(
+                  m.id,
+                  playing: playing,
+                  builder: (p) => FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: WaveBars(v.wave, played: _share(p, v.length)),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(mss(v.length), style: VText.doto(13)),
+                  // Counts up while it plays.
+                  _Progress(
+                    m.id,
+                    playing: playing,
+                    builder: (p) => Text(
+                      mss(p == null ? v.length : p.elapsed),
+                      style: VText.doto(13),
+                    ),
+                  ),
                   const SizedBox(height: 3),
                   Opacity(
                     opacity: v.played || m.fromMe ? 0 : 1,
@@ -815,7 +864,8 @@ class _Voice extends StatelessWidget {
   }
 }
 
-/// A 15 s song clip (B8): resolving, playing, or not playable now.
+/// A 15 s song clip (B8): loading, playing (the bar and time follow the
+/// clip, a long title scrolls), or not playable now.
 class _Music extends StatelessWidget {
   const _Music(this.m, this.b, {required this.playing, required this.onPlay});
 
@@ -824,71 +874,131 @@ class _Music extends StatelessWidget {
   final bool playing;
   final VoidCallback onPlay;
 
+  static const _clip = Duration(seconds: 15);
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 262,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+      child: _Progress(
+        m.id,
+        playing: playing,
+        builder: (p) {
+          final loading = p?.loading ?? false;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              ArtBox(
-                art: b.song.art,
-                url: b.song.thumb,
-                width: 48,
-                height: 48,
-                radius: BorderRadius.circular(12),
+              Row(
+                children: [
+                  ArtBox(
+                    art: b.song.art,
+                    url: b.song.thumb,
+                    width: 48,
+                    height: 48,
+                    radius: BorderRadius.circular(12),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        VMarquee(
+                          b.song.title,
+                          style: VText.inter(14, weight: 600),
+                          running: playing,
+                        ),
+                        VMarquee(
+                          b.song.artist,
+                          style: VText.inter(12, weight: 300),
+                          running: playing,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Opacity(
+                    opacity: b.unavailable ? 0.35 : 1,
+                    child: SizedBox.square(
+                      dimension: 36,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          VCircleButton(
+                            icon: b.unavailable
+                                ? VIcon.warning
+                                : playing
+                                ? VIcon.pause
+                                : VIcon.play,
+                            size: 36,
+                            onTap: b.unavailable ? null : onPlay,
+                          ),
+                          // Finding and loading the song: round the button.
+                          if (loading)
+                            const IgnorePointer(
+                              child: VSpinner(size: 36, strokeWidth: 2),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(b.song.title, style: VText.inter(14, weight: 600)),
-                    Text(b.song.artist, style: VText.inter(12, weight: 300)),
-                  ],
-                ),
+              const SizedBox(height: 10),
+              VBar(value: _share(p, _clip), height: 4),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Text(
+                    '${mss(b.start)} – ${mss(b.end)}',
+                    style: VText.inter(11, weight: 300),
+                  ),
+                  const Spacer(),
+                  Text(
+                    b.unavailable
+                        ? "Can't play right now"
+                        : loading
+                        ? 'Loading…'
+                        : p != null
+                        ? 'Playing · ${mss(p.elapsed)}'
+                        : '15 s',
+                    style: VText.inter(11, weight: 300),
+                  ),
+                ],
               ),
-              Opacity(
-                opacity: b.unavailable ? 0.35 : 1,
-                child: VCircleButton(
-                  icon: b.unavailable
-                      ? VIcon.warning
-                      : playing
-                      ? VIcon.pause
-                      : VIcon.play,
-                  size: 36,
-                  onTap: b.unavailable ? null : onPlay,
-                ),
-              ),
+              const SizedBox(height: 4),
+              Align(alignment: Alignment.centerRight, child: _Meta(m)),
             ],
-          ),
-          const SizedBox(height: 10),
-          VBar(value: playing ? 0.46 : 0, height: 4),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Text(
-                '${mss(b.start)} – ${mss(b.end)}',
-                style: VText.inter(11, weight: 300),
-              ),
-              const Spacer(),
-              Text(
-                b.unavailable
-                    ? "Can't play right now"
-                    : playing
-                    ? 'Playing · 0:07'
-                    : '15 s',
-                style: VText.inter(11, weight: 300),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Align(alignment: Alignment.centerRight, child: _Meta(m)),
-        ],
+          );
+        },
       ),
+    );
+  }
+}
+
+/// How far through [length] playback is (0 when it isn't playing).
+double _share(Playback? p, Duration length) =>
+    p == null || length == Duration.zero
+    ? 0
+    : (p.elapsed.inMilliseconds / length.inMilliseconds).clamp(0.0, 1.0);
+
+/// Rebuilds [builder] with the chat's playback while [id] is the one
+/// playing (null otherwise), so only the playing bubble redraws as it goes.
+class _Progress extends StatelessWidget {
+  const _Progress(this.id, {required this.playing, required this.builder});
+
+  final String id;
+  final bool playing;
+  final Widget Function(Playback? p) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!playing) return builder(null);
+    return Consumer(
+      builder: (context, ref, _) {
+        final p = ref.watch(playbackProvider);
+        return builder(p?.id == id ? p : null);
+      },
     );
   }
 }
