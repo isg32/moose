@@ -668,6 +668,7 @@ class AppSettings {
     this.appLock = true,
     this.lockAfter = LockAfter.s30,
     this.hideInRecents = false,
+    this.solidPanels = false,
   });
 
   final bool enterSends;
@@ -678,6 +679,9 @@ class AppSettings {
   final LockAfter lockAfter;
   final bool hideInRecents;
 
+  /// Sheets, cards and the composer solid, not see-through.
+  final bool solidPanels;
+
   Map<String, Object?> toJson() => {
     'enterSends': enterSends,
     'autoplayGifs': autoplayGifs,
@@ -686,6 +690,7 @@ class AppSettings {
     'appLock': appLock,
     'lockAfter': lockAfter.name,
     'hideInRecents': hideInRecents,
+    'solidPanels': solidPanels,
   };
 
   factory AppSettings.fromJson(Map<String, Object?> j) {
@@ -699,6 +704,7 @@ class AppSettings {
       appLock: j['appLock'] as bool? ?? d.appLock,
       lockAfter: LockAfter.values.asNameMap()[j['lockAfter']] ?? d.lockAfter,
       hideInRecents: j['hideInRecents'] as bool? ?? d.hideInRecents,
+      solidPanels: j['solidPanels'] as bool? ?? d.solidPanels,
     );
   }
 
@@ -710,6 +716,7 @@ class AppSettings {
     bool? appLock,
     LockAfter? lockAfter,
     bool? hideInRecents,
+    bool? solidPanels,
   }) => AppSettings(
     enterSends: enterSends ?? this.enterSends,
     autoplayGifs: autoplayGifs ?? this.autoplayGifs,
@@ -718,5 +725,6 @@ class AppSettings {
     appLock: appLock ?? this.appLock,
     lockAfter: lockAfter ?? this.lockAfter,
     hideInRecents: hideInRecents ?? this.hideInRecents,
+    solidPanels: solidPanels ?? this.solidPanels,
   );
 }

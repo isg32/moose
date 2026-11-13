@@ -9,7 +9,6 @@ import '../../core/theme/v_colors.dart';
 import '../../core/theme/v_palette.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/widgets/v_buttons.dart';
-import '../../core/widgets/v_page.dart';
 import '../../core/widgets/v_surface.dart';
 
 /// What each moment says and does (DESIGN.md › Moment colours).
@@ -174,13 +173,11 @@ class _MomentBurstState extends State<MomentBurst>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // The soft wallpaper, not a live blur of the chat: no per-frame
-          // cost and no blip as it comes in (see VVeil).
+          // No blur: the scrim and the moment's wash over the chat.
           RepaintBoundary(
             child: Stack(
               fit: StackFit.expand,
               children: [
-                ?VVeilBackdrop.of(context),
                 ColoredBox(
                   color: palette.popupScrim,
                   child: DecoratedBox(

@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_colors.dart';
+import '../../core/theme/v_palette.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/widgets/v_buttons.dart';
+import '../../core/widgets/v_glass.dart';
 import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_marquee.dart';
 import '../../core/widgets/v_progress.dart';
@@ -1089,7 +1091,7 @@ class _StickerMessage extends StatelessWidget {
         // A plain chip, no blur.
         DecoratedBox(
           decoration: BoxDecoration(
-            color: VInk.surfaceOf(context).withValues(alpha: 0.78),
+            color: VGlass.fill(context, VPalette.of(context).glassSheet),
             borderRadius: BorderRadius.circular(999),
           ),
           child: Padding(

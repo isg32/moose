@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme/v_theme.dart';
+import '../core/widgets/v_glass.dart';
 import '../data/providers.dart';
 import '../features/crash_overlay.dart';
 import '../features/lock/lock_pages.dart';
@@ -93,21 +94,27 @@ class _MooseAppState extends ConsumerState<MooseApp> {
       routerConfig: _router,
       builder: (context, child) => MooseTheme(
         theme: theme,
-        child: CrashOverlay(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Locked or starting, the app stays alive underneath but is
-              // neither shown nor reachable.
-              Offstage(
-                offstage: locked || _splash,
-                child: TickerMode(enabled: !locked && !_splash, child: child!),
-              ),
-              if (_splash)
-                const SplashView()
-              else if (locked)
-                const LockScreen(),
-            ],
+        child: VPanels(
+          isSolid: ref.watch(settingsProvider.select((s) => s.solidPanels)),
+          child: CrashOverlay(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Locked or starting, the app stays alive underneath but is
+                // neither shown nor reachable.
+                Offstage(
+                  offstage: locked || _splash,
+                  child: TickerMode(
+                    enabled: !locked && !_splash,
+                    child: child!,
+                  ),
+                ),
+                if (_splash)
+                  const SplashView()
+                else if (locked)
+                  const LockScreen(),
+              ],
+            ),
           ),
         ),
       ),

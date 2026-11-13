@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moose/app/app.dart';
 import 'package:moose/app/router.dart';
+import 'package:moose/core/widgets/v_controls.dart';
+import 'package:moose/core/widgets/v_list.dart';
 import 'package:moose/data/models.dart';
 import 'package:moose/data/providers.dart';
 import 'package:moose/features/onboarding/onboarding_pages.dart';
@@ -66,11 +68,11 @@ void main() {
 
     // About: Idris's layout, with the developer.
     await t.scrollUntilVisible(
-      find.text('Version 0.27.0 · licences, developer'),
+      find.text('Version 0.28.0 · licences, developer'),
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    await t.tap(find.text('Version 0.27.0 · licences, developer'));
+    await t.tap(find.text('Version 0.28.0 · licences, developer'));
     await frames(t);
     expect(find.text('Moose'), findsWidgets);
     await t.scrollUntilVisible(
@@ -82,12 +84,33 @@ void main() {
     Navigator.of(t.element(find.byType(AboutPage))).pop();
     await frames(t);
 
+    // Look › Solid panels.
+    await t.scrollUntilVisible(
+      find.text('Solid panels'),
+      -300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await t.tap(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('Solid panels'),
+          matching: find.byType(VListRow),
+        ),
+        matching: find.byType(VSwitch),
+      ),
+    );
+    await frames(t, 200);
+    expect(c.read(settingsProvider).solidPanels, isTrue);
+
     // Partner › Unpair, typed to confirm, lands on Welcome.
     await t.scrollUntilVisible(
       find.text('Aatika'),
       -300,
       scrollable: find.byType(Scrollable).first,
     );
+    // Clear of the status bar at the top.
+    await t.drag(find.byType(Scrollable).first, const Offset(0, 220));
+    await frames(t);
     await t.tap(find.text('Aatika'));
     await frames(t);
     await t.scrollUntilVisible(

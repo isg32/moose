@@ -1,9 +1,11 @@
 import 'package:flutter/widgets.dart';
 
 import '../../core/icons/v_icons.dart';
+import '../../core/theme/v_palette.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/theme/v_tokens.dart';
 import '../../core/widgets/v_buttons.dart';
+import '../../core/widgets/v_glass.dart';
 import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
@@ -169,7 +171,7 @@ class SystemPill extends StatelessWidget {
       outline: dashed ? VOutline.dashed : VOutline.solid,
       color: borderColor,
       // No blur in the chat: a plain paper backing keeps it readable.
-      fill: tint ?? VInk.surfaceOf(context).withValues(alpha: 0.78),
+      fill: tint ?? VGlass.fill(context, VPalette.of(context).glassSheet),
       child: Padding(
         padding: padding,
         child: DefaultTextStyle.merge(

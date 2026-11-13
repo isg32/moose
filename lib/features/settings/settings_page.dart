@@ -196,6 +196,21 @@ class SettingsPage extends ConsumerWidget {
             ),
           ],
         ),
+        const VEyebrow('Look'),
+        VListSection(
+          children: [
+            VListRow(
+              title: 'Solid panels',
+              subtitle: settings.solidPanels
+                  ? 'Sheets, cards and the composer are solid'
+                  : 'Sheets, cards and the composer let the wallpaper through',
+              trailing: VSwitch(
+                value: settings.solidPanels,
+                onChanged: (v) => s.update((x) => x.copyWith(solidPanels: v)),
+              ),
+            ),
+          ],
+        ),
         const VEyebrow('Notifications'),
         VListSection(
           children: [

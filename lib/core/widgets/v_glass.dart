@@ -1,6 +1,6 @@
-import 'dart:ui';
-
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../icons/v_icons.dart';
@@ -9,10 +9,14 @@ import '../theme/v_palette.dart';
 import '../theme/v_text.dart';
 import '../theme/v_tokens.dart';
 import 'v_ink.dart';
+import 'v_page.dart' show VVeilBackdrop;
 import 'v_surface.dart';
 
-/// Frosted glass: the only translucency in the app. It blurs what is behind
-/// it, adds one of the named tints from [VColors] and a 1 px border.
+/// A panel over the wallpaper: sheets, cards, the composer, chips.
+///
+/// No blur: it is see-through (a semi-transparent paper) or solid, as the
+/// person picks in Settings ([VPanels]). Only the tab pill is [frosted]:
+/// the soft wallpaper behind it, with the tint over it.
 class VGlass extends StatelessWidget {
   const VGlass({
     super.key,
@@ -22,44 +26,80 @@ class VGlass extends StatelessWidget {
     this.blur,
     this.border = true,
     this.borderRadius,
+    this.frosted = false,
   });
 
   final Widget child;
   final double radius;
 
-  /// Defaults to the tab-bar glass for the current brightness.
+  /// One of the palette's glass tints (bar, card, sheet), which picks how
+  /// see-through it is, or any other colour, used as it is.
   final Color? tint;
 
-  /// Defaults to the layout's glass strength.
+  /// Unused since panels stopped blurring; kept so callers still read.
   final double? blur;
   final bool border;
 
   /// Overrides [radius] for shapes like a sheet with only top corners.
   final BorderRadius? borderRadius;
 
+  /// The soft wallpaper behind it (the tab pill).
+  final bool frosted;
+
+  /// The fill for [tint] in the current panel style.
+  static Color fill(BuildContext context, Color? tint) {
+    final palette = VPalette.of(context);
+    final paper = VInk.surfaceOf(context);
+    final t = tint ?? palette.glassBar;
+    final sheet = t == palette.glassSheet;
+    final glass = sheet || t == palette.glassBar || t == palette.glassCard;
+    if (!glass) return t;
+    if (VPanels.solid(context)) return paper;
+    return paper.withValues(alpha: sheet ? 0.72 : 0.5);
+  }
+
   @override
   Widget build(BuildContext context) {
     final shape = borderRadius ?? BorderRadius.circular(radius);
+    final box = DecoratedBox(
+      decoration: BoxDecoration(
+        color: frosted
+            ? (tint ?? VPalette.of(context).glassBar)
+            : fill(context, tint),
+        borderRadius: shape,
+        border: border
+            ? Border.all(color: VInk.of(context), width: VSpace.hairline)
+            : null,
+      ),
+      child: child,
+    );
+    if (!frosted) return box;
     return ClipRRect(
       borderRadius: shape,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: blur ?? VPalette.of(context).blur,
-          sigmaY: blur ?? VPalette.of(context).blur,
-        ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: tint ?? VPalette.of(context).glassBar,
-            borderRadius: shape,
-            border: border
-                ? Border.all(color: VInk.of(context), width: VSpace.hairline)
-                : null,
-          ),
-          child: child,
-        ),
+      child: Stack(
+        children: [
+          // The soft wallpaper where it sits, not a live blur: it looks
+          // frosted and never pops in or out as pages and tabs move.
+          const Positioned.fill(child: VSoftBehind()),
+          box,
+        ],
       ),
     );
   }
+}
+
+/// How panels ([VGlass]) are filled: see-through or solid. Set over the
+/// app from the person's settings.
+class VPanels extends InheritedWidget {
+  const VPanels({super.key, required this.isSolid, required super.child});
+
+  final bool isSolid;
+
+  static bool solid(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<VPanels>()?.isSolid ?? false;
+
+  @override
+  bool updateShouldNotify(VPanels old) => old.isSolid != isSolid;
 }
 
 /// One tab of [VTabBar].
@@ -235,6 +275,7 @@ class _VTabBarState extends State<VTabBar> with SingleTickerProviderStateMixin {
           width: widget.stretch ? double.infinity : _naturalWidth(scaler),
           child: VGlass(
             radius: _barHeight / 2,
+            frosted: true,
             child: SizedBox(
               height: _barHeight,
               child: Padding(
@@ -580,126 +621,189 @@ class VTextField extends StatelessWidget {
 /// Which screen edge a [VEdgeBlur] sits on.
 enum VEdge { top, bottom }
 
-/// Progressive blur along a screen edge, as on iOS: strongest at the edge
-/// and easing smoothly to nothing [fade] away from it, with no seam, so
-/// content can scroll underneath while what sits on the edge stays readable.
+/// The soft edge along the top or bottom of the screen: strongest at the
+/// edge and easing to nothing [fade] away from it, so content scrolling
+/// underneath softens away while what sits on the edge stays readable.
 ///
-/// A fragment shader (`shaders/progressive_blur.frag`) varies the blur
-/// radius with distance from the edge. Where shader filters are not
-/// supported, a single light blur covers just [solid]. A soft paper-coloured
-/// gradient sits on top.
-class VEdgeBlur extends StatefulWidget {
+/// It is the soft wallpaper ([VSoftBehind]) under a paper-coloured
+/// gradient, faded out with a mask: no live blur, so it looks the same on
+/// every frame of every transition.
+class VEdgeBlur extends StatelessWidget {
   const VEdgeBlur({
     super.key,
     required this.edge,
     required this.solid,
     this.fade = VEdgeBlur.standardFade,
-    this.maxRadius = 18,
   });
 
   final VEdge edge;
 
   /// The part right at the edge (the status bar, or the tab bar and gesture
-  /// area) where the blur is at or near its strongest.
+  /// area) where it is solid.
   final double solid;
 
-  /// How far beyond [solid] the blur eases out.
+  /// How far beyond [solid] it eases out.
   final double fade;
 
-  /// Blur radius at the edge, in logical pixels.
-  final double maxRadius;
-
-  /// The one fade every edge uses, top and bottom, on every tab, so the
-  /// blur reads the same wherever you are.
+  /// The one fade every edge uses, top and bottom, on every screen.
   static const standardFade = 40.0;
-
-  static Future<FragmentProgram>? _program;
-
-  @override
-  State<VEdgeBlur> createState() => _VEdgeBlurState();
-}
-
-class _VEdgeBlurState extends State<VEdgeBlur> {
-  FragmentShader? _shader;
-
-  @override
-  void initState() {
-    super.initState();
-    if (ImageFilter.isShaderFilterSupported) {
-      VEdgeBlur._program ??= FragmentProgram.fromAsset(
-        'shaders/progressive_blur.frag',
-      );
-      VEdgeBlur._program!.then((p) {
-        if (mounted) setState(() => _shader = p.fragmentShader());
-      }, onError: (Object _) {});
-    }
-  }
-
-  @override
-  void dispose() {
-    _shader?.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.solid <= 0) return const SizedBox.shrink();
-    final top = widget.edge == VEdge.top;
-    final height = widget.solid + widget.fade;
-    final ratio = MediaQuery.devicePixelRatioOf(context);
+    if (solid <= 0) return const SizedBox.shrink();
+    final top = edge == VEdge.top;
+    final height = solid + fade;
     final paper = VInk.surfaceOf(context);
-
-    final shader = _shader;
-    final ImageFilter filter;
-    if (shader != null) {
-      // Uniforms 0–1 (the texture size) are set by the engine.
-      shader
-        ..setFloat(2, height * ratio)
-        ..setFloat(3, widget.maxRadius * ratio)
-        ..setFloat(4, top ? 0 : 1);
-      filter = ImageFilter.shader(shader);
-    } else {
-      filter = ImageFilter.blur(sigmaX: 4, sigmaY: 4);
-    }
-    // Without the shader the fallback blur covers only the solid part.
-    final inset = shader == null ? widget.fade : 0.0;
-
+    final begin = top ? Alignment.topCenter : Alignment.bottomCenter;
+    final end = top ? Alignment.bottomCenter : Alignment.topCenter;
+    final stops = [0.0, solid / height, 1.0];
     return IgnorePointer(
-      child: SizedBox(
-        height: height,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              top: top ? 0 : inset,
-              bottom: top ? inset : 0,
-              child: ClipRect(
-                child: BackdropFilter(
-                  filter: filter,
-                  child: const SizedBox.expand(),
-                ),
-              ),
-            ),
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: top ? Alignment.topCenter : Alignment.bottomCenter,
-                    end: top ? Alignment.bottomCenter : Alignment.topCenter,
-                    colors: [
-                      paper.withValues(alpha: 0.55),
-                      paper.withValues(alpha: 0.25),
-                      paper.withValues(alpha: 0),
-                    ],
-                    stops: [0, widget.solid / height, 1],
+      child: RepaintBoundary(
+        child: SizedBox(
+          height: height,
+          child: ShaderMask(
+            blendMode: BlendMode.dstIn,
+            shaderCallback: (r) => LinearGradient(
+              begin: begin,
+              end: end,
+              colors: const [VColors.black, VColors.black, VColors.transparent],
+              stops: stops,
+            ).createShader(r),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                const VSoftBehind(),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: begin,
+                      end: end,
+                      colors: [
+                        paper.withValues(alpha: 0.45),
+                        paper.withValues(alpha: 0.2),
+                        paper.withValues(alpha: 0),
+                      ],
+                      stops: stops,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+/// The soft (blurred-looking) wallpaper, lined up with the screen, painted
+/// in whatever box this fills: frosted glass without a live blur. Empty
+/// where there is no [VVeilBackdrop] (tests).
+class VSoftBehind extends StatelessWidget {
+  const VSoftBehind({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final soft = VVeilBackdrop.of(context);
+    if (soft == null) return const SizedBox.expand();
+    return _ScreenAligned(screen: MediaQuery.sizeOf(context), child: soft);
+  }
+}
+
+/// Lays [child] out at the screen's size and paints it where the screen
+/// is, clipped to this box.
+class _ScreenAligned extends SingleChildRenderObjectWidget {
+  const _ScreenAligned({required this.screen, required super.child});
+
+  final Size screen;
+
+  @override
+  _RenderScreenAligned createRenderObject(BuildContext context) =>
+      _RenderScreenAligned(screen);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderScreenAligned r) =>
+      r.screen = screen;
+}
+
+class _RenderScreenAligned extends RenderProxyBox {
+  _RenderScreenAligned(this._screen);
+
+  /// Every one on screen. A panel can move without repainting (a route
+  /// slides a cached picture of it), so after each frame each checks it is
+  /// still where it was painted, and repaints if not.
+  static final _live = <_RenderScreenAligned>{};
+  static bool _watching = false;
+
+  static void _check(Duration _) {
+    for (final r in _live) {
+      if (!r.attached || !r.hasSize || r._paintedAt == null) continue;
+      if (r.localToGlobal(Offset.zero) != r._paintedAt) r.markNeedsPaint();
+    }
+  }
+
+  Offset? _paintedAt;
+
+  @override
+  void attach(PipelineOwner owner) {
+    super.attach(owner);
+    _live.add(this);
+    if (!_watching) {
+      _watching = true;
+      SchedulerBinding.instance.addPersistentFrameCallback(_check);
+    }
+  }
+
+  @override
+  void detach() {
+    _live.remove(this);
+    super.detach();
+  }
+
+  Size _screen;
+  set screen(Size s) {
+    if (s == _screen) return;
+    _screen = s;
+    markNeedsLayout();
+  }
+
+  @override
+  bool get sizedByParent => true;
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) => constraints.biggest;
+
+  @override
+  double computeMinIntrinsicWidth(double height) => 0;
+  @override
+  double computeMaxIntrinsicWidth(double height) => 0;
+  @override
+  double computeMinIntrinsicHeight(double width) => 0;
+  @override
+  double computeMaxIntrinsicHeight(double width) => 0;
+
+  @override
+  void performLayout() {
+    child?.layout(BoxConstraints.tight(_screen));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    final c = child;
+    if (c == null) return;
+    final at = localToGlobal(Offset.zero);
+    _paintedAt = at;
+    context.pushClipRect(
+      needsCompositing,
+      offset,
+      Offset.zero & size,
+      (context, o) => context.paintChild(c, o - at),
+    );
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      false;
 }
 
 /// [VEdgeBlur] behind the status bar. Page titles start 16 below the bar,

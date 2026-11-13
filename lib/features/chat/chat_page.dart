@@ -11,7 +11,6 @@ import '../../core/theme/v_palette.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/widgets/v_buttons.dart';
 import '../../core/widgets/v_glass.dart';
-import '../../core/widgets/v_page.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
@@ -328,7 +327,7 @@ class ChatPageState extends ConsumerState<ChatPage> {
           left: 0,
           right: 0,
           top: 0,
-          child: VSoftEdge(top: true, solid: top + 64),
+          child: VEdgeBlur(edge: VEdge.top, solid: top + 64),
         ),
         Positioned(
           left: 0,
@@ -336,7 +335,7 @@ class ChatPageState extends ConsumerState<ChatPage> {
           bottom: 0,
           child: _Lift(
             rest: composerBottom,
-            builder: (lift) => VSoftEdge(top: false, solid: lift + 44),
+            builder: (lift) => VEdgeBlur(edge: VEdge.bottom, solid: lift + 44),
           ),
         ),
         Positioned(
