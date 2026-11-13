@@ -67,7 +67,8 @@ Widget stepTransition(
           (math.sin(math.pi * animation.value.clamp(0.0, 1.0)) +
               math.sin(math.pi * secondary.value.clamp(0.0, 1.0))) *
           6;
-      if (opacity == 0) return const SizedBox.expand();
+      // Covered or not yet in: invisible, but the page stays alive (a page
+      // under the scanner waits for its code).
       return Opacity(
         opacity: opacity,
         child: Transform.translate(

@@ -777,8 +777,10 @@ class _JoinPageState extends ConsumerState<JoinPage> {
         ],
         const SizedBox(height: 24),
         _SmallButton(VIcon.qr, 'Scan their QR instead', () async {
-          // The scanner comes back with the code it read (Neon).
-          final read = await context.push<String>(OnboardingRoutes.scan);
+          // The scanner comes back with the code it read (Neon). Opened as
+          // a page over this one (not a route of its own), so this page is
+          // still here to take the code.
+          final read = await pushPage<String>(context, (_) => const ScanPage());
           if (read != null && mounted) {
             _code.text = read;
             await _join(read);
@@ -855,7 +857,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
       if (code == null) continue;
       _done = true;
       unawaited(HapticFeedback.heavyImpact());
-      context.pop(code);
+      Navigator.of(context).pop(code);
       return;
     }
   }
@@ -913,7 +915,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                 child: VCircleButton(
                   icon: VIcon.close,
                   size: 44,
-                  onTap: () => context.pop(),
+                  onTap: () => Navigator.of(context).pop(),
                 ),
               ),
               Positioned(
