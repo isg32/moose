@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -10,6 +9,7 @@ import '../../core/theme/v_colors.dart';
 import '../../core/theme/v_palette.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/widgets/v_buttons.dart';
+import '../../core/widgets/v_page.dart';
 import '../../core/widgets/v_surface.dart';
 
 /// What each moment says and does (DESIGN.md › Moment colours).
@@ -174,20 +174,25 @@ class _MomentBurstState extends State<MomentBurst>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: ColoredBox(
-                color: palette.popupScrim,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      radius: 0.75,
-                      colors: [m.wash, m.wash.withValues(alpha: 0)],
+          // The soft wallpaper, not a live blur of the chat: no per-frame
+          // cost and no blip as it comes in (see VVeil).
+          RepaintBoundary(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ?VVeilBackdrop.of(context),
+                ColoredBox(
+                  color: palette.popupScrim,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        radius: 0.75,
+                        colors: [m.wash, m.wash.withValues(alpha: 0)],
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
           IgnorePointer(

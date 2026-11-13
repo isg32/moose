@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/cupertino.dart';
 
 import '../icons/v_icons.dart';
@@ -299,31 +297,58 @@ Widget? _refresh(Future<void> Function()? onRefresh) => onRefresh == null
     ? null
     : CupertinoSliverRefreshControl(onRefresh: onRefresh);
 
-/// The page veil: the shared wallpaper blurred (30) under the veil tint, so
-/// full pages read clearly while the wallpaper still shows through.
+/// The page veil: a soft copy of the shared wallpaper under the veil tint,
+/// so full pages read clearly while the wallpaper still shows through.
+///
+/// As Cariño's tabs: the soft copy is the wallpaper decoded tiny and scaled
+/// up ([VVeilBackdrop]). It looks blurred but costs nothing per frame, and
+/// fades with plain opacity, unlike a live blur, which blips when a photo
+/// wallpaper is under it.
 class VVeil extends StatelessWidget {
   const VVeil({super.key});
 
   @override
   Widget build(BuildContext context) {
     final entry = VEntrance.of(context);
-    Widget veil(double t) => ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 30 * t, sigmaY: 30 * t),
-        child: ColoredBox(
-          color: VPalette.of(context).veil
-              .withValues(alpha: VPalette.of(context).veil.a * t),
-        ),
+    final soft = VVeilBackdrop.of(context);
+    final veil = RepaintBoundary(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ?soft,
+          ColoredBox(color: VPalette.of(context).veil),
+        ],
       ),
     );
-    if (entry == null) return veil(1);
-    // A blur can't be faded by fading what's above it: grow its strength
-    // (and the veil's tint) with the page coming in.
+    if (entry == null) return veil;
+    // Fades in with the page coming in.
     return AnimatedBuilder(
       animation: entry,
-      builder: (context, _) => veil(entry.value.clamp(0.0, 1.0)),
+      child: veil,
+      builder: (context, child) {
+        final t = entry.value.clamp(0.0, 1.0);
+        return Opacity(opacity: t, child: t == 0 ? null : child);
+      },
     );
   }
+}
+
+/// The soft (blurred-looking) wallpaper [VVeil] draws under its tint, set
+/// once over the app by the shared theme.
+class VVeilBackdrop extends InheritedWidget {
+  const VVeilBackdrop({
+    super.key,
+    required this.backdrop,
+    required super.child,
+  });
+
+  final Widget backdrop;
+
+  static Widget? of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<VVeilBackdrop>()?.backdrop;
+
+  @override
+  bool updateShouldNotify(VVeilBackdrop old) => old.backdrop != backdrop;
 }
 
 /// How far a page has come in (0–1), for what has to animate itself, like
