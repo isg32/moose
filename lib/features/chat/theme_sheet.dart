@@ -129,13 +129,17 @@ class _ThemeSheetState extends ConsumerState<ThemeSheet> {
                       const SizedBox(height: 14),
                       Text('PALETTES', style: VText.eyebrow),
                       const SizedBox(height: 10),
-                      GridView.count(
-                        crossAxisCount: 4,
+                      GridView(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 10,
-                        crossAxisSpacing: 10,
-                        childAspectRatio: 1.02,
+                        // A tile and its name, whatever the width.
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 10,
+                              mainAxisExtent: 82,
+                            ),
                         children: [
                           for (final name in VWallpapers.all.keys)
                             _Swatch(
