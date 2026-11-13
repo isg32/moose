@@ -17,6 +17,10 @@ join, then plays a script against whatever the phone sends:
   a voice note      downloads and opens it, then sends one back (a tone)
                     and a 3 s video (a test pattern)
   a video           downloads and opens it
+  a song            checks the video id and window, and sends a clip back
+                    (same song, from 0:30)
+  a meme            fetches its link and checks it's a picture
+  a round video     downloads and opens it
   a theme           notes it
   doodles           makes her own board "Aatika's board"; when the phone
                     makes one and draws, she draws a heart on it too
@@ -533,8 +537,35 @@ class Aatika:
                     time.sleep(1)
                     self.message({"t": "moment", "moment": body["moment"]}, kind="moment")
                 elif kind == "sticker":
-                    self.check("phone's sticker arrived", True)
-                    self.text("cute 🥺")
+                    if body.get("blob"):
+                        data = aead_open(unb64(body["k"]), n.download(body["blob"]))
+                        ok = data[:3] == b"\xff\xd8\xff" or data[:8] == b"\x89PNG\r\n\x1a\n"
+                        self.check("phone's photo sticker opened", ok, f"{len(data)} bytes")
+                        n.call("DELETE", f"/v1/blobs?key={requests.utils.quote(body['blob'], safe='')}")
+                    else:
+                        self.check("phone's sticker arrived", True)
+                        self.text("cute 🥺")
+                elif kind == "music":
+                    song = body["song"]
+                    self.check("phone's song arrived", bool(song.get("v")) and body.get("start", -1) >= 0,
+                               f"{song.get('title')} · {song.get('v')} from {body['start'] // 1000} s")
+                    self.message({"t": "music", "song": song, "start": 30000})
+                elif kind == "meme":
+                    url = body.get("url") or ""
+                    try:
+                        got_meme = requests.get(url, timeout=20)
+                        ok = got_meme.status_code == 200 and got_meme.headers.get(
+                            "content-type", "").startswith("image/")
+                    except Exception:  # noqa: BLE001
+                        ok = False
+                    self.check("phone's meme loads", ok, url[:60])
+                    self.text("lol 😂")
+                elif kind == "round":
+                    v = body["video"]
+                    data = aead_open(unb64(v["k"]), n.download(v["blob"]))
+                    self.check("phone's round video opened", data[4:8] == b"ftyp",
+                               f"{len(data)} bytes, {v.get('ms', 0) / 1000:.1f} s")
+                    n.call("DELETE", f"/v1/blobs?key={requests.utils.quote(v['blob'], safe='')}")
                 elif kind == "voice":
                     data = aead_open(unb64(body["k"]), n.download(body["blob"]))
                     self.check("phone's voice note opened", data[4:8] == b"ftyp",

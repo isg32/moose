@@ -67,6 +67,9 @@ class YouTubeSongs implements MusicRepository, SongPlayer {
     f?.call();
   }
 
+  /// A clip is playing (tests).
+  bool get playing => _player.playing;
+
   @override
   Future<void> stop() async {
     await _player.stop();

@@ -21,6 +21,12 @@ import 'package:moose/net/local_store.dart';
 import 'package:moose/net/background_check.dart';
 import 'package:moose/net/neon_backend.dart';
 import 'package:moose/net/neon_calls.dart';
+import 'package:moose/net/phone_round.dart';
+import 'package:moose/net/phone_songs.dart';
+import 'package:moose/net/phone_storage.dart';
+import 'package:moose/net/web_memes.dart';
+import 'package:moose/features/common/art.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:moose/net/phone_media.dart';
 import 'package:moose/net/phone_voice.dart';
 import 'package:moose/net/push.dart';
@@ -126,7 +132,20 @@ void main() {
       ..askNotifications = Push.ask;
     await Push.init(onWake: () => backend.wake?.call());
     expect(await Push.token(), isNotNull, reason: 'Firebase gave a token');
-    var c = ProviderContainer(overrides: backend.overrides());
+    // As main() puts them together for a Neon build.
+    final songs = YouTubeSongs();
+    final cache = await getTemporaryDirectory();
+    List<Override> neon(NeonBackend b) => [
+      ...b.overrides(),
+      musicRepositoryProvider.overrideWithValue(songs),
+      songPlayerProvider.overrideWithValue(songs),
+      memeRepositoryProvider.overrideWithValue(WebMemes()),
+      roundCameraProvider.overrideWithValue(PhoneRound(b.mediaDir)),
+      storageRepositoryProvider.overrideWithValue(
+        PhoneStorage(b.store, b.mediaDir, cache),
+      ),
+    ];
+    var c = ProviderContainer(overrides: neon(backend));
     await binding.convertFlutterSurfaceToImage();
     await t.pumpWidget(
       UncontrolledProviderScope(container: c, child: const MooseApp()),
@@ -215,7 +234,22 @@ void main() {
     await t.tap(find.text('Close'));
     await frames(t);
 
-    // 4 · A sticker (S1).
+    // 4 · A sticker (S1). On Neon the library starts empty: make one.
+    c
+        .read(stickersProvider.notifier)
+        .add(
+          'ours',
+          const Sticker.doodle(
+            id: 'heart',
+            strokes: [
+              Stroke(
+                tool: PenTool.marker,
+                argb: 0xFFFF5C7A,
+                points: [Offset(0.2, 0.3), Offset(0.5, 0.8), Offset(0.8, 0.3)],
+              ),
+            ],
+          ),
+        );
     final before = c.read(messagesProvider).length;
     await t.tap(find.bySemanticsLabel('Stickers, GIFs and memes'));
     await frames(t);
@@ -397,6 +431,121 @@ void main() {
     await t.tap(find.bySemanticsLabel(RegExp('^Send')).last);
     await frames(t, 1000);
     expect(c.read(messagesProvider).last.body, isA<VideoBody>());
+
+    // 6⅞ · A song from YouTube: search, a 15 s window, send; hers plays
+    // here from the stream this phone finds (C27, C28, B8).
+    await t.tap(
+      find
+          .byWidgetPredicate((w) => w is VIconView && w.icon == VIcon.plus)
+          .first,
+    );
+    await frames(t);
+    await t.tap(find.text('Music'));
+    await frames(t);
+    await t.tap(find.byType(EditableText).last);
+    await t.enterText(find.byType(EditableText).last, 'sienna the marias');
+    await until(
+      t,
+      'YouTube results',
+      () =>
+          find.bySemanticsLabel(RegExp(r'Sienna.* by ')).evaluate().isNotEmpty,
+      within: const Duration(seconds: 30),
+    );
+    await t.tap(find.bySemanticsLabel(RegExp(r'Sienna.* by ')).first);
+    await frames(t, 1000);
+    await t.tap(find.text('Send to Aatika'));
+    await frames(t, 1000);
+    final ourSong = (c.read(messagesProvider).last.body as MusicBody).song;
+    expect(ourSong.videoId, isNotEmpty);
+    expect(ourSong.thumb, contains(ourSong.videoId));
+    await until(
+      t,
+      'her song',
+      () =>
+          c.read(messagesProvider).any((m) => !m.fromMe && m.body is MusicBody),
+      within: const Duration(seconds: 30),
+    );
+    final hersSong =
+        c
+                .read(messagesProvider)
+                .lastWhere((m) => !m.fromMe && m.body is MusicBody)
+                .body
+            as MusicBody;
+    final clipDone = Completer<void>();
+    await songs.play(hersSong.song, hersSong.start, onDone: clipDone.complete);
+    await until(
+      t,
+      'her clip playing from YouTube',
+      () => songs.playing,
+      within: const Duration(seconds: 40),
+    );
+    await frames(t, 2000);
+    await songs.stop();
+    await shot('06f-song');
+
+    // A meme from Reddit, a sticker cut from a photo, and a round video
+    // from the front camera (C26, S2, C16).
+    await t.tap(find.bySemanticsLabel('Stickers, GIFs and memes'));
+    await frames(t);
+    await t.tap(find.text('Memes'));
+    bool isWebMeme(Widget w) => w is ArtBox && (w.url ?? '').startsWith('http');
+    await until(
+      t,
+      'memes from Reddit',
+      () => find.byWidgetPredicate(isWebMeme).evaluate().isNotEmpty,
+      within: const Duration(seconds: 30),
+    );
+    await frames(t, 1500);
+    await t.tap(find.byWidgetPredicate(isWebMeme).first);
+    await frames(t);
+    await t.tap(find.bySemanticsLabel('Send').last);
+    await frames(t, 1000);
+    final meme = (c.read(messagesProvider).last.body as MemeBody).meme;
+    expect(meme.source, MemeSource.reddit);
+    expect(meme.url, startsWith('https://'));
+
+    final cut = (await photos.gallery()).single;
+    c
+        .read(messagesProvider.notifier)
+        .send(StickerBody(Sticker.photo(id: 'cut-1', art: 7, path: cut.path)));
+    await frames(t, 1500);
+
+    await t.tap(find.bySemanticsLabel('Hold to record, tap for round video'));
+    await frames(t, 300);
+    final roundHold = await t.startGesture(
+      t.getCenter(
+        find.bySemanticsLabel('Hold to record a round video, tap for voice'),
+      ),
+    );
+    for (var i = 0; i < 60; i++) {
+      await t.pump(const Duration(milliseconds: 50));
+    }
+    await roundHold.up();
+    await until(
+      t,
+      'our round video',
+      () => switch (c.read(messagesProvider).last.body) {
+        RoundVideoBody(:final video) => video.path != null,
+        _ => false,
+      },
+      within: const Duration(seconds: 15),
+    );
+    final round = (c.read(messagesProvider).last.body as RoundVideoBody).video;
+    expect(File(round.path!).readAsBytesSync().sublist(4, 8), 'ftyp'.codeUnits);
+    await t.tap(
+      find.bySemanticsLabel('Hold to record a round video, tap for voice'),
+    );
+    await frames(t, 1500);
+    await shot('06g-round');
+
+    // Storage: real sizes for what's on the phone (C38).
+    final use = {
+      for (final u in c.read(storageRepositoryProvider).load())
+        u.label: u.bytes,
+    };
+    for (final kind in ['Photos', 'Videos', 'Voice notes', 'Round videos']) {
+      expect(use[kind], greaterThan(0), reason: '$kind on the phone');
+    }
 
     // 6⅞ · Calls, phone to phone over WebRTC (K1–K5). We video-call her:
     // she picks up, her picture arrives, we hang up.
@@ -639,7 +788,7 @@ void main() {
       dir: dir,
       label: 'e2e',
     );
-    c = ProviderContainer(overrides: reopened.overrides());
+    c = ProviderContainer(overrides: neon(reopened));
     await t.pumpWidget(
       UncontrolledProviderScope(container: c, child: const MooseApp()),
     );
