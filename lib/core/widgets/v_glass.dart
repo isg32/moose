@@ -55,7 +55,7 @@ class VGlass extends StatelessWidget {
     final glass = sheet || t == palette.glassBar || t == palette.glassCard;
     if (!glass) return t;
     if (VPanels.solid(context)) return paper;
-    return paper.withValues(alpha: sheet ? 0.72 : 0.5);
+    return paper.withValues(alpha: sheet ? 0.86 : 0.55);
   }
 
   @override
