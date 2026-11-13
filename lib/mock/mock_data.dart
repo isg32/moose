@@ -616,6 +616,10 @@ abstract final class MockData {
           length: Duration(minutes: 12),
         ),
       ),
+      theirs(20, 44, const TextBody('that was the best call omg')),
+      theirs(22, 45, const CallBody(video: true, outcome: CallOutcome.missed)),
+      mine(23, 2, const CallBody(video: false, outcome: CallOutcome.noAnswer)),
+      mine(23, 5, const TextBody("call me when you're up ☀️")),
     ];
   }
 }

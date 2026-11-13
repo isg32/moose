@@ -186,7 +186,8 @@ class ChatPageState extends ConsumerState<ChatPage> {
       onPlayVoice: (m) => _play(m, (m.body as VoiceBody).length),
       onPlaySong: (m) => _play(m, const Duration(seconds: 15)),
       onOpenMedia: (m, i) => hooks.openMedia(context, ref, m, i),
-      onCallBack: (m) => hooks.call(context, video: (m.body as CallBody).video),
+      onCallBack: (m) =>
+          hooks.call(context, ref, video: (m.body as CallBody).video),
     );
 
     return Stack(
@@ -255,7 +256,7 @@ class ChatPageState extends ConsumerState<ChatPage> {
             onPokeHold: session.decoy ? null : () => _poke(pick: true),
             onCall: session.decoy
                 ? null
-                : (video) => hooks.call(context, video: video),
+                : (video) => hooks.call(context, ref, video: video),
           ),
         ),
         if (!online)
@@ -365,16 +366,24 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        VCircleButton(
-          icon: VIcon.phone,
-          size: 40,
-          onTap: onCall == null ? null : () => onCall!(false),
+        Semantics(
+          button: true,
+          label: 'Voice call',
+          child: VCircleButton(
+            icon: VIcon.phone,
+            size: 40,
+            onTap: onCall == null ? null : () => onCall!(false),
+          ),
         ),
         const SizedBox(width: 8),
-        VCircleButton(
-          icon: VIcon.video,
-          size: 40,
-          onTap: onCall == null ? null : () => onCall!(true),
+        Semantics(
+          button: true,
+          label: 'Video call',
+          child: VCircleButton(
+            icon: VIcon.video,
+            size: 40,
+            onTap: onCall == null ? null : () => onCall!(true),
+          ),
         ),
         const SizedBox(width: 8),
         Semantics(

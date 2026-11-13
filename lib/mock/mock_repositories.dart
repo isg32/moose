@@ -70,6 +70,11 @@ class MockChatRepository implements ChatRepository {
       });
       return;
     }
+    // "call me" gets a call back, to show an incoming call (K2).
+    if (body is TextBody && body.text.toLowerCase().contains('call me')) {
+      _after(replyDelay, () => _events.add(const CallArrived(video: true)));
+      return;
+    }
     if (body is! TextBody || _replies++ % 2 == 1) return;
     _after(replyDelay, () => _events.add(const TypingChanged(true)));
     _after(replyDelay * 2, () {

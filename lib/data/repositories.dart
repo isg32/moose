@@ -38,6 +38,12 @@ class MomentArrived extends ChatEvent {
   final VMoment moment;
 }
 
+/// The partner is calling (K2).
+class CallArrived extends ChatEvent {
+  const CallArrived({required this.video});
+  final bool video;
+}
+
 abstract interface class ChatRepository {
   List<Message> history();
 

@@ -175,6 +175,8 @@ class MessagesNotifier extends Notifier<List<Message>> {
             .setPresence(typing ? Presence.typing : Presence.online);
       case MomentArrived(:final moment):
         ref.read(incomingMomentProvider.notifier).show(moment);
+      case CallArrived(:final video):
+        ref.read(incomingCallProvider.notifier).ring(video: video);
     }
   }
 
@@ -267,6 +269,20 @@ class IncomingMoment extends Notifier<VMoment?> {
   void show(VMoment m) => state = m;
 
   void dismiss() => state = null;
+}
+
+/// A call ringing now (K2): true for video, false for voice.
+final incomingCallProvider = NotifierProvider<IncomingCall, bool?>(
+  IncomingCall.new,
+);
+
+class IncomingCall extends Notifier<bool?> {
+  @override
+  bool? build() => null;
+
+  void ring({required bool video}) => state = video;
+
+  void clear() => state = null;
 }
 
 /// When each moment can next be sent: one of each every 10 s (C24).

@@ -11,6 +11,7 @@ import '../core/theme/v_tokens.dart';
 import '../core/widgets/v_glass.dart';
 import '../core/widgets/v_ink.dart';
 import '../data/providers.dart';
+import '../features/calls/call_page.dart';
 import '../features/moments/moment_burst.dart';
 
 /// The three tabs with the floating glass pill over them, and Cariño's
@@ -133,6 +134,8 @@ class _AppShellState extends State<AppShell> {
                   shell.goBranch(i, initialLocation: i == shell.currentIndex),
             ),
           ),
+          // A call ringing opens the incoming call screen (K2).
+          const _CallListener(),
           // A hug, poke, kiss or miss-you arriving covers everything (C25).
           Consumer(
             builder: (context, ref, _) {
@@ -158,5 +161,19 @@ class _AppShellState extends State<AppShell> {
         ],
       ),
     );
+  }
+}
+
+class _CallListener extends ConsumerWidget {
+  const _CallListener();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(incomingCallProvider, (_, video) {
+      if (video == null) return;
+      ref.read(incomingCallProvider.notifier).clear();
+      answerCall(context, ref, video: video);
+    });
+    return const SizedBox.shrink();
   }
 }

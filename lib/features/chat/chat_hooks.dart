@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../calls/call_page.dart';
 import '../common/overlay.dart';
 import '../common/toast.dart';
 import '../media/attach_sheet.dart';
@@ -104,5 +105,6 @@ class ChatHooks {
   }
 
   /// Starts a call (K1).
-  void call(BuildContext context, {required bool video}) {}
+  void call(BuildContext context, WidgetRef ref, {required bool video}) =>
+      startCall(context, ref, video: video);
 }

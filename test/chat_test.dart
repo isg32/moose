@@ -72,7 +72,7 @@ void main() {
 
   testWidgets('long-press a message to react and to reply', (tester) async {
     final c = await open(tester);
-    await tester.longPress(find.text('leaving office now'));
+    await tester.longPress(find.text('that was the best call omg'));
     await settle(tester);
     expect(find.text('Delete for me'), findsOneWidget);
     await tester.tap(find.text('🔥'));
@@ -82,24 +82,30 @@ void main() {
         .firstWhere(
           (m) =>
               m.body is TextBody &&
-              (m.body as TextBody).text == 'leaving office now',
+              (m.body as TextBody).text == 'that was the best call omg',
         );
     expect(m.reactions.single.emoji, '🔥');
 
-    await tester.longPress(find.text('leaving office now'));
+    await tester.longPress(find.text('that was the best call omg'));
     await settle(tester);
     await tester.tap(find.text('Reply'));
     await settle(tester);
-    // The quote sits above the field until sent or cancelled.
-    expect(find.text('You'), findsWidgets);
+    // The quote sits above the field until sent or cancelled: the message
+    // shows twice, in the chat and in the quote.
+    expect(find.text('that was the best call omg'), findsNWidgets(2));
     expect(tester.takeException(), isNull);
     await close(tester);
   });
 
   testWidgets('the theme sheet changes the wallpaper for both', (tester) async {
     final c = await open(tester);
+    // The wallpaper beside one of Aatika's messages (hers sit on the left).
     final chat = tester.getRect(find.byType(ChatPage));
-    await tester.longPressAt(Offset(chat.center.dx, chat.top + 150));
+    final beside = Offset(
+      chat.right - 12,
+      tester.getCenter(find.text('that was the best call omg')).dy,
+    );
+    await tester.longPressAt(beside);
     await settle(tester);
     expect(find.text('Apply for both'), findsOneWidget);
     await tester.tap(find.text('paper'));
@@ -115,7 +121,7 @@ void main() {
     expect(tester.takeException(), isNull);
 
     // Dismissing without Apply puts the old theme back.
-    await tester.longPressAt(Offset(chat.center.dx, chat.top + 150));
+    await tester.longPressAt(beside);
     await settle(tester);
     await tester.tap(find.text('moss'));
     await settle(tester);
@@ -171,7 +177,7 @@ void main() {
         .set(c.read(sessionProvider).copyWith(decoy: true));
     await settle(tester);
     expect(find.text('Say hi to Neha'), findsOneWidget);
-    expect(find.text('leaving office now'), findsNothing);
+    expect(find.text('that was the best call omg'), findsNothing);
     await close(tester);
   });
 }
