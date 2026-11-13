@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../../core/icons/v_icons.dart';
 import '../calls/call_page.dart';
+import '../common/choice_sheet.dart';
 import '../common/overlay.dart';
 import '../common/toast.dart';
 import '../media/attach_sheet.dart';
@@ -11,6 +13,7 @@ import '../media/media_pages.dart';
 import '../media/media_viewer.dart';
 import '../moments/poke_picker.dart';
 import '../music/music_pages.dart';
+import '../stickers/sticker_maker.dart';
 import '../stickers/tray.dart';
 
 /// Where the chat hands off to the other features: attachments, stickers,
@@ -83,8 +86,22 @@ class ChatHooks {
   /// Music search and the 15 s picker (C27, C28).
   Future<Body?> music(BuildContext context) => pickSong(context);
 
-  /// A doodle sent as a sticker.
-  Future<Body?> doodle(BuildContext context, WidgetRef ref) async => null;
+  /// A doodle sent as a sticker: pick the board, send its snapshot.
+  Future<Body?> doodle(BuildContext context, WidgetRef ref) async {
+    final doodles = ref.read(doodlesProvider);
+    final d = await showChoiceSheet<Doodle>(
+      context,
+      title: 'Send a doodle',
+      choices: [for (final d in doodles) Choice(d, d.name, icon: VIcon.doodle)],
+    );
+    if (d == null) return null;
+    return StickerBody(
+      Sticker.doodle(
+        id: 'snap${DateTime.now().microsecondsSinceEpoch}',
+        strokes: normalise(d.strokes),
+      ),
+    );
+  }
 
   /// The media viewer (C21) on [m]'s [index]th item.
   void openMedia(BuildContext context, WidgetRef ref, Message m, int index) {

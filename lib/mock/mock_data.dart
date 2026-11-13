@@ -179,7 +179,7 @@ abstract final class MockData {
     ),
     Stroke(
       tool: PenTool.fineLiner,
-      argb: VPenColors.presets[1],
+      argb: 0xFFB57EDC,
       size: 3,
       points: wave(const Offset(64, 150), 250, height: 14),
     ),
