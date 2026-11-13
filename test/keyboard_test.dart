@@ -65,6 +65,48 @@ void main() {
     await t.pump(const Duration(seconds: 5));
   });
 
+  testWidgets('a tap while the old keyboard slides away keeps the focus', (
+    t,
+  ) async {
+    await open(t);
+    final field = find.descendant(
+      of: find.byType(Composer),
+      matching: find.byType(EditableText),
+    );
+    bool focused() => t.widget<EditableText>(field).focusNode.hasFocus;
+    Future<void> keyboard(double dp) async {
+      t.view.viewInsets = FakeViewPadding(bottom: dp * 2.625);
+      t.binding.handleMetricsChanged();
+      await t.pump(const Duration(milliseconds: 16));
+    }
+
+    // The last keyboard is still on its way down when the field is tapped.
+    await keyboard(300);
+    await t.tap(field);
+    await t.pump();
+    await keyboard(150);
+    await keyboard(0);
+    expect(focused(), isTrue, reason: 'that was the old keyboard leaving');
+
+    // Android flickers the keyboard when the text connection resets: down
+    // for a frame, then back. That isn't putting it away.
+    await keyboard(160);
+    await keyboard(336);
+    await keyboard(0);
+    await keyboard(336);
+    await t.pump(const Duration(milliseconds: 500));
+    expect(focused(), isTrue, reason: 'a flicker keeps the focus');
+
+    // Put away for real: it stays down, and the focus goes with it.
+    await keyboard(0);
+    expect(focused(), isTrue, reason: 'not yet');
+    await t.pump(const Duration(milliseconds: 450));
+    expect(focused(), isFalse);
+    t.view.resetViewInsets();
+    await t.pumpWidget(const SizedBox.shrink());
+    await t.pump(const Duration(seconds: 5));
+  });
+
   testWidgets('the composer rides on top of the keyboard', (t) async {
     t.view.physicalSize = const Size(1080, 2400);
     t.view.devicePixelRatio = 2.625;

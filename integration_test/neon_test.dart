@@ -50,6 +50,17 @@ void main() {
     }
   }
 
+  /// Taps the composer, then types into it, as a person would. (enterText
+  /// alone can't focus a field on a real-keyboard device.)
+  Future<void> type(WidgetTester t, String text) async {
+    final field = find.byType(EditableText).first;
+    await t.tap(field);
+    for (var i = 0; i < 6; i++) {
+      await t.pump(const Duration(milliseconds: 50));
+    }
+    await t.enterText(field, text);
+  }
+
   Future<void> frames(WidgetTester t, [int ms = 700]) async {
     for (var i = 0; i < ms; i += 50) {
       await t.pump(const Duration(milliseconds: 50));
@@ -121,7 +132,7 @@ void main() {
     expect(c.read(chatThemeProvider).glass, 0.6);
 
     // 2 · A text: Aatika types, hearts it, sees it and replies (C15).
-    await t.enterText(find.byType(EditableText).first, 'dinner at 8?');
+    await type(t, 'dinner at 8?');
     await frames(t, 200);
     await t.tap(find.bySemanticsLabel('Send'));
     var typed = false;
@@ -233,8 +244,18 @@ void main() {
 
     // 7 · Away: Home is pressed, a message comes, Firebase wakes the
     // phone and a notification shows; then Moose is opened again.
-    await t.enterText(find.byType(EditableText).first, 'brb');
+    await type(t, 'brb');
     await frames(t, 200);
+    if (find.bySemanticsLabel('Send').evaluate().isEmpty) {
+      fail(
+        [
+          for (final e in find.byType(EditableText).evaluate())
+            '${(e.widget as EditableText).controller.text} '
+                'focus=${(e.widget as EditableText).focusNode.hasFocus} '
+                'at ${t.getRect(find.byWidget(e.widget))}',
+        ].join(' | '),
+      );
+    }
     await t.tap(find.bySemanticsLabel('Send'));
     // No frames while in the background: wait on the data, not the UI.
     final end = DateTime.now().add(const Duration(seconds: 120));
@@ -246,13 +267,13 @@ void main() {
     }
     await Future<void>.delayed(const Duration(seconds: 8)); // back in front
     await frames(t, 1000);
-    await t.enterText(find.byType(EditableText).first, 'back!');
+    await type(t, 'back!');
     await frames(t, 200);
     await t.tap(find.bySemanticsLabel('Send'));
     await frames(t, 1500);
 
     // 8 · Bye.
-    await t.enterText(find.byType(EditableText).first, 'bye');
+    await type(t, 'bye');
     await frames(t, 200);
     await t.tap(find.bySemanticsLabel('Send'));
     await until(

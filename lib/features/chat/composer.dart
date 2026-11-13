@@ -80,6 +80,16 @@ enum _Rec { none, holding, locked }
 class ComposerState extends State<Composer> with WidgetsBindingObserver {
   /// The keyboard's height last time the window changed.
   double _keyboard = 0;
+
+  /// The keyboard has risen since the field took focus. Until it has, a
+  /// keyboard still sliding away from before isn't "put away".
+  bool _risen = false;
+
+  /// Android hides and re-shows the keyboard for a frame or two when the
+  /// text connection resets; only a keyboard that stays down this long was
+  /// really put away.
+  Timer? _away;
+  static const _awayAfter = Duration(milliseconds: 400);
   final _text = TextEditingController();
   final _focus = FocusNode();
 
@@ -108,7 +118,20 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
     final views = WidgetsBinding.instance.platformDispatcher.views;
     if (views.isEmpty) return;
     final now = views.first.viewInsets.bottom;
-    if (_keyboard > 0 && now == 0 && _focus.hasFocus) _focus.unfocus();
+    if (_focus.hasFocus && now > _keyboard) _risen = true;
+    if (now > 0) {
+      _away?.cancel();
+    } else if (_risen && _keyboard > 0 && _focus.hasFocus) {
+      _away?.cancel();
+      _away = Timer(_awayAfter, () {
+        final views = WidgetsBinding.instance.platformDispatcher.views;
+        final still = views.isEmpty || views.first.viewInsets.bottom == 0;
+        if (mounted && still && _focus.hasFocus) {
+          _risen = false;
+          _focus.unfocus();
+        }
+      });
+    }
     _keyboard = now;
   }
 
@@ -116,6 +139,9 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _focus.addListener(() {
+      if (_focus.hasFocus) _risen = false;
+    });
     var was = false;
     _text.addListener(() {
       setState(() {});
@@ -127,6 +153,7 @@ class ComposerState extends State<Composer> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _away?.cancel();
     _clock?.cancel();
     _text.dispose();
     _focus.dispose();

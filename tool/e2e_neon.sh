@@ -22,6 +22,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# The screen must stay on for the whole run (frames stop when it sleeps).
+adb shell svc power stayon usb
+adb shell input keyevent KEYCODE_WAKEUP
 echo "· starting Aatika (Python)"
 $py tool/partner/partner.py --code-file "$code_file" > build/e2e_partner.log 2>&1 &
 partner=$!
@@ -46,6 +49,8 @@ flutter drive \
   --dart-define-from-file=env.json \
   --dart-define=PARTNER_CODE="$code" || phone=$?
 
+# If the phone gave up, Aatika has no one to talk to.
+[[ $phone == 0 ]] || kill "$partner" 2>/dev/null || true
 echo "· waiting for Aatika"
 status=0
 wait "$partner" || status=$?
