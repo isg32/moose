@@ -22,6 +22,7 @@ import '../../platform/crash_log.dart';
 import '../common/avatar.dart';
 import '../common/overlay.dart';
 import '../common/parts.dart';
+import '../common/toast.dart';
 import '../common/wallpaper.dart';
 import '../moments/moment_burst.dart';
 import '../onboarding/onboarding_pages.dart';
@@ -195,6 +196,15 @@ class _DashedAction extends StatelessWidget {
 Future<void> showUnpair(BuildContext context, WidgetRef ref) async {
   final ok = await showOverlayPage<bool>(context, (_) => const _Unpair());
   if (ok != true || !context.mounted) return;
+  try {
+    await ref.read(pairRepositoryProvider).unpair();
+  } on Object {
+    if (context.mounted) {
+      showToast(context, "Couldn't reach the server. Try again.");
+    }
+    return;
+  }
+  if (!context.mounted) return;
   ref.read(sessionProvider.notifier).unpair();
   context.go(OnboardingRoutes.welcome);
 }

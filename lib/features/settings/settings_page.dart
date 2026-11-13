@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -50,6 +52,12 @@ class SettingsPage extends ConsumerWidget {
     c.dispose();
     if (name != null && name.trim().isNotEmpty) {
       ref.read(pairingProvider.notifier).rename(name.trim());
+      unawaited(
+        ref
+            .read(pairRepositoryProvider)
+            .setName(name.trim())
+            .catchError((_) {}),
+      );
     }
   }
 

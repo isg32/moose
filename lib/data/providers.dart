@@ -42,6 +42,9 @@ final storageRepositoryProvider = Provider<StorageRepository>(
   (ref) => MockStorageRepository(),
 );
 
+/// True when Moose runs on Neon, false on the mock partner.
+final onNeonProvider = Provider<bool>((ref) => false);
+
 // The shared theme.
 
 final chatThemeProvider = NotifierProvider<ChatThemeNotifier, ChatTheme>(
@@ -135,6 +138,8 @@ class PairingNotifier extends Notifier<Pairing> {
   @override
   Pairing build() => ref.read(pairRepositoryProvider).load();
 
+  void set(Pairing p) => state = p;
+
   void setPresence(Presence p) =>
       state = state.copyWith(presence: p, lastSeen: DateTime.now());
 
@@ -157,6 +162,7 @@ class MessagesNotifier extends Notifier<List<Message>> {
     final repo = ref.watch(chatRepositoryProvider);
     _sub = repo.events.listen(_on);
     ref.onDispose(() => _sub?.cancel());
+    listenSelf((_, next) => repo.store(next));
     return repo.history();
   }
 
@@ -179,7 +185,36 @@ class MessagesNotifier extends Notifier<List<Message>> {
         ref.read(incomingCallProvider.notifier).ring(video: video);
       case RepairRequested():
         ref.read(repairRequestProvider.notifier).set(true);
+      case ReactionChanged(:final id, :final emoji):
+        state = [
+          for (final m in state)
+            m.id == id ? m.copyWith(reactions: _theirs(m.reactions, emoji)) : m,
+        ];
+      case OnlineChanged(:final online):
+        ref.read(onlineProvider.notifier).set(online);
+      case Unpaired():
+        ref.read(sessionProvider.notifier).unpair();
     }
+  }
+
+  /// The partner's reaction is now [emoji]: theirs is whatever isn't mine.
+  static List<Reaction> _theirs(List<Reaction> rs, String? emoji) {
+    final out = <Reaction>[];
+    for (final r in rs) {
+      if (r.mine && r.count > 1) {
+        out.add(Reaction(r.emoji, mine: true));
+      } else if (r.mine) {
+        out.add(r);
+      }
+    }
+    if (emoji == null) return out;
+    final i = out.indexWhere((r) => r.emoji == emoji);
+    if (i >= 0) {
+      out[i] = Reaction(emoji, mine: true, count: 2);
+    } else {
+      out.add(Reaction(emoji));
+    }
+    return out;
   }
 
   /// Sends a message of [body], optionally replying to [reply].
@@ -206,6 +241,12 @@ class MessagesNotifier extends Notifier<List<Message>> {
         else
           m.copyWith(reactions: _toggle(m.reactions, emoji)),
     ];
+    final mine = state
+        .firstWhere((m) => m.id == id)
+        .reactions
+        .where((r) => r.mine)
+        .firstOrNull;
+    ref.read(chatRepositoryProvider).react(id, mine?.emoji);
   }
 
   static List<Reaction> _toggle(List<Reaction> rs, String emoji) {

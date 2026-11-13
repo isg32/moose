@@ -6,6 +6,23 @@ import 'models.dart';
 
 abstract interface class PairRepository {
   Pairing load();
+
+  /// Your name (and, for real, your public key) on the server.
+  Future<void> setName(String name);
+
+  /// A fresh invite code for your person to type or scan (C5).
+  Future<String> invite();
+
+  /// Gives the pairing once someone joins your code; cancel to stop
+  /// waiting. [mockAfter] is how long the pretend partner takes; the real
+  /// server ignores it.
+  Stream<Pairing> waitForPartner({required Duration mockAfter});
+
+  /// Joins their code (C6): the pairing, or null when it has expired.
+  Future<Pairing?> join(String code);
+
+  /// Ends the pairing for both phones (C41).
+  Future<void> unpair();
 }
 
 /// Something that happened on the other phone.
@@ -44,6 +61,24 @@ class CallArrived extends ChatEvent {
   final bool video;
 }
 
+/// The partner reacted to message [id]; null took it back.
+class ReactionChanged extends ChatEvent {
+  const ReactionChanged(this.id, this.emoji);
+  final String id;
+  final String? emoji;
+}
+
+/// The server came or went (C44's banner).
+class OnlineChanged extends ChatEvent {
+  const OnlineChanged(this.online);
+  final bool online;
+}
+
+/// The partner unpaired from their phone.
+class Unpaired extends ChatEvent {
+  const Unpaired();
+}
+
 /// The partner has a new phone and asks to be approved (C9).
 class RepairRequested extends ChatEvent {
   const RepairRequested();
@@ -57,6 +92,15 @@ abstract interface class ChatRepository {
 
   /// Hands a message to the outbox.
   void send(Message message);
+
+  /// Your reaction on [id] is now [emoji] (null took it back).
+  void react(String id, String? emoji);
+
+  /// You started or stopped typing.
+  void typing(bool on);
+
+  /// The conversation changed; keep it on this phone.
+  void store(List<Message> messages);
 
   void dispose();
 }

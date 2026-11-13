@@ -31,6 +31,7 @@ class ComposerActions {
     this.onCancelReply,
     this.onRemoveMedia,
     this.onAddMedia,
+    this.onTyping,
   });
 
   final void Function(String text) onSendText;
@@ -42,6 +43,9 @@ class ComposerActions {
   final VoidCallback? onCancelReply;
   final void Function(int index)? onRemoveMedia;
   final VoidCallback? onAddMedia;
+
+  /// Text started or stopped being there (the partner's typing dots).
+  final void Function(bool typing)? onTyping;
 }
 
 /// The chat's composer (C16).
@@ -97,7 +101,12 @@ class ComposerState extends State<Composer> {
   @override
   void initState() {
     super.initState();
-    _text.addListener(() => setState(() {}));
+    var was = false;
+    _text.addListener(() {
+      setState(() {});
+      if (_typing || was) widget.actions.onTyping?.call(_typing);
+      was = _typing;
+    });
   }
 
   @override

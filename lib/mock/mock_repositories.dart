@@ -7,6 +7,23 @@ import 'mock_data.dart';
 class MockPairRepository implements PairRepository {
   @override
   Pairing load() => MockData.pairing();
+
+  @override
+  Future<void> setName(String name) async {}
+
+  @override
+  Future<String> invite() async => MockData.inviteCode;
+
+  @override
+  Stream<Pairing> waitForPartner({required Duration mockAfter}) =>
+      Stream<void>.periodic(mockAfter).take(1).map((_) => MockData.pairing());
+
+  @override
+  Future<Pairing?> join(String code) async =>
+      code == MockData.inviteCode ? MockData.pairing() : null;
+
+  @override
+  Future<void> unpair() async {}
 }
 
 /// A pretend Aatika: what you send goes ✓, ✓✓ then seen; now and then she
@@ -96,6 +113,15 @@ class MockChatRepository implements ChatRepository {
       );
     });
   }
+
+  @override
+  void react(String id, String? emoji) {}
+
+  @override
+  void typing(bool on) {}
+
+  @override
+  void store(List<Message> messages) {}
 
   @override
   void dispose() {

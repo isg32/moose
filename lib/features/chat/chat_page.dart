@@ -284,6 +284,7 @@ class ChatPageState extends ConsumerState<ChatPage> {
             enterSends: settings.enterSends,
             actions: ComposerActions(
               onSendText: (t) => _send(TextBody(t)),
+              onTyping: (on) => ref.read(chatRepositoryProvider).typing(on),
               onSendVoice: (len) =>
                   _send(VoiceBody(length: len, wave: MockData.voiceWave)),
               onSendRound: (len) => _send(

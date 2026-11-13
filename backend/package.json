@@ -6,7 +6,8 @@
     "build": "tsc -p .",
     "migrate": "node --env-file=.env.local scripts/migrate.ts",
     "deploy": "npm run build && npx -y neon@latest deploy --env .env.local",
-    "test": "node --env-file=.env.local test/e2e.ts"
+    "test": "node --env-file=.env.local test/e2e.ts",
+    "cleanup": "node --env-file=.env.local scripts/cleanup.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1168.0",

@@ -192,6 +192,13 @@ class _NamePageState extends ConsumerState<NamePage> {
           enabled: _name.text.trim().isNotEmpty,
           onPressed: () {
             ref.read(sessionProvider.notifier).setName(_name.text.trim());
+            // Best effort: pairing registers the name again anyway.
+            unawaited(
+              ref
+                  .read(pairRepositoryProvider)
+                  .setName(_name.text.trim())
+                  .catchError((_) {}),
+            );
             context.push(
               '${OnboardingRoutes.background}${widget.join ? '?join=1' : ''}',
             );
@@ -405,8 +412,9 @@ class _QrPainter extends CustomPainter {
   bool shouldRepaint(_QrPainter old) => old.seed != seed;
 }
 
-/// C5: show your code; your person types or scans it. In the mock, Aatika
-/// joins after a few seconds.
+/// C5: show your code; your person types or scans it. The server makes the
+/// code and says when they've joined; the mock Aatika joins after
+/// [joinsAfter].
 class CreatePairPage extends ConsumerStatefulWidget {
   const CreatePairPage({
     super.key,
@@ -420,34 +428,71 @@ class CreatePairPage extends ConsumerStatefulWidget {
 }
 
 class _CreatePairPageState extends ConsumerState<CreatePairPage> {
-  var _left = const Duration(minutes: 9, seconds: 42);
+  var _left = const Duration(minutes: 10);
   Timer? _clock;
-  Timer? _joined;
+  StreamSubscription<Pairing>? _wait;
+  String? _code;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
     _clock = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _left -= const Duration(seconds: 1));
+      if (!mounted || _code == null) return;
+      setState(() => _left -= const Duration(seconds: 1));
+      if (_left <= Duration.zero) unawaited(_start());
     });
-    _joined = Timer(widget.joinsAfter, () {
+    unawaited(_start());
+  }
+
+  /// Gets a code, then waits for your person to join it.
+  Future<void> _start() async {
+    final repo = ref.read(pairRepositoryProvider);
+    setState(() {
+      _code = null;
+      _error = null;
+      _left = const Duration(minutes: 10);
+    });
+    try {
+      final code = await repo.invite();
       if (!mounted) return;
-      HapticFeedback.heavyImpact();
-      ref.read(sessionProvider.notifier).pair();
-      context.go(OnboardingRoutes.paired);
-    });
+      setState(() => _code = code);
+      await _wait?.cancel();
+      _wait = repo
+          .waitForPartner(mockAfter: widget.joinsAfter)
+          .listen(
+            (pairing) {
+              if (!mounted) return;
+              unawaited(HapticFeedback.heavyImpact());
+              ref.read(pairingProvider.notifier).set(pairing);
+              ref.read(sessionProvider.notifier).pair();
+              context.go(OnboardingRoutes.paired);
+            },
+            onError: (Object _) {
+              if (mounted) {
+                setState(
+                  () => _error = "Couldn't reach Moose's server. Tap to retry.",
+                );
+              }
+            },
+          );
+    } on Object {
+      if (mounted) {
+        setState(() => _error = "Couldn't reach Moose's server. Tap to retry.");
+      }
+    }
   }
 
   @override
   void dispose() {
     _clock?.cancel();
-    _joined?.cancel();
+    unawaited(_wait?.cancel());
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    const code = MockData.inviteCode;
+    final code = _code ?? '······';
     return StepPage(
       back: 'Back',
       eyebrow: 'Step 3 of 3',
@@ -462,7 +507,7 @@ class _CreatePairPageState extends ConsumerState<CreatePairPage> {
           ),
         ),
         const SizedBox(height: 10),
-        const Center(child: QrCard(data: code)),
+        Center(child: QrCard(data: code)),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -476,7 +521,7 @@ class _CreatePairPageState extends ConsumerState<CreatePairPage> {
             const SizedBox(width: 10),
             Expanded(
               child: _SmallButton(VIcon.copy, 'Copy', () async {
-                await Clipboard.setData(const ClipboardData(text: code));
+                await Clipboard.setData(ClipboardData(text: code));
                 if (context.mounted) showToast(context, 'Code copied');
               }),
             ),
@@ -484,17 +529,20 @@ class _CreatePairPageState extends ConsumerState<CreatePairPage> {
         ),
       ],
       bottom: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const DotLoader(),
-            const SizedBox(width: 10),
-            Text(
-              'Waiting for your person',
-              style: VText.inter(14, weight: 500),
-            ),
-          ],
-        ),
+        if (_error != null)
+          GestureDetector(onTap: _start, child: InlineError(_error!))
+        else
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const DotLoader(),
+              const SizedBox(width: 10),
+              Text(
+                'Waiting for your person',
+                style: VText.inter(14, weight: 500),
+              ),
+            ],
+          ),
         Text.rich(
           TextSpan(
             children: [
@@ -561,16 +609,34 @@ class _JoinPageState extends ConsumerState<JoinPage> {
     super.dispose();
   }
 
-  void _join(String code) {
-    if (code == MockData.inviteCode) {
-      ref.read(sessionProvider.notifier).pair();
-      context.go(OnboardingRoutes.paired);
-    } else if (code == MockData.repairCode) {
+  var _joining = false;
+
+  Future<void> _join(String code) async {
+    if (code == MockData.repairCode && !ref.read(onNeonProvider)) {
       context.go(OnboardingRoutes.waiting);
-    } else {
-      HapticFeedback.heavyImpact();
-      setState(() => _error = 'That code has expired. Ask for a new one.');
+      return;
     }
+    setState(() => _joining = true);
+    String? error;
+    try {
+      final pairing = await ref.read(pairRepositoryProvider).join(code);
+      if (!mounted) return;
+      if (pairing != null) {
+        ref.read(pairingProvider.notifier).set(pairing);
+        ref.read(sessionProvider.notifier).pair();
+        context.go(OnboardingRoutes.paired);
+        return;
+      }
+      error = 'That code has expired. Ask for a new one.';
+    } on Object {
+      error = "Couldn't reach Moose's server. Try again.";
+    }
+    if (!mounted) return;
+    unawaited(HapticFeedback.heavyImpact());
+    setState(() {
+      _joining = false;
+      _error = error;
+    });
   }
 
   @override
@@ -619,7 +685,7 @@ class _JoinPageState extends ConsumerState<JoinPage> {
       bottom: [
         VButton.primary(
           'Join',
-          enabled: code.length == 6,
+          enabled: code.length == 6 && !_joining,
           onPressed: () => _join(code),
         ),
       ],
@@ -639,6 +705,12 @@ class ScanPage extends ConsumerWidget {
       ink: VColors.white,
       child: GestureDetector(
         onTap: () {
+          if (ref.read(onNeonProvider)) {
+            // The camera reader isn't in yet: type the code.
+            showToast(context, 'Type their code for now');
+            context.pop();
+            return;
+          }
           HapticFeedback.heavyImpact();
           ref.read(sessionProvider.notifier).pair();
           context.go(OnboardingRoutes.paired);
