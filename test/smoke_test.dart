@@ -202,6 +202,53 @@ void main() {
     }
   }
 
+  // The screens that turn with the phone, in landscape.
+  final turning = <String, Future<void> Function(BuildContext)>{
+    'Viewer': (c) => pushPage<void>(
+      c,
+      (_) => MediaViewer(
+        items: [
+          for (final m in MockData.gallery())
+            ViewerItem(media: m, from: 'Aatika', at: MockData.mockNow),
+        ],
+        start: 2,
+      ),
+    ),
+    'Video call': (c) => pushPage<void>(
+      c,
+      (_) => const CallPage(video: true, answersAfter: Duration.zero),
+    ),
+    'Board': (c) => pushPage<void>(c, (_) => const BoardPage(id: 'sunday')),
+  };
+  for (final wallpaper in ['night', 'paper']) {
+    for (final MapEntry(:key, :value) in turning.entries) {
+      testWidgets('landscape, $wallpaper: $key', (t) async {
+        t.view.physicalSize = const Size(2400, 1080);
+        t.view.devicePixelRatio = 2.625;
+        addTearDown(t.view.reset);
+        final c = ProviderContainer();
+        addTearDown(c.dispose);
+        c
+            .read(chatThemeProvider.notifier)
+            .set(ChatTheme(wallpaper: WallpaperRef.builtin(wallpaper)));
+        c
+            .read(sessionProvider.notifier)
+            .set(c.read(sessionProvider).copyWith(locked: false));
+        await t.pumpWidget(
+          UncontrolledProviderScope(container: c, child: const MooseApp()),
+        );
+        await t.pump(const Duration(milliseconds: 600));
+        unawaited(value(t.element(find.byType(ChatPage))));
+        for (var i = 0; i < 24; i++) {
+          await t.pump(const Duration(milliseconds: 50));
+        }
+        expect(t.takeException(), isNull, reason: key);
+        await t.pumpWidget(const SizedBox.shrink());
+        await t.pump(const Duration(seconds: 5));
+      });
+    }
+  }
+
   test('VColors keeps the moment colours apart from the inks', () {
     for (final m in VMoment.values) {
       expect(m.color, isNot(VColors.white));

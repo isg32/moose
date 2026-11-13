@@ -14,6 +14,7 @@ import '../../core/widgets/v_ink.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../common/choice_sheet.dart';
+import '../common/rotation.dart';
 import '../common/strokes.dart';
 import '../common/toast.dart';
 import '../stickers/sticker_maker.dart';
@@ -374,8 +375,12 @@ class _BoardPageState extends ConsumerState<BoardPage> {
         .watch(doodlesProvider)
         .firstWhere((d) => d.id == widget.id, orElse: () => _doodle);
     final partner = ref.watch(pairingProvider).partner.name;
-    final top = MediaQuery.paddingOf(context).top;
-    final bottom = MediaQuery.paddingOf(context).bottom;
+    final pad = MediaQuery.paddingOf(context);
+    final top = pad.top;
+    final bottom = pad.bottom;
+    // In landscape the dock stands down the left side; the board keeps its
+    // shape so both phones see the same page.
+    final wide = isLandscape(context);
     final pen = _pen(_tool);
     final live = _live;
     final shown = [
@@ -395,151 +400,155 @@ class _BoardPageState extends ConsumerState<BoardPage> {
         ? _strokes.where((s) => s.by == 'partner').lastOrNull?.points.lastOrNull
         : null;
 
-    return ColoredBox(
-      color: VInk.surfaceOf(context),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          LayoutBuilder(
-            builder: (context, box) {
-              final size = box.biggest;
-              final k = _scale(size);
-              final o = _origin(size);
-              final bounds = _pickedBounds();
-              return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onPanStart: (d) => _down(d.localPosition, size),
-                onPanUpdate: (d) => _move(d.localPosition, size, d.delta),
-                onPanEnd: (_) => _up(),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    PaperView(doodle.paper),
-                    CustomPaint(
-                      painter: StrokesPainter(
-                        shown,
-                        space: boardSpace,
-                        repaintKey: _tick,
-                      ),
-                    ),
-                    if (live != null &&
-                        (_tool == PenTool.lasso || _tool == PenTool.eraser))
-                      CustomPaint(
-                        painter: _Trace(
-                          live,
-                          k,
-                          o,
-                          VInk.of(context),
-                          dashed: _tool == PenTool.lasso,
-                        ),
-                      ),
-                    if (bounds != null) ...[
-                      Positioned.fromRect(
-                        rect: Rect.fromLTRB(
-                          o.dx + bounds.left * k - 10,
-                          o.dy + bounds.top * k - 10,
-                          o.dx + bounds.right * k + 10,
-                          o.dy + bounds.bottom * k + 10,
-                        ),
-                        child: IgnorePointer(
-                          child: _SelectionBox(ink: VInk.of(context)),
-                        ),
-                      ),
-                    ],
-                    if (partnerAt != null)
-                      Positioned(
-                        left: o.dx + partnerAt.dx * k,
-                        top: o.dy + partnerAt.dy * k,
-                        child: IgnorePointer(
-                          child: _PartnerCursor(name: partner),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            },
-          ),
-          // The top bar: back, name and who's here, undo, redo, more.
-          Positioned(
-            left: 14,
-            right: 14,
-            top: top + 8,
-            child: Row(
-              children: [
-                _GlassButton(
-                  VIcon.back,
-                  'Back',
-                  () => Navigator.of(context).pop(),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return AllowRotation(
+      child: ColoredBox(
+        color: VInk.surfaceOf(context),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            LayoutBuilder(
+              builder: (context, box) {
+                final size = box.biggest;
+                final k = _scale(size);
+                final o = _origin(size);
+                final bounds = _pickedBounds();
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanStart: (d) => _down(d.localPosition, size),
+                  onPanUpdate: (d) => _move(d.localPosition, size, d.delta),
+                  onPanEnd: (_) => _up(),
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Text(
-                        doodle.name,
-                        style: VText.inter(15, weight: 600),
-                        overflow: TextOverflow.ellipsis,
+                      PaperView(doodle.paper),
+                      CustomPaint(
+                        painter: StrokesPainter(
+                          shown,
+                          space: boardSpace,
+                          repaintKey: _tick,
+                        ),
                       ),
-                      Text(
-                        _picked.isNotEmpty
-                            ? '${_picked.length} stroke${_picked.length == 1 ? '' : 's'} selected'
-                            : doodle.partnerHere
-                            ? '$partner is drawing'
-                            : 'Shared with $partner',
-                        style: VText.secondary,
-                      ),
+                      if (live != null &&
+                          (_tool == PenTool.lasso || _tool == PenTool.eraser))
+                        CustomPaint(
+                          painter: _Trace(
+                            live,
+                            k,
+                            o,
+                            VInk.of(context),
+                            dashed: _tool == PenTool.lasso,
+                          ),
+                        ),
+                      if (bounds != null) ...[
+                        Positioned.fromRect(
+                          rect: Rect.fromLTRB(
+                            o.dx + bounds.left * k - 10,
+                            o.dy + bounds.top * k - 10,
+                            o.dx + bounds.right * k + 10,
+                            o.dy + bounds.bottom * k + 10,
+                          ),
+                          child: IgnorePointer(
+                            child: _SelectionBox(ink: VInk.of(context)),
+                          ),
+                        ),
+                      ],
+                      if (partnerAt != null)
+                        Positioned(
+                          left: o.dx + partnerAt.dx * k,
+                          top: o.dy + partnerAt.dy * k,
+                          child: IgnorePointer(
+                            child: _PartnerCursor(name: partner),
+                          ),
+                        ),
                     ],
                   ),
-                ),
-                Opacity(
-                  opacity: _undo.isEmpty ? 0.35 : 1,
-                  child: _GlassButton(VIcon.undo, 'Undo', _undoOne),
-                ),
-                const SizedBox(width: 8),
-                Opacity(
-                  opacity: _redo.isEmpty ? 0.35 : 1,
-                  child: _GlassButton(VIcon.redo, 'Redo', _redoOne),
-                ),
-                const SizedBox(width: 8),
-                _GlassButton(VIcon.more, 'More', _more),
-              ],
+                );
+              },
             ),
-          ),
-          if (_picked.isNotEmpty && _tool == PenTool.lasso)
+            // The top bar: back, name and who's here, undo, redo, more.
             Positioned(
-              left: 0,
-              right: 0,
-              top: top + 150,
-              child: Center(child: LassoBar(onAction: _lassoAction)),
+              left: 14,
+              right: 14,
+              top: top + 8,
+              child: Row(
+                children: [
+                  _GlassButton(
+                    VIcon.back,
+                    'Back',
+                    () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          doodle.name,
+                          style: VText.inter(15, weight: 600),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          _picked.isNotEmpty
+                              ? '${_picked.length} stroke${_picked.length == 1 ? '' : 's'} selected'
+                              : doodle.partnerHere
+                              ? '$partner is drawing'
+                              : 'Shared with $partner',
+                          style: VText.secondary,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Opacity(
+                    opacity: _undo.isEmpty ? 0.35 : 1,
+                    child: _GlassButton(VIcon.undo, 'Undo', _undoOne),
+                  ),
+                  const SizedBox(width: 8),
+                  Opacity(
+                    opacity: _redo.isEmpty ? 0.35 : 1,
+                    child: _GlassButton(VIcon.redo, 'Redo', _redoOne),
+                  ),
+                  const SizedBox(width: 8),
+                  _GlassButton(VIcon.more, 'More', _more),
+                ],
+              ),
             ),
-          // The dock (C32).
-          Positioned(
-            left: 10,
-            right: 10,
-            bottom: bottom + 26,
-            child: _Dock(
-              tool: _tool,
-              argb: _argb,
-              onTool: (t) {
-                HapticFeedback.selectionClick();
-                if (t == _tool && t != PenTool.lasso) {
+            if (_picked.isNotEmpty && _tool == PenTool.lasso)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: top + 150,
+                child: Center(child: LassoBar(onAction: _lassoAction)),
+              ),
+            // The dock (C32).
+            Positioned(
+              left: 10 + pad.left,
+              right: wide ? null : 10,
+              top: wide ? top + 60 : null,
+              bottom: wide ? bottom + 10 : bottom + 26,
+              child: _Dock(
+                vertical: wide,
+                tool: _tool,
+                argb: _argb,
+                onTool: (t) {
+                  HapticFeedback.selectionClick();
+                  if (t == _tool && t != PenTool.lasso) {
+                    _options();
+                  } else {
+                    setState(() {
+                      _tool = t;
+                      _picked = {};
+                    });
+                  }
+                },
+                onHold: (t) {
+                  setState(() => _tool = t);
                   _options();
-                } else {
-                  setState(() {
-                    _tool = t;
-                    _picked = {};
-                  });
-                }
-              },
-              onHold: (t) {
-                setState(() => _tool = t);
-                _options();
-              },
-              onColour: _colour,
+                },
+                onColour: _colour,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -586,7 +595,11 @@ class _Dock extends StatelessWidget {
     required this.onTool,
     required this.onHold,
     required this.onColour,
+    this.vertical = false,
   });
+
+  /// Down the side, in landscape.
+  final bool vertical;
 
   final PenTool tool;
   final int argb;
@@ -610,15 +623,18 @@ class _Dock extends StatelessWidget {
   Widget build(BuildContext context) {
     final ink = VInk.of(context);
     final paper = VInk.surfaceOf(context);
+    final dir = vertical ? Axis.vertical : Axis.horizontal;
     return VGlass(
       radius: 32,
       tint: VPalette.of(context).glassSheet,
       blur: 18,
       child: SizedBox(
-        height: 64,
-        child: Row(
+        height: vertical ? null : 64,
+        width: vertical ? 64 : null,
+        child: Flex(
+          direction: dir,
           children: [
-            const SizedBox(width: 6),
+            const SizedBox.square(dimension: 6),
             for (final t in PenTool.values)
               Expanded(
                 child: Semantics(
@@ -631,12 +647,11 @@ class _Dock extends StatelessWidget {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       curve: Curves.easeOut,
-                      height: t == tool ? 46 : 40,
-                      transform: Matrix4.translationValues(
-                        0,
-                        t == tool ? -8 : 0,
-                        0,
-                      ),
+                      height: vertical ? null : (t == tool ? 46 : 40),
+                      width: vertical ? (t == tool ? 46 : 40) : null,
+                      transform: vertical
+                          ? Matrix4.translationValues(t == tool ? 8 : 0, 0, 0)
+                          : Matrix4.translationValues(0, t == tool ? -8 : 0, 0),
                       decoration: BoxDecoration(
                         color: t == tool ? ink : null,
                         borderRadius: BorderRadius.circular(17),
@@ -656,10 +671,13 @@ class _Dock extends StatelessWidget {
                 ),
               ),
             Container(
-              width: 1,
-              height: 30,
+              width: vertical ? 30 : 1,
+              height: vertical ? 1 : 30,
               color: ink,
-              margin: const EdgeInsets.symmetric(horizontal: 5),
+              margin: EdgeInsets.symmetric(
+                horizontal: vertical ? 0 : 5,
+                vertical: vertical ? 5 : 0,
+              ),
             ),
             Semantics(
               button: true,
@@ -680,7 +698,7 @@ class _Dock extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox.square(dimension: 12),
           ],
         ),
       ),

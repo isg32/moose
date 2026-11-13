@@ -12,6 +12,7 @@ import '../../core/widgets/v_progress.dart';
 import '../../data/models.dart';
 import '../common/art.dart';
 import '../common/parts.dart';
+import '../common/rotation.dart';
 
 /// One item the viewer can show, with who sent it and when.
 class ViewerItem {
@@ -107,140 +108,168 @@ class _MediaViewerState extends State<MediaViewer> {
     return '$day, ${hhmm(t)}';
   }
 
+  Widget _header(ViewerItem item) => Row(
+    children: [
+      VCircleButton(
+        icon: VIcon.back,
+        size: 44,
+        onTap: () => Navigator.of(context).pop(),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item.from, style: VText.inter(15, weight: 600)),
+            Text(
+              '${_when(item.at)} · ${_at + 1} of ${widget.items.length}',
+              style: VText.secondary,
+            ),
+          ],
+        ),
+      ),
+      VCircleButton(icon: VIcon.more, size: 44, onTap: () {}),
+    ],
+  );
+
+  Widget _pages() => PageView.builder(
+    controller: _page,
+    itemCount: widget.items.length,
+    onPageChanged: (i) {
+      _clock?.cancel();
+      setState(() {
+        _at = i;
+        _playing = false;
+        _position = 0;
+      });
+    },
+    itemBuilder: (context, i) {
+      final it = widget.items[i];
+      return InteractiveViewer(
+        maxScale: 4,
+        child: Center(
+          child: AspectRatio(
+            aspectRatio: it.media.aspect,
+            child: ArtBox(
+              art: it.media.art,
+              child: it.video
+                  ? Center(
+                      child: Semantics(
+                        button: true,
+                        label: _playing ? 'Pause' : 'Play',
+                        child: VTappable(
+                          onTap: _toggle,
+                          child: Opacity(
+                            opacity: _playing && i == _at ? 0 : 1,
+                            child: Container(
+                              width: 68,
+                              height: 68,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: VColors.black.withValues(alpha: 0.4),
+                                border: Border.all(color: VColors.white),
+                              ),
+                              child: const Center(
+                                child: VIconView(
+                                  VIcon.play,
+                                  size: 28,
+                                  color: VColors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+        ),
+      );
+    },
+  );
+
+  Widget _scrubber(ViewerItem item) {
+    final total = item.media.duration ?? Duration.zero;
+    return Row(
+      children: [
+        Text(mss(total * _position), style: VText.doto(13)),
+        const SizedBox(width: 10),
+        Expanded(child: VBar(value: _position, height: 4)),
+        const SizedBox(width: 10),
+        Text(mss(total), style: VText.doto(13)),
+      ],
+    );
+  }
+
+  Widget _actions(ViewerItem item) => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceAround,
+    children: [
+      _Action(VIcon.reply, 'Reply', () {
+        Navigator.of(context).pop();
+        widget.onReply?.call(item);
+      }),
+      _Action(VIcon.download, 'Save', () => HapticFeedback.selectionClick()),
+      _Action(VIcon.share, 'Share', () => HapticFeedback.selectionClick()),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
     final paper = VInk.surfaceOf(context);
     final item = widget.items[_at];
-    final total = item.media.duration ?? Duration.zero;
-    return ColoredBox(
-      color: paper,
-      child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Row(
-                children: [
-                  VCircleButton(
-                    icon: VIcon.back,
-                    size: 44,
-                    onTap: () => Navigator.of(context).pop(),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(item.from, style: VText.inter(15, weight: 600)),
-                        Text(
-                          '${_when(item.at)} · ${_at + 1} of ${widget.items.length}',
-                          style: VText.secondary,
-                        ),
-                      ],
-                    ),
-                  ),
-                  VCircleButton(icon: VIcon.more, size: 44, onTap: () {}),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: PageView.builder(
-                controller: _page,
-                itemCount: widget.items.length,
-                onPageChanged: (i) {
-                  _clock?.cancel();
-                  setState(() {
-                    _at = i;
-                    _playing = false;
-                    _position = 0;
-                  });
-                },
-                itemBuilder: (context, i) {
-                  final it = widget.items[i];
-                  return InteractiveViewer(
-                    maxScale: 4,
-                    child: Center(
-                      child: AspectRatio(
-                        aspectRatio: it.media.aspect,
-                        child: ArtBox(
-                          art: it.media.art,
-                          child: it.video
-                              ? Center(
-                                  child: Semantics(
-                                    button: true,
-                                    label: _playing ? 'Pause' : 'Play',
-                                    child: VTappable(
-                                      onTap: _toggle,
-                                      child: Opacity(
-                                        opacity: _playing && i == _at ? 0 : 1,
-                                        child: Container(
-                                          width: 68,
-                                          height: 68,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: VColors.black.withValues(
-                                              alpha: 0.4,
-                                            ),
-                                            border: Border.all(
-                                              color: VColors.white,
-                                            ),
-                                          ),
-                                          child: const Center(
-                                            child: VIconView(
-                                              VIcon.play,
-                                              size: 28,
-                                              color: VColors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : null,
+    // In landscape the picture takes the screen and the rest sits beside
+    // it.
+    final wide = isLandscape(context);
+    return AllowRotation(
+      child: ColoredBox(
+        color: paper,
+        child: SafeArea(
+          child: wide
+              ? Row(
+                  children: [
+                    Expanded(child: _pages()),
+                    SizedBox(
+                      width: 280,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+                        child: Column(
+                          children: [
+                            _header(item),
+                            const Spacer(),
+                            if (item.video) ...[
+                              _scrubber(item),
+                              const SizedBox(height: 18),
+                            ],
+                            _actions(item),
+                          ],
                         ),
                       ),
                     ),
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
-              child: Column(
-                children: [
-                  if (item.video) ...[
-                    Row(
-                      children: [
-                        Text(mss(total * _position), style: VText.doto(13)),
-                        const SizedBox(width: 10),
-                        Expanded(child: VBar(value: _position, height: 4)),
-                        const SizedBox(width: 10),
-                        Text(mss(total), style: VText.doto(13)),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
                   ],
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _Action(VIcon.reply, 'Reply', () {
-                        Navigator.of(context).pop();
-                        widget.onReply?.call(item);
-                      }),
-                      _Action(VIcon.download, 'Save', () {
-                        HapticFeedback.selectionClick();
-                      }),
-                      _Action(VIcon.share, 'Share', () {
-                        HapticFeedback.selectionClick();
-                      }),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
+                )
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: _header(item),
+                    ),
+                    const SizedBox(height: 20),
+                    Expanded(child: _pages()),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+                      child: Column(
+                        children: [
+                          if (item.video) ...[
+                            _scrubber(item),
+                            const SizedBox(height: 18),
+                          ],
+                          _actions(item),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );

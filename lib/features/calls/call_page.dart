@@ -18,6 +18,7 @@ import '../common/art.dart';
 import '../common/avatar.dart';
 import '../common/overlay.dart';
 import '../common/parts.dart';
+import '../common/rotation.dart';
 
 enum CallStage { calling, incoming, connected }
 
@@ -137,16 +138,19 @@ class _CallPageState extends ConsumerState<CallPage>
   Widget build(BuildContext context) {
     final partner = ref.watch(pairingProvider).partner;
     if (_stage == CallStage.connected && _video) {
-      return _VideoCall(
-        partner: partner,
-        length: _length,
-        muted: _muted,
-        cameraOff: _cameraOff,
-        front: _front,
-        onFlip: () => setState(() => _front = !_front),
-        onMute: () => setState(() => _muted = !_muted),
-        onCamera: () => setState(() => _cameraOff = !_cameraOff),
-        onEnd: _end,
+      // Video turns with the phone (landscape where it helps).
+      return AllowRotation(
+        child: _VideoCall(
+          partner: partner,
+          length: _length,
+          muted: _muted,
+          cameraOff: _cameraOff,
+          front: _front,
+          onFlip: () => setState(() => _front = !_front),
+          onMute: () => setState(() => _muted = !_muted),
+          onCamera: () => setState(() => _cameraOff = !_cameraOff),
+          onEnd: _end,
+        ),
       );
     }
     return Stack(
@@ -471,8 +475,63 @@ class _VideoCall extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final top = MediaQuery.paddingOf(context).top;
-    final bottom = MediaQuery.paddingOf(context).bottom;
+    final pad = MediaQuery.paddingOf(context);
+    final top = pad.top;
+    final bottom = pad.bottom;
+    // In landscape the controls stand in a column down the right side.
+    final wide = isLandscape(context);
+    final buttons = <Widget>[
+      Semantics(
+        button: true,
+        label: 'Flip camera',
+        child: VCircleButton(icon: VIcon.swapCamera, size: 54, onTap: onFlip),
+      ),
+      Semantics(
+        button: true,
+        label: muted ? 'Unmute' : 'Mute',
+        child: VCircleButton(
+          icon: VIcon.micOff,
+          size: 54,
+          filled: muted,
+          onTap: onMute,
+        ),
+      ),
+      Semantics(
+        button: true,
+        label: cameraOff ? 'Camera on' : 'Camera off',
+        child: VCircleButton(
+          icon: VIcon.video,
+          size: 54,
+          filled: cameraOff,
+          onTap: onCamera,
+        ),
+      ),
+      Semantics(
+        button: true,
+        label: 'End call',
+        child: VTappable(
+          onTap: onEnd,
+          child: Container(
+            width: 54,
+            height: 54,
+            decoration: const BoxDecoration(
+              color: VColors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Transform.rotate(
+                angle: 2.36,
+                child: const VIconView(
+                  VIcon.phone,
+                  size: 24,
+                  color: VColors.black,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ];
     return VInkScope(
       ink: VColors.white,
       child: ColoredBox(
@@ -515,10 +574,10 @@ class _VideoCall extends StatelessWidget {
               ),
             ),
             Positioned(
-              right: 16,
+              right: wide ? 112 + pad.right : 16,
               top: top + 12,
-              width: 104,
-              height: 150,
+              width: wide ? 150 : 104,
+              height: wide ? 104 : 150,
               child: VOutlined(
                 radius: 20,
                 child: ClipRRect(
@@ -535,73 +594,21 @@ class _VideoCall extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: 14,
-              right: 14,
-              bottom: bottom + 30,
+              left: wide ? null : 14,
+              right: wide ? 14 + pad.right : 14,
+              top: wide ? 16 : null,
+              bottom: wide ? 16 : bottom + 30,
+              width: wide ? 84 : null,
               child: VGlass(
                 radius: 42,
                 tint: VColors.black.withValues(alpha: 0.45),
                 blur: 18,
                 child: SizedBox(
-                  height: 84,
-                  child: Row(
+                  height: wide ? null : 84,
+                  child: Flex(
+                    direction: wide ? Axis.vertical : Axis.horizontal,
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Semantics(
-                        button: true,
-                        label: 'Flip camera',
-                        child: VCircleButton(
-                          icon: VIcon.swapCamera,
-                          size: 54,
-                          onTap: onFlip,
-                        ),
-                      ),
-                      Semantics(
-                        button: true,
-                        label: muted ? 'Unmute' : 'Mute',
-                        child: VCircleButton(
-                          icon: VIcon.micOff,
-                          size: 54,
-                          filled: muted,
-                          onTap: onMute,
-                        ),
-                      ),
-                      Semantics(
-                        button: true,
-                        label: cameraOff ? 'Camera on' : 'Camera off',
-                        child: VCircleButton(
-                          icon: VIcon.video,
-                          size: 54,
-                          filled: cameraOff,
-                          onTap: onCamera,
-                        ),
-                      ),
-                      Semantics(
-                        button: true,
-                        label: 'End call',
-                        child: VTappable(
-                          onTap: onEnd,
-                          child: Container(
-                            width: 54,
-                            height: 54,
-                            decoration: const BoxDecoration(
-                              color: VColors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Transform.rotate(
-                                angle: 2.36,
-                                child: const VIconView(
-                                  VIcon.phone,
-                                  size: 24,
-                                  color: VColors.black,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    children: buttons,
                   ),
                 ),
               ),
