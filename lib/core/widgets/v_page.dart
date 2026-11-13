@@ -333,6 +333,67 @@ class VVeil extends StatelessWidget {
   }
 }
 
+/// A band along the top or bottom of the screen painted with the soft
+/// wallpaper (see [VVeilBackdrop]), solid at the edge and fading out over
+/// [fade]: what scrolls under it softens away, like a blur, but it is a
+/// plain picture, so it never pops in or out with a transition.
+///
+/// It must span the screen's width and touch [top]'s edge, so the soft
+/// copy lines up with the wallpaper behind it.
+class VSoftEdge extends StatelessWidget {
+  const VSoftEdge({
+    super.key,
+    required this.top,
+    required this.solid,
+    this.fade = 40,
+  });
+
+  final bool top;
+  final double solid;
+  final double fade;
+
+  @override
+  Widget build(BuildContext context) {
+    final screen = MediaQuery.sizeOf(context);
+    final height = solid + fade;
+    final soft = VVeilBackdrop.of(context);
+    final paper = VColors.onColor(VPalette.of(context).ink);
+    final stops = [0.0, solid / height, 1.0];
+    final begin = top ? Alignment.topCenter : Alignment.bottomCenter;
+    final end = top ? Alignment.bottomCenter : Alignment.topCenter;
+    return IgnorePointer(
+      child: RepaintBoundary(
+        child: SizedBox(
+          height: height,
+          child: ShaderMask(
+            blendMode: BlendMode.dstIn,
+            shaderCallback: (r) => LinearGradient(
+              begin: begin,
+              end: end,
+              colors: const [VColors.black, VColors.black, VColors.transparent],
+              stops: stops,
+            ).createShader(r),
+            child: ClipRect(
+              child: OverflowBox(
+                alignment: top ? Alignment.topCenter : Alignment.bottomCenter,
+                minHeight: screen.height,
+                maxHeight: screen.height,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ?soft,
+                    ColoredBox(color: paper.withValues(alpha: 0.18)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// The soft (blurred-looking) wallpaper [VVeil] draws under its tint, set
 /// once over the app by the shared theme.
 class VVeilBackdrop extends InheritedWidget {

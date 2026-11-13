@@ -704,10 +704,29 @@ class _VEdgeBlurState extends State<VEdgeBlur> {
 
 /// [VEdgeBlur] behind the status bar. Page titles start 16 below the bar,
 /// where the blur is already close to nothing.
+///
+/// Inside the app shell ([VShellEdges]) the shell draws it once, over every
+/// tab, so pages there draw none: one blur that never comes and goes.
 class VStatusBarBlur extends StatelessWidget {
-  const VStatusBarBlur({super.key});
+  const VStatusBarBlur({super.key, this.always = false});
+
+  /// Draw it even under [VShellEdges] (the shell's own).
+  final bool always;
 
   @override
-  Widget build(BuildContext context) =>
-      VEdgeBlur(edge: VEdge.top, solid: MediaQuery.paddingOf(context).top);
+  Widget build(BuildContext context) {
+    if (!always && VShellEdges.within(context)) return const SizedBox.shrink();
+    return VEdgeBlur(edge: VEdge.top, solid: MediaQuery.paddingOf(context).top);
+  }
+}
+
+/// Marks what the app shell draws its edges over (see [VStatusBarBlur]).
+class VShellEdges extends InheritedWidget {
+  const VShellEdges({super.key, required super.child});
+
+  static bool within(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<VShellEdges>() != null;
+
+  @override
+  bool updateShouldNotify(VShellEdges old) => false;
 }

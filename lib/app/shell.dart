@@ -89,10 +89,20 @@ class _AppShellState extends State<AppShell> {
       child: Stack(
         children: [
           Positioned.fill(
-            child: _TabSwap(index: shell.currentIndex, child: shell),
+            child: _TabSwap(
+              index: shell.currentIndex,
+              child: VShellEdges(child: shell),
+            ),
           ),
-          // Content scrolling under the pill softens into a blur that is
-          // strongest at the bottom edge.
+          // One blur along the top and one along the bottom, drawn here over
+          // every tab and never part of a tab's transition (as Cariño): they
+          // stay exactly as they are when tabs switch.
+          const Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: VStatusBarBlur(always: true),
+          ),
           Positioned(
             left: 0,
             right: 0,
@@ -209,7 +219,10 @@ class _CallListener extends ConsumerWidget {
   }
 }
 
-/// Switching tabs: the new tab fades up and settles in, not a hard cut.
+/// Switching tabs: the new tab shows at once, under a soft copy of the
+/// wallpaper that fades away (as Cariño's). The tab itself is never faded
+/// or scaled, so the glass and blurs in it draw the same from the first
+/// frame and nothing pops in at the end.
 class _TabSwap extends StatefulWidget {
   const _TabSwap({required this.index, required this.child});
 
@@ -224,7 +237,7 @@ class _TabSwapState extends State<_TabSwap>
     with SingleTickerProviderStateMixin {
   late final _c = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 280),
+    duration: const Duration(milliseconds: 260),
     value: 1,
   );
 
@@ -240,23 +253,26 @@ class _TabSwapState extends State<_TabSwap>
     super.dispose();
   }
 
-  late final _eased = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
-
   @override
-  Widget build(BuildContext context) => VEntrance(
-    // The pages' veils grow their blur with this (see VVeil).
-    animation: _eased,
-    child: AnimatedBuilder(
-      animation: _c,
-      child: widget.child,
-      builder: (context, child) {
-        if (_c.value == 1) return child!;
-        final t = _eased.value;
-        return Opacity(
-          opacity: 0.35 + 0.65 * t,
-          child: Transform.scale(scale: 0.98 + 0.02 * t, child: child),
-        );
-      },
-    ),
-  );
+  Widget build(BuildContext context) {
+    final soft = VVeilBackdrop.of(context);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        widget.child,
+        if (soft != null)
+          IgnorePointer(
+            child: AnimatedBuilder(
+              animation: _c,
+              child: RepaintBoundary(child: soft),
+              builder: (context, child) {
+                final left = 1 - Curves.easeOutCubic.transform(_c.value);
+                if (left <= 0) return const SizedBox.shrink();
+                return Opacity(opacity: left * 0.9, child: child);
+              },
+            ),
+          ),
+      ],
+    );
+  }
 }
