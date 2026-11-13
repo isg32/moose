@@ -6,11 +6,12 @@ name: Build and release
 # No keystore is committed. It comes from the MOOSE_KEYSTORE_BASE64
 # secret (`base64 -w0 release-key.jks`), is decoded into the runner's temp
 # folder for the build, and android/app/build.gradle.kts reads it through
-# the MOOSE_* variables, the same way build_signed.sh does locally.
+# the MOOSE_* variables.
 #
 # Secrets (in the "deployment" environment): MOOSE_KEYSTORE_BASE64,
-# MOOSE_KEYSTORE_PASSWORD, MOOSE_KEY_PASSWORD and, optionally,
-# MOOSE_KEY_ALIAS (defaults to "upload").
+# MOOSE_KEYSTORE_PASSWORD, MOOSE_KEY_PASSWORD, MOOSE_API_URL and
+# MOOSE_AUTH_URL; optionally MOOSE_KEY_ALIAS (defaults to "upload") and
+# MOOSE_KLIPY_KEY (better GIF search).
 
 on:
   push:
@@ -20,10 +21,17 @@ on:
 permissions:
   contents: write
 
+# A newer push replaces a build still running for an older one.
+concurrency:
+  group: release
+  cancel-in-progress: true
+
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
     environment: deployment
+    # A stuck build fails in time instead of holding the runner for hours.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -36,6 +44,17 @@ jobs:
         with:
           flutter-version: '3.47.9'
           cache: true
+
+      # Gradle comes from GitHub's file host, which sometimes times out:
+      # keep it (and the dependency cache) between runs.
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/wrapper
+            ~/.gradle/caches
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties', 'android/**/*.gradle.kts') }}
+          restore-keys: gradle-${{ runner.os }}-
 
       - name: Accept Android SDK licences
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
@@ -67,14 +86,53 @@ jobs:
       - name: Test
         run: flutter test
 
-      - name: Generate env.json for dart-define
+      # The backend URLs (and KLIPY key) for --dart-define-from-file. jq
+      # writes the JSON, so a value with a quote can't break it.
+      - name: Write env.json
+        env:
+          MOOSE_API_URL: ${{ secrets.MOOSE_API_URL }}
+          MOOSE_AUTH_URL: ${{ secrets.MOOSE_AUTH_URL }}
+          MOOSE_KLIPY_KEY: ${{ secrets.MOOSE_KLIPY_KEY }}
         run: |
-          cat << EOF > env.json
-          {
-            "MOOSE_API_URL": "${{ secrets.MOOSE_API_URL }}",
-            "MOOSE_AUTH_URL": "${{ secrets.MOOSE_AUTH_URL }}"
-          }
-          EOF
+          if [ -z "$MOOSE_API_URL" ] || [ -z "$MOOSE_AUTH_URL" ]; then
+            echo "MOOSE_API_URL and MOOSE_AUTH_URL must be set" >&2
+            exit 1
+          fi
+          jq -n \
+            --arg api "$MOOSE_API_URL" \
+            --arg auth "$MOOSE_AUTH_URL" \
+            --arg klipy "$MOOSE_KLIPY_KEY" \
+            '{MOOSE_API_URL: $api, MOOSE_AUTH_URL: $auth}
+              + (if $klipy == "" then {} else {MOOSE_KLIPY_KEY: $klipy} end)' \
+            > env.json
+
+      # Gradle's own downloader tries one host once, and GitHub's file host
+      # sometimes answers 504 for hours. aria2 fetches the same file from the
+      # official host and two mirrors, retrying, and checks it against the
+      # SHA-256 pinned in gradle-wrapper.properties (when there is one).
+      - name: Fetch Gradle
+        run: |
+          sudo apt-get install -y -qq aria2 > /dev/null
+          PROPS=android/gradle/wrapper/gradle-wrapper.properties
+          URL=$(sed -n 's/^distributionUrl=//p' "$PROPS" | sed 's#\\:#:#')
+          SUM=$(sed -n 's/^distributionSha256Sum=//p' "$PROPS")
+          FILE=$(basename "$URL")
+          VERSION=$(echo "$FILE" | sed -E 's/gradle-(.*)-(bin|all).zip/\1/')
+          aria2c --max-tries=10 --retry-wait=15 --split=3 \
+            ${SUM:+--checksum="sha-256=$SUM"} --dir="$RUNNER_TEMP" --out=gradle.zip \
+            "$URL" \
+            "https://mirrors.cloud.tencent.com/gradle/$FILE" \
+            "https://mirrors.aliyun.com/gradle/distributions/v$VERSION/$FILE"
+          sed -i "s#^distributionUrl=.*#distributionUrl=file\\://$RUNNER_TEMP/gradle.zip#" "$PROPS"
+
+      # The committed gradle.properties asks for an 8 GB heap and 4 GB of
+      # metaspace; with R8 and the Kotlin daemon on top, that starves the
+      # 16 GB runner until it drops off ("lost communication"). Smaller here.
+      - name: Fit Gradle to the runner
+        run: |
+          sed -i 's#^org.gradle.jvmargs=.*#org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError#' android/gradle.properties
+          echo 'kotlin.daemon.jvmargs=-Xmx1g' >> android/gradle.properties
+          echo 'org.gradle.workers.max=2' >> android/gradle.properties
 
       - name: Build signed APKs
         env:
@@ -82,26 +140,35 @@ jobs:
           MOOSE_KEYSTORE_PASSWORD: ${{ secrets.MOOSE_KEYSTORE_PASSWORD }}
           MOOSE_KEY_PASSWORD: ${{ secrets.MOOSE_KEY_PASSWORD }}
           MOOSE_KEY_ALIAS: ${{ secrets.MOOSE_KEY_ALIAS }}
-        run: flutter build apk --release --split-per-abi --dart-define-from-file=env.json
+        # Retried, since a download can time out on a cold cache.
+        run: |
+          for attempt in 1 2 3; do
+            flutter build apk --release --split-per-abi --dart-define-from-file=env.json && exit 0
+            echo "Build attempt $attempt failed; retrying in 30 s" >&2
+            sleep 30
+          done
+          exit 1
 
       - name: Check the APKs are signed with the release key
         run: |
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
-          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
-            | grep -q "Android Debug" && { echo "Signed with the debug key" >&2; exit 1; } || true
+          if "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
+            | grep -q "Android Debug"; then
+            echo "Signed with the debug key" >&2
+            exit 1
+          fi
 
-      - name: Remove the keystore
+      - name: Remove the keystore and env.json
         if: always()
-        run: rm -f "$RUNNER_TEMP/release-key.jks"
+        run: rm -f "$RUNNER_TEMP/release-key.jks" env.json
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.VERSION }}-${{ steps.version.outputs.SHA }}
-          name: Idris ${{ steps.version.outputs.VERSION }}
+          name: Moose ${{ steps.version.outputs.VERSION }}
           body: |
-            **Commit:** ${{ steps.version.outputs.SHA }}
-            **Message:** ${{ steps.version.outputs.MESSAGE }}
+            **Commit:** ${{ steps.version.outputs.SHA }} · ${{ steps.version.outputs.MESSAGE }}
 
             For most phones: `app-arm64-v8a-release.apk`.
           files: |

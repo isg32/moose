@@ -5,6 +5,16 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Release signing: set by the release workflow (from secrets) or by hand,
+// never committed. Without them, release builds fall back to the debug key,
+// so `flutter build apk --release` still works with no setup.
+val releaseStoreFile = System.getenv("MOOSE_KEYSTORE_FILE")?.let { file(it) }
+val releaseStorePassword = System.getenv("MOOSE_KEYSTORE_PASSWORD")?.takeIf { it.isNotEmpty() }
+val releaseKeyPassword =
+    System.getenv("MOOSE_KEY_PASSWORD")?.takeIf { it.isNotEmpty() } ?: releaseStorePassword
+val releaseKeyAlias = System.getenv("MOOSE_KEY_ALIAS")?.takeIf { it.isNotEmpty() } ?: "upload"
+val canSignRelease = releaseStorePassword != null && releaseStoreFile?.exists() == true
+
 android {
     namespace = "com.isg32.moose"
     // Firebase and notifications need androidx.core 1.19, built for API 37.
@@ -33,11 +43,22 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = releaseKeyAlias
+            keyPassword = releaseKeyPassword
+            storeFile = releaseStoreFile
+            storePassword = releaseStorePassword
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (canSignRelease) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             // R8 keeps NewPipe (song clips) and WebRTC (calls) whole.
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
