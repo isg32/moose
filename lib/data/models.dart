@@ -563,6 +563,30 @@ class AppSettings {
   final LockAfter lockAfter;
   final bool hideInRecents;
 
+  Map<String, Object?> toJson() => {
+    'enterSends': enterSends,
+    'autoplayGifs': autoplayGifs,
+    'autoDownload': autoDownload.name,
+    'showPreview': showPreview,
+    'appLock': appLock,
+    'lockAfter': lockAfter.name,
+    'hideInRecents': hideInRecents,
+  };
+
+  factory AppSettings.fromJson(Map<String, Object?> j) {
+    const d = AppSettings();
+    return AppSettings(
+      enterSends: j['enterSends'] as bool? ?? d.enterSends,
+      autoplayGifs: j['autoplayGifs'] as bool? ?? d.autoplayGifs,
+      autoDownload:
+          AutoDownload.values.asNameMap()[j['autoDownload']] ?? d.autoDownload,
+      showPreview: j['showPreview'] as bool? ?? d.showPreview,
+      appLock: j['appLock'] as bool? ?? d.appLock,
+      lockAfter: LockAfter.values.asNameMap()[j['lockAfter']] ?? d.lockAfter,
+      hideInRecents: j['hideInRecents'] as bool? ?? d.hideInRecents,
+    );
+  }
+
   AppSettings copyWith({
     bool? enterSends,
     bool? autoplayGifs,

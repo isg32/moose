@@ -21,7 +21,23 @@ import 'wire.dart';
 /// Moose on Neon: the hidden account, this phone's keys, the API and the
 /// conversation on disk. Opening needs no network, so Moose starts offline.
 class NeonBackend {
-  NeonBackend._(this.auth, this.api, this.identity, this.store, this.dir);
+  NeonBackend._(
+    this.auth,
+    this.api,
+    this.identity,
+    this.store,
+    this.dir,
+    this.vault,
+    this._lock,
+  );
+
+  final Vault vault;
+
+  /// The app lock as last saved: PIN, decoy PIN and the decoy's name.
+  final ({String pin, String? decoy, String decoyName}) _lock;
+  static const _kPin = 'lock.pin';
+  static const _kDecoy = 'lock.decoy';
+  static const _kDecoyName = 'lock.decoyName';
 
   final NeonAuth auth;
   final MooseApi api;
@@ -62,6 +78,12 @@ class NeonBackend {
       await Identity.load(vault),
       await LocalStore.open(dir),
       dir,
+      vault,
+      (
+        pin: await vault.read(_kPin) ?? '',
+        decoy: await vault.read(_kDecoy),
+        decoyName: await vault.read(_kDecoyName) ?? 'Neha',
+      ),
     );
   }
 
@@ -110,9 +132,19 @@ class NeonBackend {
       chatThemeProvider.overrideWith(() => _StoredTheme(store)),
       mediaSourceProvider.overrideWithValue(media),
       askNotificationsProvider.overrideWithValue(() => askNotifications()),
+      settingsProvider.overrideWith(() => _StoredSettings(store)),
       sessionProvider.overrideWith(
-        () => _StartSession(
-          Session(paired: store.paired, locked: false, name: store.myName),
+        () => _StoredSession(
+          vault,
+          Session(
+            paired: store.paired,
+            // With a PIN saved, Moose opens locked (C13).
+            locked: _lock.pin.isNotEmpty,
+            pin: _lock.pin,
+            decoyPin: _lock.decoy,
+            decoyName: _lock.decoyName,
+            name: store.myName,
+          ),
         ),
       ),
     ];
@@ -136,12 +168,55 @@ class _StoredTheme extends ChatThemeNotifier {
   }
 }
 
-class _StartSession extends SessionNotifier {
-  _StartSession(this._start);
+/// Local settings, kept with the conversation.
+class _StoredSettings extends SettingsNotifier {
+  _StoredSettings(this._store);
+  final LocalStore _store;
+
+  @override
+  AppSettings build() => _store.settings;
+
+  @override
+  void update(AppSettings Function(AppSettings) f) {
+    super.update(f);
+    _store
+      ..settings = state
+      ..changed();
+  }
+}
+
+/// The session, with the app lock kept in the Keystore.
+class _StoredSession extends SessionNotifier {
+  _StoredSession(this._vault, this._start);
+  final Vault _vault;
   final Session _start;
 
   @override
   Session build() => _start;
+
+  void _save() {
+    unawaited(_vault.write(NeonBackend._kPin, state.pin));
+    unawaited(_vault.write(NeonBackend._kDecoy, state.decoyPin));
+    unawaited(_vault.write(NeonBackend._kDecoyName, state.decoyName));
+  }
+
+  @override
+  void setPin(String pin) {
+    super.setPin(pin);
+    _save();
+  }
+
+  @override
+  void setDecoy(String pin, String name) {
+    super.setDecoy(pin, name);
+    _save();
+  }
+
+  @override
+  void removeLock() {
+    super.removeLock();
+    _save();
+  }
 }
 
 class NeonPairRepository implements PairRepository {

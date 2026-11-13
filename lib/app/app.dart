@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +9,7 @@ import '../data/providers.dart';
 import '../features/crash_overlay.dart';
 import '../features/lock/lock_pages.dart';
 import '../features/onboarding/onboarding_pages.dart';
+import '../platform/secure_window.dart';
 import 'moose_theme.dart';
 import 'router.dart';
 
@@ -48,6 +51,12 @@ class _MooseAppState extends ConsumerState<MooseApp> {
         if (mounted) setState(() => _splash = false);
       });
     }
+    // "Hide in recent apps": now, and whenever it's switched.
+    unawaited(SecureWindow.set(ref.read(settingsProvider).hideInRecents));
+    ref.listenManual(
+      settingsProvider.select((s) => s.hideInRecents),
+      (_, on) => unawaited(SecureWindow.set(on)),
+    );
     // Leaving Moose for longer than "Lock after" locks it (C36).
     _life = AppLifecycleListener(
       onHide: () => _left = DateTime.now(),

@@ -21,6 +21,7 @@ class LocalStore {
   List<String> securityCode = const [];
   List<Message> messages = const [];
   ChatTheme theme = const ChatTheme();
+  AppSettings settings = const AppSettings();
 
   Timer? _save;
   Future<void> _writing = Future.value();
@@ -50,6 +51,8 @@ class LocalStore {
     securityCode = [for (final g in (j['code'] as List?) ?? const []) '$g'];
     final t = (j['theme'] as Map?)?.cast<String, Object?>();
     if (t != null) theme = ChatTheme.fromJson(t);
+    final st = (j['settings'] as Map?)?.cast<String, Object?>();
+    if (st != null) settings = AppSettings.fromJson(st);
     messages = [
       for (final m in (j['messages'] as List?) ?? const [])
         _message((m as Map).cast<String, Object?>()),
@@ -64,6 +67,7 @@ class LocalStore {
     'since': since?.toIso8601String(),
     'code': securityCode,
     'theme': theme.toJson(),
+    'settings': settings.toJson(),
     'messages': [for (final m in messages) _stored(m)],
   };
 
