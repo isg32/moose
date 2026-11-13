@@ -567,21 +567,27 @@ class NeonChatRepository implements ChatRepository {
         case DoodleEnvelope(:final op):
           _emit(DoodleChanged(op));
         case ProfileEnvelope(:final name, :final blob, :final blobKey):
-          unawaited(() async {
-            String? photo;
-            if (blob != null && blobKey != null) {
-              try {
-                photo = await _download(blob, blobKey, 'partner-${uuid()}');
-              } on Object {
-                return;
+          // Taken (acked) only once its picture is here, else tried again.
+          String? photo;
+          if (blob != null && blobKey != null) {
+            try {
+              photo = await _download(blob, blobKey, 'partner-${uuid()}');
+            } on NetError catch (e) {
+              // Gone from storage: taken already, or too old. Let it go.
+              if (e.status != 404) {
+                _retry(m.id, ack);
+                continue;
               }
+            } on Object {
+              _retry(m.id, ack);
+              continue;
             }
-            b.store
-              ..partnerPhoto = photo
-              ..changed();
-            if (name.isNotEmpty) b.store.partner = _renamed(name);
-            _emit(PartnerChanged(name: name, photo: photo));
-          }());
+          }
+          b.store
+            ..partnerPhoto = photo
+            ..changed();
+          if (name.isNotEmpty) b.store.partner = _renamed(name);
+          _emit(PartnerChanged(name: name, photo: photo));
         case CallEnvelope():
           // An offer older than a minute rang out long ago.
           if (env.op == 'offer' &&
@@ -592,7 +598,8 @@ class NeonChatRepository implements ChatRepository {
             b.callSignals.add(env);
           }
         case ThemeEnvelope(:final theme, :final blob, :final blobKey):
-          unawaited(_themeArrived(theme, blob, blobKey));
+          // Taken (acked) only once its photo is here, else tried again.
+          if (!await _themeArrived(theme, blob, blobKey)) _retry(m.id, ack);
         case null:
           break;
       }
@@ -741,19 +748,30 @@ class NeonChatRepository implements ChatRepository {
     _ => m,
   };
 
-  Future<void> _themeArrived(ChatTheme t, String? blob, String? key) async {
+  /// False when its photo couldn't come down (try again later).
+  Future<bool> _themeArrived(ChatTheme t, String? blob, String? key) async {
     var theme = t;
     if (blob != null && key != null) {
       try {
         final path = await _download(blob, key, 'wall-${uuid()}');
         theme = t.copyWith(wallpaper: WallpaperRef.photo(path));
+      } on NetError catch (e) {
+        // Gone from storage (taken already, or too old): let it go.
+        return e.status == 404;
       } on Object {
-        return; // Couldn't get the photo: keep the current theme.
+        return false;
       }
     } else if (t.wallpaper.photo != null) {
-      return;
+      return true; // a photo with nothing to fetch: nothing to apply
     }
     _emit(ThemeChanged(theme));
+    return true;
+  }
+
+  /// Leaves mail [id] on the server to be handled again next time.
+  void _retry(String id, List<String> ack) {
+    ack.remove(id);
+    _seen.remove(id);
   }
 
   @override

@@ -1,6 +1,13 @@
+import 'dart:ui' as ui;
+import 'dart:math' as math;
+import 'dart:io';
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_colors.dart';
@@ -191,6 +198,7 @@ class _ThemeSheetState extends ConsumerState<ThemeSheet> {
                                 ),
                                 child: ArtBox(
                                   art: int.tryParse(p.substring(5)) ?? 0,
+                                  path: p.startsWith('mock:') ? null : p,
                                 ),
                               ),
                             ),
@@ -326,10 +334,89 @@ class _WallpaperCropState extends State<WallpaperCrop> {
   var _scale = 1.0;
   var _offset = Offset.zero;
   var _start = 1.0;
+  var _busy = false;
+
+  /// A photo from the phone (not the mock's stand-in).
+  bool get _real => !widget.photo.startsWith('mock:');
+
+  /// What's framed on screen, drawn into a phone-sized JPEG: the wallpaper
+  /// both phones get.
+  Future<String> _crop(Size screen) async {
+    final bytes = await File(widget.photo).readAsBytes();
+    final image = (await (await ui.instantiateImageCodec(
+      bytes,
+    )).getNextFrame()).image;
+    final k = math.min(2.5, 1440 / screen.width);
+    final out = Size(screen.width * k, screen.height * k);
+    final rec = ui.PictureRecorder();
+    final c = Canvas(rec)..scale(k);
+    // As the preview draws it: the photo covering the screen, scaled about
+    // the middle, then moved.
+    final src =
+        Offset.zero & Size(image.width.toDouble(), image.height.toDouble());
+    final fit = applyBoxFit(BoxFit.cover, src.size, screen);
+    final from = Alignment.center.inscribe(fit.source, src);
+    final dst = Alignment.center.inscribe(
+      fit.destination,
+      Offset.zero & screen,
+    );
+    final mid = screen.center(Offset.zero);
+    c
+      ..translate(_offset.dx, _offset.dy)
+      ..translate(mid.dx, mid.dy)
+      ..scale(_scale)
+      ..translate(-mid.dx, -mid.dy)
+      ..drawImageRect(
+        image,
+        from,
+        dst,
+        Paint()..filterQuality = FilterQuality.high,
+      );
+    final framed = await rec.endRecording().toImage(
+      out.width.round(),
+      out.height.round(),
+    );
+    final png = (await framed.toByteData(format: ui.ImageByteFormat.png))!
+        .buffer
+        .asUint8List();
+    final dir = Directory(
+      '${(await getApplicationSupportDirectory()).path}/media',
+    );
+    await dir.create(recursive: true);
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    try {
+      final jpg = await FlutterImageCompress.compressWithList(
+        png,
+        quality: 88,
+        format: CompressFormat.jpeg,
+      );
+      return (await File('${dir.path}/wallpaper-$stamp.jpg').writeAsBytes(jpg))
+          .path;
+    } on Object {
+      // No compressor (the desktop build): keep the PNG.
+      return (await File('${dir.path}/wallpaper-$stamp.png').writeAsBytes(png))
+          .path;
+    }
+  }
+
+  Future<void> _use(InkChoice ink) async {
+    if (_busy) return;
+    var photo = widget.photo;
+    if (_real) {
+      setState(() => _busy = true);
+      try {
+        photo = await _crop(MediaQuery.sizeOf(context));
+      } on Object {
+        // Couldn't crop: the whole photo, as it is.
+      }
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop((WallpaperRef.photo(photo), ink));
+  }
 
   @override
   Widget build(BuildContext context) {
-    final art = int.tryParse(widget.photo.substring(5)) ?? 0;
+    final art = _real ? 0 : int.tryParse(widget.photo.substring(5)) ?? 0;
     return VInkScope(
       ink: VColors.white,
       child: ColoredBox(
@@ -347,11 +434,19 @@ class _WallpaperCropState extends State<WallpaperCrop> {
                 offset: _offset,
                 child: Transform.scale(
                   scale: _scale,
-                  child: ArtBox(
-                    art: art,
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
+                  child: _real
+                      ? Image.file(
+                          File(widget.photo),
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          filterQuality: FilterQuality.medium,
+                        )
+                      : ArtBox(
+                          art: art,
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
                 ),
               ),
             ),
@@ -424,10 +519,7 @@ class _WallpaperCropState extends State<WallpaperCrop> {
                             VLink(
                               'Use black ink',
                               style: VText.inter(12),
-                              onTap: () => Navigator.of(context).pop((
-                                WallpaperRef.photo(widget.photo),
-                                InkChoice.black,
-                              )),
+                              onTap: () => unawaited(_use(InkChoice.black)),
                             ),
                           ],
                         ),
@@ -444,10 +536,8 @@ class _WallpaperCropState extends State<WallpaperCrop> {
                             Expanded(
                               child: VButton.primary(
                                 'Use',
-                                onPressed: () => Navigator.of(context).pop((
-                                  WallpaperRef.photo(widget.photo),
-                                  InkChoice.auto,
-                                )),
+                                onPressed: () =>
+                                    unawaited(_use(InkChoice.auto)),
                               ),
                             ),
                           ],
