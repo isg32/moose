@@ -5,6 +5,7 @@ import 'package:moose/app/app.dart';
 import 'package:moose/core/icons/v_icons.dart';
 import 'package:moose/data/models.dart';
 import 'package:moose/data/providers.dart';
+import 'package:moose/features/chat/composer.dart';
 import 'package:moose/features/media/media_viewer.dart';
 
 /// Attachments end to end: attach, pick two in the gallery, caption, send;
@@ -46,7 +47,11 @@ void main() {
     expect(find.text('1 / 2'), findsOneWidget);
     await t.enterText(find.byType(EditableText).last, 'the lake');
     await t.tap(find.bySemanticsLabel('Send to Aatika'));
-    await frames(t);
+    // Going up: each photo shows how much of it has gone.
+    await frames(t, 300);
+    expect(find.textContaining('Sending ·'), findsWidgets);
+    await frames(t, 400);
+    expect(find.textContaining('Sending ·'), findsNothing);
 
     final sent = c.read(messagesProvider).last;
     expect(sent.body, isA<PhotoBody>());
@@ -59,6 +64,20 @@ void main() {
     await frames(t);
     expect(find.byType(MediaViewer), findsOneWidget);
     expect(t.takeException(), isNull);
+
+    // Reply's circle answers a tap (it used to swallow it): the viewer
+    // closes and the composer quotes the photo.
+    await t.tap(
+      find.descendant(
+        of: find.byType(MediaViewer),
+        matching: find.byWidgetPredicate(
+          (w) => w is VIconView && w.icon == VIcon.reply,
+        ),
+      ),
+    );
+    await frames(t);
+    expect(find.byType(MediaViewer), findsNothing);
+    expect(t.widget<Composer>(find.byType(Composer)).replyTo?.id, sent.id);
 
     await t.pumpWidget(const SizedBox.shrink());
     await t.pump(const Duration(seconds: 5));

@@ -74,6 +74,20 @@ class MockChatRepository implements ChatRepository {
   @override
   void send(Message message) {
     final id = message.id;
+    // Photos and videos go up first, as on Neon (in 0.4 s here).
+    final media = switch (message.body) {
+      PhotoBody(:final photos) => photos,
+      VideoBody(:final video) || RoundVideoBody(:final video) => [video],
+      _ => const <Media>[],
+    };
+    for (final x in media) {
+      for (final (ms, p) in [(0, 0.0), (130, 0.35), (260, 0.7), (400, 1.0)]) {
+        _after(
+          Duration(milliseconds: ms),
+          () => _events.add(UploadProgress(id, x.id, p)),
+        );
+      }
+    }
     _after(const Duration(milliseconds: 500), () {
       _events.add(DeliveryUpdate(id, Delivery.sent));
     });

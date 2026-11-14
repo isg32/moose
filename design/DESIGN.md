@@ -45,6 +45,15 @@ This is the spec the Flutter code follows. It is distilled from the **Moose Scre
 | Top / bottom progressive blur | paper @ 0.6 → 0 | same | ≤ 11 | none |
 | Disabled action | whole element @ 0.35 | same | – | – |
 
+**What the app does now (this replaces the Blur column):** live blur appears in exactly three places: the progressive edge blur at the top and bottom (`shaders/progressive_blur.frag`, drawn once by the shell), the frosted tab pill, and behind a moment burst (C25), where the chat blurs in through its sigma (0 → 18 over 420 ms). Everything else in the table has **no blur**:
+
+- **Cards and the composer** are see-through paper at 55 %, or solid with Settings › Look › Solid panels.
+- **Sheets** are always solid, so text never ghosts through them.
+- **Page veils** are a copy of the wallpaper under the tint, opaque from the first frame.
+- **Popups** dim what's behind them at 70 %.
+
+A blur is never put inside an opacity or a fade, because it pops. Renders of the built screens are in [`docs/gallery.md`](../docs/gallery.md).
+
 ## Shared wallpapers (Cariño's palettes)
 
 `night` (the default), `dune`, `moss`, `fog`, `ember` and `black` take white ink; `paper` and `white` take black ink. The base colours and blobs are Cariño's `VWallpapers`, copied as they are. Photo wallpapers add dim (0–100 %) and blur.

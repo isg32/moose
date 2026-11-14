@@ -132,14 +132,42 @@ class MooseApi {
     await _call('POST', '/v1/mail/ack', {'ids': ids});
   }
 
-  /// Uploads an already-sealed blob; returns its key.
-  Future<String> upload(Uint8List sealed) async {
+  /// Uploads an already-sealed blob; returns its key. [onProgress] hears
+  /// how many bytes the network has taken so far.
+  ///
+  /// A video can take minutes, so there's no deadline for the whole
+  /// upload: it gives up only when nothing has moved for [stall].
+  Future<String> upload(
+    Uint8List sealed, {
+    void Function(int sent, int total)? onProgress,
+    Duration stall = const Duration(seconds: 30),
+  }) async {
     final j = await _call('POST', '/v1/blobs');
-    final res = await _raw(
-      http.Request('PUT', Uri.parse(j['url'] as String))..bodyBytes = sealed,
-    );
-    if (res.statusCode >= 300) throw NetError(res.statusCode, 'upload');
-    return j['key'] as String;
+    var moved = DateTime.now();
+    final req = _Upload(Uri.parse(j['url'] as String), sealed, (sent) {
+      moved = DateTime.now();
+      onProgress?.call(sent, sealed.length);
+    });
+    final stuck = Completer<http.StreamedResponse>();
+    final watch = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (DateTime.now().difference(moved) > stall && !stuck.isCompleted) {
+        stuck.completeError(const NetError(0, 'upload stalled'));
+      }
+    });
+    try {
+      final sent = await Future.any([_http.send(req), stuck.future]);
+      watch.cancel();
+      final res = await http.Response.fromStream(sent)
+          .timeout(const Duration(seconds: 30));
+      if (res.statusCode >= 300) throw NetError(res.statusCode, 'upload');
+      return j['key'] as String;
+    } on NetError {
+      rethrow;
+    } on Exception catch (e) {
+      throw NetError(0, '$e');
+    } finally {
+      watch.cancel();
+    }
   }
 
   Future<Uint8List> download(String key) async {
@@ -222,6 +250,38 @@ class MooseApi {
       );
     } on Exception catch (e) {
       throw NetError(0, '$e');
+    }
+  }
+}
+
+/// A PUT of [bytes] that hands them over in chunks as the network takes
+/// them, telling [onSent] how far it has got. Storage wants the length up
+/// front (no chunked encoding), so it's set.
+class _Upload extends http.BaseRequest {
+  _Upload(Uri url, this.bytes, this.onSent) : super('PUT', url) {
+    contentLength = bytes.length;
+  }
+
+  final Uint8List bytes;
+  final void Function(int sent) onSent;
+
+  static const _chunk = 64 * 1024;
+
+  @override
+  http.ByteStream finalize() {
+    super.finalize();
+    return http.ByteStream(_chunks());
+  }
+
+  // A generator: the next chunk is only made when the socket asks for it,
+  // so progress follows what has actually gone out (give or take its
+  // buffer).
+  Stream<List<int>> _chunks() async* {
+    onSent(0);
+    for (var at = 0; at < bytes.length; at += _chunk) {
+      final end = (at + _chunk).clamp(0, bytes.length);
+      yield Uint8List.sublistView(bytes, at, end);
+      onSent(end);
     }
   }
 }

@@ -364,6 +364,21 @@ class MessagesNotifier extends Notifier<List<Message>> {
           for (final m in state)
             if (m.id == messageId) _withFile(m, mediaId, path) else m,
         ];
+      case UploadProgress(:final messageId, :final mediaId, :final progress):
+        state = [
+          for (final m in state)
+            if (m.id == messageId)
+              _withMedia(
+                m,
+                mediaId,
+                (x) => x.copyWith(
+                  transfer: progress >= 1 ? Transfer.done : Transfer.uploading,
+                  progress: progress.clamp(0.0, 1.0),
+                ),
+              )
+            else
+              m,
+        ];
       case DoodleChanged(:final op):
         ref.read(doodlesProvider.notifier).applyRemote(op);
       case PartnerChanged(:final name, :final photo):
@@ -386,6 +401,25 @@ class MessagesNotifier extends Notifier<List<Message>> {
       case Unpaired():
         ref.read(sessionProvider.notifier).unpair();
     }
+  }
+
+  /// [m] with its photo or video [mediaId] changed by [change].
+  static Message _withMedia(
+    Message m,
+    String mediaId,
+    Media Function(Media) change,
+  ) {
+    Media one(Media x) => x.id == mediaId ? change(x) : x;
+    return m.copyWith(
+      body: switch (m.body) {
+        PhotoBody(:final photos, :final caption) => PhotoBody([
+          for (final p in photos) one(p),
+        ], caption: caption),
+        VideoBody(:final video) => VideoBody(one(video)),
+        RoundVideoBody(:final video) => RoundVideoBody(one(video)),
+        final b => b,
+      },
+    );
   }
 
   static Message _withFile(Message m, String mediaId, String path) {

@@ -103,7 +103,10 @@ class _VideoFrameState extends State<VideoFrame> {
   @override
   void initState() {
     super.initState();
-    _c.initialize().then((_) {
+    _c.initialize().then((_) async {
+      // Some decoders (Android's, often) draw nothing until a frame is
+      // asked for: seek to the start so the first frame shows.
+      await _c.seekTo(Duration.zero);
       if (mounted) setState(() {});
     }, onError: (Object _) {});
   }

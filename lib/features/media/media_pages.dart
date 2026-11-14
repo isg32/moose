@@ -1,5 +1,9 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_colors.dart';
@@ -14,6 +18,7 @@ import '../../data/models.dart';
 import '../../data/providers.dart' show MediaSource;
 import '../../mock/mock_data.dart';
 import '../common/art.dart';
+import '../common/video_frame.dart';
 import '../common/overlay.dart';
 import '../common/parts.dart';
 import 'attach_sheet.dart';
@@ -293,11 +298,13 @@ class _MediaPreviewState extends State<MediaPreview> {
                   onPageChanged: (i) => setState(() => _at = i),
                   itemBuilder: (context, i) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: ArtBox(
-                      art: _media[i].art,
-                      path: _media[i].path,
-                      radius: BorderRadius.circular(20),
-                    ),
+                    child: _media[i].duration != null
+                        ? _PreviewVideo(_media[i], active: i == _at)
+                        : ArtBox(
+                            art: _media[i].art,
+                            path: _media[i].path,
+                            radius: BorderRadius.circular(20),
+                          ),
                   ),
                 ),
               ),
@@ -327,10 +334,22 @@ class _MediaPreviewState extends State<MediaPreview> {
                         padding: const EdgeInsets.all(2),
                         child: ArtBox(
                           art: _media[i].art,
-                          path: _media[i].path,
+                          // A video's file isn't an image: its first frame
+                          // goes on top instead.
+                          path: _media[i].duration == null
+                              ? _media[i].path
+                              : null,
                           width: 44,
                           height: 44,
                           radius: BorderRadius.circular(10),
+                          child: _media[i].duration != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: _media[i].path == null
+                                      ? null
+                                      : VideoFrame(_media[i].path!),
+                                )
+                              : null,
                         ),
                       ),
                     ),
@@ -552,6 +571,132 @@ class _CameraPageState extends State<CameraPage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+
+/// A video in the preview (C19): its first frame, and tap to play it
+/// through before sending. It stops when swiped away.
+class _PreviewVideo extends StatefulWidget {
+  const _PreviewVideo(this.media, {required this.active});
+
+  final Media media;
+  final bool active;
+
+  @override
+  State<_PreviewVideo> createState() => _PreviewVideoState();
+}
+
+class _PreviewVideoState extends State<_PreviewVideo> {
+  VideoPlayerController? _c;
+
+  @override
+  void initState() {
+    super.initState();
+    final path = widget.media.path;
+    if (path == null) return;
+    final c = _c = VideoPlayerController.file(File(path));
+    c.addListener(_changed);
+    c.initialize().then((_) async {
+      // Some decoders show nothing until asked for a frame.
+      await c.seekTo(Duration.zero);
+      if (mounted) setState(() {});
+    }, onError: (Object _) {});
+  }
+
+  void _changed() {
+    final c = _c!;
+    if (!mounted) return;
+    final v = c.value;
+    if (v.isInitialized && !v.isPlaying && v.position >= v.duration) {
+      unawaited(c.seekTo(Duration.zero));
+    }
+    setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(_PreviewVideo old) {
+    super.didUpdateWidget(old);
+    if (!widget.active && (_c?.value.isPlaying ?? false)) unawaited(_c!.pause());
+  }
+
+  @override
+  void dispose() {
+    _c?.removeListener(_changed);
+    unawaited(_c?.dispose());
+    super.dispose();
+  }
+
+  void _toggle() {
+    final c = _c;
+    if (c == null || !c.value.isInitialized) return;
+    unawaited(c.value.isPlaying ? c.pause() : c.play());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _c;
+    final ready = c != null && c.value.isInitialized;
+    final playing = ready && c.value.isPlaying;
+    final shown = ready ? c.value.position : Duration.zero;
+    final total = ready ? c.value.duration : widget.media.duration!;
+    return VTappable(
+      onTap: _toggle,
+      haptic: false,
+      child: ArtBox(
+        art: widget.media.art,
+        radius: BorderRadius.circular(20),
+        child: OnMedia(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (ready)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: SizedBox(
+                      width: c.value.size.width,
+                      height: c.value.size.height,
+                      child: VideoPlayer(c),
+                    ),
+                  ),
+                ),
+              Center(
+                child: AnimatedOpacity(
+                  opacity: playing ? 0 : 1,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: VColors.black.withValues(alpha: 0.4),
+                      border: Border.all(color: VColors.white),
+                    ),
+                    child: const Center(
+                      child: VIconView(
+                        VIcon.play,
+                        size: 28,
+                        color: VColors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 14,
+                bottom: 12,
+                child: Text(
+                  playing ? '${mss(shown)} / ${mss(total)}' : mss(total),
+                  style: VText.doto(13),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

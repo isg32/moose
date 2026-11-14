@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -149,14 +150,32 @@ class _MomentBurstState extends State<MomentBurst>
 
   late final _flyers = _scatter(widget.moment);
 
+  /// How far the chat behind blurs.
+  static const double _blur = 18;
+
+  /// The field that had the keyboard when it arrived, to give it back.
+  FocusNode? _typing;
+
   @override
   void initState() {
     super.initState();
     if (widget.buzz) unawaited(widget.moment.buzz());
+    // The keyboard is the system's, drawn over everything Moose draws:
+    // take it down so the burst isn't hidden under it.
+    final focus = FocusManager.instance.primaryFocus;
+    if (focus?.context?.findAncestorStateOfType<EditableTextState>() != null) {
+      _typing = focus;
+      focus!.unfocus();
+    }
   }
 
   @override
   void dispose() {
+    // Back to typing where they were.
+    final typing = _typing;
+    if (typing != null && typing.context != null && typing.canRequestFocus) {
+      typing.requestFocus();
+    }
     _drift.dispose();
     _ripple.dispose();
     _beat.dispose();
@@ -173,7 +192,22 @@ class _MomentBurstState extends State<MomentBurst>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // No blur: the scrim and the moment's wash over the chat.
+          // The chat blurs away behind it. The blur eases in through its
+          // sigma, never through an opacity, so it doesn't pop.
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: _blur),
+            duration: const Duration(milliseconds: 420),
+            curve: Curves.easeOutCubic,
+            builder: (context, sigma, _) => BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: sigma,
+                sigmaY: sigma,
+                tileMode: TileMode.decal,
+              ),
+              child: const SizedBox.expand(),
+            ),
+          ),
+          // The scrim and the moment's wash over the blurred chat.
           RepaintBoundary(
             child: Stack(
               fit: StackFit.expand,

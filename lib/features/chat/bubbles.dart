@@ -595,6 +595,7 @@ class _MediaTile extends StatelessWidget {
         media.progress,
         'From the cloud · $got of $mb MB',
       ),
+      Transfer.uploading => _Sending(media),
       Transfer.cloud => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -631,6 +632,37 @@ class _MediaTile extends StatelessWidget {
   );
 }
 
+/// Your photo or video going up to the cloud: a ring that fills as it
+/// goes, and how much of it has gone.
+class _Sending extends StatelessWidget {
+  const _Sending(this.media);
+
+  final Media media;
+
+  @override
+  Widget build(BuildContext context) {
+    final mb = (media.bytes / 1e6).toStringAsFixed(1);
+    final got = (media.bytes * media.progress / 1e6).toStringAsFixed(1);
+    return Semantics(
+      label: 'Sending, ${(media.progress * 100).round()} percent',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Eased, so chunky progress steps still glide.
+          TweenAnimationBuilder<double>(
+            tween: Tween(end: media.progress),
+            duration: const Duration(milliseconds: 250),
+            builder: (context, p, _) =>
+                VRing(value: p, size: 44, strokeWidth: 4, color: VColors.white),
+          ),
+          const SizedBox(height: 6),
+          Text('Sending · $got of $mb MB', style: VText.inter(11, weight: 500)),
+        ],
+      ),
+    );
+  }
+}
+
 class _Video extends StatelessWidget {
   const _Video(this.m, this.video, {required this.onOpen});
 
@@ -656,22 +688,24 @@ class _Video extends StatelessWidget {
                   child: VideoFrame(path),
                 ),
               Center(
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: VColors.black.withValues(alpha: 0.4),
-                    border: Border.all(color: VColors.white),
-                  ),
-                  child: const Center(
-                    child: VIconView(
-                      VIcon.play,
-                      size: 24,
-                      color: VColors.white,
-                    ),
-                  ),
-                ),
+                child: video.transfer == Transfer.uploading
+                    ? _Sending(video)
+                    : Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: VColors.black.withValues(alpha: 0.4),
+                          border: Border.all(color: VColors.white),
+                        ),
+                        child: const Center(
+                          child: VIconView(
+                            VIcon.play,
+                            size: 24,
+                            color: VColors.white,
+                          ),
+                        ),
+                      ),
               ),
               Positioned(
                 left: 10,
@@ -752,7 +786,15 @@ class _RoundVideoState extends State<_RoundVideo> {
                           ),
                         ),
                 ),
-                if (!playing)
+                if (video.transfer == Transfer.uploading)
+                  // Going up: the ring fills with the upload.
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(end: video.progress),
+                    duration: const Duration(milliseconds: 250),
+                    builder: (context, p, _) =>
+                        VRing(value: p, size: size + 8, strokeWidth: 4),
+                  )
+                else if (!playing)
                   VRing(value: 0, size: size + 8, strokeWidth: 4)
                 else if (video.path != null)
                   ValueListenableBuilder(
@@ -768,7 +810,14 @@ class _RoundVideoState extends State<_RoundVideo> {
                     builder: (context, p, _) =>
                         VRing(value: p, size: size + 8, strokeWidth: 4),
                   ),
-                if (!playing)
+                if (video.transfer == Transfer.uploading)
+                  OnMedia(
+                    child: Text(
+                      '${(video.progress * 100).round()}%',
+                      style: VText.doto(22, weight: 900),
+                    ),
+                  )
+                else if (!playing)
                   const OnMedia(
                     child: VIconView(
                       VIcon.mute,

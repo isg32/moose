@@ -705,26 +705,53 @@ class NeonChatRepository implements ChatRepository {
     return file.path;
   }
 
-  /// Seals and uploads [m]'s files that aren't in storage yet.
-  Future<Media> _upload(Media m) async {
+  /// Seals and uploads [m]'s file if it isn't in storage yet, telling the
+  /// chat how far it has got (message [messageId]).
+  Future<Media> _upload(String messageId, Media m) async {
     final path = m.path;
     if (m.blob != null || path == null) return m;
-    final sealed = await Channel.sealBlob(await File(path).readAsBytes());
-    final key = await b.api.upload(sealed.bytes);
-    return m.copyWith(blob: key, blobKey: sealed.key);
+    // At most every 1 % and every 100 ms: enough to look smooth without
+    // rebuilding the chat for every chunk.
+    var shown = -1.0;
+    var at = DateTime(0);
+    void report(double p) {
+      final now = DateTime.now();
+      if (p < 1 &&
+          (p - shown < 0.01 || now.difference(at).inMilliseconds < 100)) {
+        return;
+      }
+      shown = p;
+      at = now;
+      _emit(UploadProgress(messageId, m.id, p));
+    }
+
+    report(0);
+    try {
+      final sealed = await Channel.sealBlob(await File(path).readAsBytes());
+      final key = await b.api.upload(
+        sealed.bytes,
+        // The last bit is the server saying yes, so hold 99 % till then.
+        onProgress: (sent, total) =>
+            report(total == 0 ? 0 : (sent / total).clamp(0.0, 0.99)),
+      );
+      return m.copyWith(blob: key, blobKey: sealed.key);
+    } finally {
+      // Done or not: no ring left spinning (a failed send shows Retry).
+      _emit(UploadProgress(messageId, m.id, 1));
+    }
   }
 
   Future<Message> _withUploads(Message m) async => switch (m.body) {
     PhotoBody(:final photos, :final caption) => m.copyWith(
       body: PhotoBody([
-        for (final p in photos) await _upload(p),
+        for (final p in photos) await _upload(m.id, p),
       ], caption: caption),
     ),
     VideoBody(:final video) => m.copyWith(
-      body: VideoBody(await _upload(video)),
+      body: VideoBody(await _upload(m.id, video)),
     ),
     RoundVideoBody(:final video) => m.copyWith(
-      body: RoundVideoBody(await _upload(video)),
+      body: RoundVideoBody(await _upload(m.id, video)),
     ),
     StickerBody(:final sticker)
         when sticker.path != null && sticker.blob == null =>

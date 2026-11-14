@@ -84,6 +84,9 @@ enum Transfer {
 
   /// The partner's phone is offline and nothing is in the cloud yet.
   waiting,
+
+  /// Yours, going up to the cloud, with progress.
+  uploading,
 }
 
 /// A photo or video as the chat shows it. [art] picks the stand-in art until

@@ -10,6 +10,11 @@ abstract final class VText {
   static const String dotoFamily = 'Doto';
   static const String interFamily = 'Inter';
 
+  /// Emoji (moments, reactions) come from the system's colour emoji font.
+  /// Naming it makes the fallback the same on Android, Linux and in
+  /// rendered previews, which have no system fallback of their own.
+  static const List<String> fallback = ['Noto Color Emoji'];
+
   static TextStyle doto(
     double size, {
     int weight = 700,
@@ -33,6 +38,7 @@ abstract final class VText {
   ) {
     return TextStyle(
       fontFamily: family,
+      fontFamilyFallback: fallback,
       fontSize: size,
       fontWeight: FontWeight.values[(weight ~/ 100).clamp(1, 9) - 1],
       fontVariations: [FontVariation('wght', weight.toDouble())],
@@ -71,6 +77,7 @@ abstract final class VText {
   /// Monospace for ADB commands.
   static const TextStyle mono = TextStyle(
     fontFamily: 'monospace',
+    fontFamilyFallback: fallback,
     fontSize: 11.5,
     height: 1.5,
   );

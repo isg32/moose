@@ -85,6 +85,15 @@ class MediaReady extends ChatEvent {
   final String path;
 }
 
+/// Your photo or video [mediaId] in message [messageId] is going up:
+/// [progress] runs 0–1, and 1 means it's in storage.
+class UploadProgress extends ChatEvent {
+  const UploadProgress(this.messageId, this.mediaId, this.progress);
+  final String messageId;
+  final String mediaId;
+  final double progress;
+}
+
 /// The partner changed a doodle board.
 class DoodleChanged extends ChatEvent {
   const DoodleChanged(this.op);

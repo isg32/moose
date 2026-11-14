@@ -58,7 +58,10 @@ class _VTappableState extends State<VTappable> {
       behavior: HitTestBehavior.opaque,
       onTapDown: _enabled ? (_) => _set(true) : null,
       onTapUp: _enabled ? (_) => _set(false) : null,
-      onTapCancel: () => _set(false),
+      // Only when enabled: any tap callback makes a recogniser, and a
+      // disabled one inside a tappable parent would win the tap and drop it
+      // (the media viewer's Reply / Save / Share).
+      onTapCancel: _enabled ? () => _set(false) : null,
       onTap: widget.onTap == null
           ? null
           : () {

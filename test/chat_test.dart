@@ -170,6 +170,29 @@ void main() {
     await close(tester);
   });
 
+  testWidgets('a burst takes the keyboard down, then gives it back', (
+    tester,
+  ) async {
+    final c = await open(tester);
+    await tester.tap(find.byType(EditableText).first);
+    await settle(tester);
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    // A hug lands while typing: the system keyboard would cover it.
+    c.read(incomingMomentProvider.notifier).show(VMoment.hug);
+    await settle(tester);
+    expect(find.byType(MomentBurst), findsOneWidget);
+    expect(tester.testTextInput.isVisible, isFalse);
+    expect(find.byType(BackdropFilter), findsWidgets);
+
+    await tester.tap(find.text('Close'));
+    await settle(tester);
+    expect(find.byType(MomentBurst), findsNothing);
+    expect(tester.testTextInput.isVisible, isTrue);
+    expect(tester.takeException(), isNull);
+    await close(tester);
+  });
+
   testWidgets('the decoy chat is empty and sends nothing', (tester) async {
     final c = await open(tester);
     c
